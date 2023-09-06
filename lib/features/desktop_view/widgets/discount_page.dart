@@ -18,7 +18,7 @@ class DiscountsPage extends ConsumerWidget {
           headerLabel: 'Last Order',
           color: Colors.black,
         ),
-        Container(
+        SizedBox(
           // width: Get.width,
           height: 245,
           // margin: const EdgeInsets.only(top: 8),
@@ -52,19 +52,6 @@ class DiscountsPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                // Expanded(
-                //   child:
-                //    SizedBox(
-                //     width: Get.width * 0.8,
-                //     child: ListView.builder(
-                //       scrollDirection: Axis.horizontal,
-                //       itemCount: 4,
-                //       itemBuilder: (context, index) {
-                //         return const DiscountCard();
-                //       },
-                //     ),
-                //   ),
-                // ),
                 Container(
                   margin: const EdgeInsets.only(top: 24),
                   child: const LastOrdersCard(),

@@ -59,7 +59,6 @@ class _AppState extends ConsumerState<App> {
       onTap: () {},
       onTapDown: (details) {
         tapPosition = details.globalPosition;
-        // Todo: Make the SliderMenu close when user tabs outside the slider
       },
       child: Scaffold(
         body: Responsive(

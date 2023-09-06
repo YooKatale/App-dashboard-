@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterwave_standard/flutterwave.dart';
+import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 import '/features/common/widgets/custom_button.dart';
 import '/main.dart';
@@ -322,6 +323,9 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
       phoneNumber: userNumber!,
     );
 
+    var value = double.parse(amountController.text.trim());
+    log('value: $value');
+
     try {
       final Flutterwave flutterwave = Flutterwave(
         context: context,
@@ -335,25 +339,14 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
         customization: Customization(title: "Test Payment"),
         isTestMode: true,
       );
+
       final ChargeResponse response = await flutterwave.charge();
       showLoading(response.toString());
       log("${response.toJson()}");
-      analytics!.logEvent(
-        name: 'purchase',
-        parameters: {
-          'currency': currencyController.text.trim(),
-          'value': double.tryParse(amountController.text.trim()),
-          'items': [
-            {
-              'item_id': 'p123',
-              'item_name': 'Product 1',
-              'currency': currencyController.text.trim(),
-              'value': double.tryParse(amountController.text.trim()),
-              'time': DateTime.now(),
-            },
-            // other items
-          ],
-        },
+      analytics!.logPurchase(
+        currency: currencyController.text.trim(),
+        value: double.parse(amountController.text.trim()),
+        transactionId: Uuid().v1(),
       );
     } on Exception catch (err) {
       log('Error is $err');
@@ -361,7 +354,6 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
         name: 'purchase_error',
         parameters: {
           'error': err.toString(),
-          'time': DateTime.now(),
         },
       );
     }
