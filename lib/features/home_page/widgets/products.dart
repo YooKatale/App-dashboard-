@@ -1,5 +1,10 @@
 import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -138,8 +143,76 @@ class ProductsPage extends ConsumerWidget {
               loading: () => CircularProgressIndicator(
                 color: Colors.green.shade900,
               ),
-            )
+            ),
+            const SizedBox(height: 10),
+            CustomButton(
+                width: 180,
+                onPressed: () async {
+                  FilePickerResult? result =
+                      await FilePicker.platform.pickFiles();
+
+                  if (result != null) {
+                    try {
+                      File file = File(result.files.single.path!);
+                      final bytes = await file.readAsBytes();
+
+                      TaskSnapshot snap = await upload_file(file, bytes);
+                      if (snap.state == TaskState.success) {
+                        // ignore: use_build_context_synchronously
+                        showDialog(
+                            context: context,
+                            builder: (context) => SimpleDialog(
+                                  alignment: Alignment.center,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  title:
+                                      const Text('File uploaded successfully'),
+                                  titleTextStyle:
+                                      const TextStyle(color: Colors.green),
+                                ));
+                      } else if (snap.state == TaskState.running) {
+                        return const CircularProgressIndicator(
+                            color: Colors.green);
+                      }
+                      String downloadUrl = await snap.ref.getDownloadURL();
+
+                      await FirebaseFirestore.instance
+                          .collection('images')
+                          .add({
+                        'name': file.uri,
+                        'url': downloadUrl,
+                      });
+                    } on Exception catch (err) {
+                      log('Error: $err');
+
+                      // ignore: use_build_context_synchronously
+                      showDialog(
+                          context: context,
+                          builder: (context) => const SimpleDialog(
+                                title: Center(
+                                  child: Text('Opps! Something went Wrong'),
+                                ),
+                                titleTextStyle: TextStyle(color: Colors.red),
+                              ));
+                    }
+                  } else {
+                    log('Opps! something went wrong');
+                  }
+                },
+                title: 'Upload Products'),
           ],
         ));
+  }
+
+  Future<TaskSnapshot> upload_file(File file, Uint8List bytes) async {
+    UploadTask task =
+        FirebaseStorage.instance.ref('images/${file.path}').putData(bytes);
+
+    TaskSnapshot snap = await task;
+    return snap;
   }
 }

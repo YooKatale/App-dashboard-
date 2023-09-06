@@ -141,7 +141,7 @@ class _OrderListCardState extends State<OrderListCard> {
                             setState(() {
                               items -= 1;
                               analytics?.logEvent(
-                                  name: 'remove_to_cart',
+                                  name: 'remove_from_cart',
                                   parameters: {
                                     'item_id': 'p123',
                                     'item_name': 'Product 1',
@@ -173,15 +173,16 @@ class _OrderListCardState extends State<OrderListCard> {
                           log('Button tapped');
                           setState(() {
                             items += 1;
-                            log('Items ${items}');
+                            log('Items $items');
                             analytics?.logEvent(
-                                name: 'add_from_cart',
-                                parameters: {
-                                  'item_id': 'p123',
-                                  'item_name': 'Product 1',
-                                  'currency': 'USD ',
-                                  'value': 12.99
-                                });
+                              name: 'add_from_cart',
+                              parameters: {
+                                'item_id': 'p123',
+                                'item_name': 'Product 1',
+                                'currency': 'USD ',
+                                'value': 12.99
+                              },
+                            );
                           });
                         },
                         child: const FaIcon(
