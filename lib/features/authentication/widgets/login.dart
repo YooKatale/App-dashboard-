@@ -112,7 +112,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: Center(
       child: SizedBox(
         width: 500,
-        height: MediaQuery.of(context).size.height * 0.55,
+        height: MediaQuery.of(context).size.height * 0.58,
         child: Column(
           children: [
             const AuthHeading(),

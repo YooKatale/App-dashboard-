@@ -14,8 +14,9 @@ import 'features/desktop_view/widgets/desktop_appbar.dart';
 import 'features/home_page/widgets/home_page.dart';
 
 class MyApp extends ConsumerWidget {
-  MyApp({super.key});
-
+  const MyApp({super.key});
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
