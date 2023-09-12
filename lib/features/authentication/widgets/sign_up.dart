@@ -46,225 +46,233 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BaseWidget(
-        child: Container(
-      width: 500,
-      height: MediaQuery.of(context).size.height,
-      child: Column(
-        children: [
-          const AuthHeading(),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  AuthForm(
-                    label: 'Firstname',
-                    hintText: 'firstname is required',
-                    controller: firstNameController!,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      firstName = value!;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  AuthForm(
-                    label: 'Lastname',
-                    hintText: 'lastname is required',
-                    controller: lastNameController!,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      lastName = value!;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  AuthForm(
-                    label: 'Phone Number',
-                    hintText: 'include country code [+256...]',
-                    controller: phoneNumberController!,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      firstName = value!;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Gender',
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        color: Color(0XFF1A202C),
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Cabin',
-                      ),
+    return SafeArea(
+      child: BaseWidget(
+          child: SizedBox(
+        width: 500,
+        height: MediaQuery.of(context).size.height,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const AuthHeading(),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    AuthForm(
+                      label: 'Firstname',
+                      hintText: 'firstname is required',
+                      controller: firstNameController!,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password is required';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        firstName = value!;
+                      },
                     ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      height: 40,
-                      width: MediaQuery.of(context).size.width,
-                      child: DropdownButtonFormField<String>(
-                        style: const TextStyle(
+                    const SizedBox(height: 20),
+                    AuthForm(
+                      label: 'Lastname',
+                      hintText: 'lastname is required',
+                      controller: lastNameController!,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password is required';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        lastName = value!;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    AuthForm(
+                      label: 'Phone Number',
+                      hintText: 'include country code [+256...]',
+                      controller: phoneNumberController!,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password is required';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        firstName = value!;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Gender',
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
                           color: Color(0XFF1A202C),
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Cabin',
                         ),
-                        value: gender,
-                        decoration: const InputDecoration(
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color.fromRGBO(61, 60, 60, 0.2),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        height: 40,
+                        width: MediaQuery.of(context).size.width,
+                        child: DropdownButtonFormField<String>(
+                          style: const TextStyle(
+                            color: Color(0XFF1A202C),
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Cabin',
+                          ),
+                          value: gender,
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 0),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Color.fromRGBO(61, 60, 60, 0.2),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Color.fromARGB(255, 10, 118, 207),
+                              ), // Change border color here
                             ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Color.fromARGB(255, 10, 118, 207),
-                            ), // Change border color here
+                          // hint: Text('Select gender'),
+                          borderRadius: BorderRadius.circular(4),
+                          isExpanded: true,
+                          items: ['Select gender', 'Male', 'Female']
+                              .map<DropdownMenuItem<String>>((value) {
+                            return DropdownMenuItem(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? value) {
+                            if (value == null) return;
+                            setState(() {
+                              gender = value;
+                            });
+                          },
+                          dropdownColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    AuthForm(
+                      label: 'Email *',
+                      hintText: 'email is required',
+                      controller: emailController!,
+                      validator: (value) {
+                        final emailRegExp =
+                            RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (value == null || value.isEmpty) {
+                          return 'Email is required';
+                        } else if (!emailRegExp.hasMatch(value)) {
+                          return 'Please enter a valid email address';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        setState(() {
+                          email = value!;
+                          log('email: $email');
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: const Align(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: BorderSide.strokeAlignCenter,
+                        child: Text(
+                          'Date of Birth *',
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            color: Color(0XFF1A202C),
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Cabin',
                           ),
                         ),
-                        // hint: Text('Select gender'),
-                        borderRadius: BorderRadius.circular(4),
-                        isExpanded: true,
-                        items: ['Select gender', 'Male', 'Female']
-                            .map<DropdownMenuItem<String>>((value) {
-                          return DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String? value) {
-                          if (value == null) return;
-                          setState(() {
-                            gender = value;
-                          });
-                        },
-                        dropdownColor: Colors.white,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  AuthForm(
-                    label: 'Email *',
-                    hintText: 'email is required',
-                    controller: emailController!,
-                    validator: (value) {
-                      final emailRegExp =
-                          RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                      if (value == null || value.isEmpty) {
-                        return 'Email is required';
-                      } else if (!emailRegExp.hasMatch(value)) {
-                        return 'Please enter a valid email address';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      setState(() {
-                        email = value!;
-                        log('email: $email');
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Date of Birth *',
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        color: Color(0XFF1A202C),
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Cabin',
-                      ),
+                    DatePicker(),
+                    const SizedBox(height: 16),
+                    AuthForm(
+                      label: 'Password *',
+                      hintText: 'password is required',
+                      controller: passwordController!,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password is required';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        setState(() {
+                          password = value!;
+                          log('password: $password');
+                        });
+                      },
                     ),
-                  ),
-                  DatePicker(),
-                  const SizedBox(height: 16),
-                  AuthForm(
-                    label: 'Password *',
-                    hintText: 'password is required',
-                    controller: passwordController!,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      return null;
-                    },
-                    onSaved: (value) {
-                      setState(() {
-                        password = value!;
-                        log('password: $password');
-                      });
-                    },
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Access your account',
-                        style: TextStyle(
-                          fontFamily: 'Cabin',
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      TextButton(
-                        child: const Text(
-                          'Sign In',
+                    Row(
+                      children: [
+                        const Text(
+                          'Access your account',
                           style: TextStyle(
                             fontFamily: 'Cabin',
-                            color: Color.fromRGBO(24, 95, 45, 1),
-                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LoginPage(),
-                              ));
-                        },
-                      )
-                    ],
-                  ),
-                  const CheckBoxWidget(),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  Align(
-                      alignment: Alignment.centerLeft,
-                      child: CustomButton(
-                        onPressed: () {},
-                        title: 'Sign Up',
-                        width: 120,
-                      ))
-                ],
+                        TextButton(
+                          child: const Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontFamily: 'Cabin',
+                              color: Color.fromRGBO(24, 95, 45, 1),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginPage(),
+                                ));
+                          },
+                        )
+                      ],
+                    ),
+                    const CheckBoxWidget(),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    Align(
+                        alignment: Alignment.centerLeft,
+                        child: CustomButton(
+                          onPressed: () {},
+                          title: 'Sign Up',
+                          width: 120,
+                        ))
+                  ],
+                ),
               ),
-            ),
-          )
-        ],
-      ),
-    ));
+            )
+          ],
+        ),
+      )),
+    );
   }
 }
 
@@ -301,6 +309,7 @@ class _DatePickerState extends State<DatePicker> {
           builder: (BuildContext context, Widget? child) {
             return SizedBox(
               height: MediaQuery.of(context).size.height * 2,
+              // width: MediaQuery.of(context).size.width,
               child: child,
             );
           },
@@ -316,8 +325,8 @@ class _DatePickerState extends State<DatePicker> {
         children: [
           SizedBox(
             height: 40,
-            width: 435,
-            // width: MediaQuery.of(context).size.width * 0.82,
+            // width: 400,
+            width: MediaQuery.of(context).size.width * 0.83,
             child: TextFormField(
               textAlignVertical: TextAlignVertical.center,
               enabled: false,

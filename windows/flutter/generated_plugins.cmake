@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   awesome_notifications
-  desktop_webview_auth
   firebase_core
   flutter_secure_storage_windows
   local_auth_windows

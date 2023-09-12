@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:yookatale/features/products/widgets/view_products_page.dart';

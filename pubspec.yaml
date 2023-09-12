@@ -28,6 +28,12 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  firebase_core: ^2.15.0
+  firebase_database: ^10.2.5
+  # firebase_core: ^2.15.1
+  firebase_auth: ^4.7.2
+  firebase_ui_oauth: ^1.4.7
+  # firebase_auth: null
   flutter:
     sdk: flutter
 
@@ -44,9 +50,6 @@ dependencies:
   get: ^4.6.5
   intl: ^0.18.1
   syncfusion_flutter_datepicker: ^22.2.8
-  firebase_core: ^2.15.1
-  firebase_auth: ^4.7.2
-  firebase_ui_oauth: ^1.4.7
   google_sign_in: ^6.1.4
   google_sign_in_web: ^0.12.0+3
   flutterwave_standard: ^1.0.8
@@ -59,14 +62,14 @@ dependencies:
   firebase_analytics_web: ^0.5.4+5
   flutter_facebook_auth: ^4.3.0
   local_auth: ^2.1.0
-  firebase_database: ^10.2.5
+  # firebase_database: ^10.2.5
   flutter_secure_storage: ^9.0.0
   bcrypt: ^1.1.3
-  firebase_analytics: ^10.4.5
+  # firebase_analytics: ^10.4.5
   awesome_notifications: ^0.7.4+1
   google_maps_flutter: ^2.5.0
   custom_info_window: ^1.0.1
- 
+
 
 dev_dependencies:
   flutter_test:
@@ -87,40 +90,40 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/stich.png
-    - assets/logo.jpg
-    - assets/logo1.webp
-    - assets/card-secure.webp
-    - assets/vegetables.jpeg
-    - assets/grocery.jpeg
-    
-    - assets/categories.json
-    - assets/popular_products.json
-    - assets/fruit_products.json
-    - assets/desktop_popular.json
+  - assets/stich.png
+  - assets/logo.jpg
+  - assets/logo1.webp
+  - assets/card-secure.webp
+  - assets/vegetables.jpeg
+  - assets/grocery.jpeg
 
-    - assets/popular_products/
-    - assets/fruits/
-    - assets/categories/
-    - assets/popular_products1/
+  - assets/categories.json
+  - assets/popular_products.json
+  - assets/fruit_products.json
+  - assets/desktop_popular.json
+
+  - assets/popular_products/
+  - assets/fruits/
+  - assets/categories/
+  - assets/popular_products1/
 
   fonts:
-    - family: Raleway
-      fonts:
-        - asset: assets/fonts/Raleway-Regular.ttf
-        - asset: assets/fonts/Raleway-Bold.ttf
+  - family: Raleway
+    fonts:
+    - asset: assets/fonts/Raleway-Regular.ttf
+    - asset: assets/fonts/Raleway-Bold.ttf
 
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
+# fonts:
+#   - family: Schyler
+#     fonts:
+#       - asset: fonts/Schyler-Regular.ttf
+#       - asset: fonts/Schyler-Italic.ttf
+#         style: italic
+#   - family: Trajan Pro
+#     fonts:
+#       - asset: fonts/TrajanPro.ttf
+#       - asset: fonts/TrajanPro_Bold.ttf
+#         weight: 700
+#
+# For details regarding fonts from package dependencies,
+# see https://flutter.dev/custom-fonts/#from-packages
