@@ -206,7 +206,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       ),
                     ),
                     DatePicker(),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 12),
                     AuthForm(
                       label: 'Password *',
                       hintText: 'password is required',
@@ -324,7 +324,7 @@ class _DatePickerState extends State<DatePicker> {
       child: Row(
         children: [
           SizedBox(
-            height: 40,
+            height: 38,
             // width: 400,
             width: MediaQuery.of(context).size.width * 0.83,
             child: TextFormField(
