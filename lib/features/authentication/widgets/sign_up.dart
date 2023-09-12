@@ -77,7 +77,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         firstName = value!;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     AuthForm(
                       label: 'Lastname',
                       hintText: 'lastname is required',
@@ -92,7 +92,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         lastName = value!;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     AuthForm(
                       label: 'Phone Number',
                       hintText: 'include country code [+256...]',
@@ -107,7 +107,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         firstName = value!;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -123,7 +123,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: SizedBox(
-                        height: 40,
+                        height: 38,
                         width: MediaQuery.of(context).size.width,
                         child: DropdownButtonFormField<String>(
                           style: const TextStyle(
@@ -166,7 +166,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     AuthForm(
                       label: 'Email *',
                       hintText: 'email is required',
@@ -188,7 +188,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         });
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 15),
                     Container(
                       width: MediaQuery.of(context).size.width,
                       child: const Align(
@@ -206,7 +206,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       ),
                     ),
                     DatePicker(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 15),
                     AuthForm(
                       label: 'Password *',
                       hintText: 'password is required',
@@ -256,7 +256,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     ),
                     const CheckBoxWidget(),
                     const SizedBox(
-                      height: 16,
+                      height: 15,
                     ),
                     Align(
                         alignment: Alignment.centerLeft,
