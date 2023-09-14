@@ -145,6 +145,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.5.0"
+  firebase_analytics:
+    dependency: "direct main"
+    description:
+      name: firebase_analytics
+      sha256: "82992b2e93e4752d30296a881f65dde6dfdc09671f9a8cf994fa5d453bd72bde"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.4.5"
   firebase_analytics_platform_interface:
     dependency: transitive
     description:
