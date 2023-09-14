@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:yookatale/features/authentication/widgets/sign_up.dart';
 
 import '../../common/widgets/custom_button.dart';
 
@@ -27,7 +28,7 @@ class RegisterWidget extends ConsumerWidget {
               text: TextSpan(
                 text: 'While ',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                 ),
                 children: [
                   TextSpan(
@@ -35,13 +36,13 @@ class RegisterWidget extends ConsumerWidget {
                     style: TextStyle(
                       color: Theme.of(context).primaryColor,
                       fontWeight: FontWeight.w600,
-                      fontSize: 24,
+                      fontSize: 20,
                     ),
                   ),
                   const TextSpan(
                     text: 'is your mobile food ',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 18,
                     ),
                   )
                 ],
@@ -51,7 +52,7 @@ class RegisterWidget extends ConsumerWidget {
         ),
         const Text(
           'market...',
-          style: TextStyle(color: Colors.white, fontSize: 24),
+          style: TextStyle(color: Colors.white, fontSize: 20),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -62,7 +63,7 @@ class RegisterWidget extends ConsumerWidget {
                   TextSpan(
                     text: 'Subscribe to Yookatale, ',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).primaryColor,
                     ),
@@ -70,7 +71,7 @@ class RegisterWidget extends ConsumerWidget {
                   const TextSpan(
                     text: 'rest assured ',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
                   )
@@ -81,15 +82,21 @@ class RegisterWidget extends ConsumerWidget {
         ),
         const Text(
           'about all our everyday home kitchen',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: Colors.white, fontSize: 18),
         ),
         const Text(
           'needs',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: Colors.white, fontSize: 18),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         CustomButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SignUpPage(),
+                ));
+          },
           title: 'Register',
         )
       ]),
