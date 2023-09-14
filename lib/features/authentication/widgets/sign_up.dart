@@ -1,12 +1,18 @@
 import 'dart:developer';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:yookatale/app.dart';
 import 'package:yookatale/features/authentication/widgets/login.dart';
 import 'package:yookatale/features/common/widgets/custom_button.dart';
+import 'package:yookatale/main.dart';
+
+// ignore: unused_import
+import '../../../backend/backend_auth_services.dart';
 
 import '../../common/controller/utility_method.dart';
 import '/features/authentication/widgets/auth_form.dart';
@@ -43,6 +49,34 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   // TextEditingController? passwordController;
   // TextEditingController? passwordController;
   // TextEditingController? passwordController;
+
+  void signup(
+      {required BuildContext context,
+      required String userEmail,
+      required String userPassword}) async {
+    var navigator = Navigator.of(context);
+
+    String email = userEmail;
+    String password = userPassword;
+    log('User: $email $password');
+    try {
+      UserCredential userCredential = await auth!
+          .signInWithEmailAndPassword(email: email, password: password);
+      log('user: ${userCredential.user!.displayName}');
+      if (userCredential.user != null) {
+        navigator.push(MaterialPageRoute(builder: (context) => App()));
+      }
+    } catch (err) {
+      log('Error: $err');
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error signing up: $err'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +295,16 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     Align(
                         alignment: Alignment.centerLeft,
                         child: CustomButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              _formKey.currentState!.save();
+                              log('Email: $email, password: $password');
+                              signup(
+                                  context: context,
+                                  userEmail: email,
+                                  userPassword: password);
+                            }
+                          },
                           title: 'Sign Up',
                           width: 120,
                         ))
