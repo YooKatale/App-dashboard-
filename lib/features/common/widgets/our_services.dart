@@ -77,14 +77,17 @@ class ServicesTile extends StatelessWidget {
             children: [
               iconLeft,
               SizedBox(
-                  width: 190,
-                  child: Text(
-                    labelLeft,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
+                  width: 150,
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Text(
+                      labelLeft,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   )),
             ],
@@ -97,14 +100,17 @@ class ServicesTile extends StatelessWidget {
               children: [
                 iconRight,
                 SizedBox(
-                    width: 190,
-                    child: Text(
-                      labelRight,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
+                    width: 150,
+                    child: Padding(
+                      padding: const EdgeInsets.all(5.0),
+                      child: Text(
+                        labelRight,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     )),
               ],
