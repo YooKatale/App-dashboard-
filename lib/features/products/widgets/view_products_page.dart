@@ -4,34 +4,59 @@ import 'package:get/get.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yookatale/features/common/widgets/base_widget.dart';
 
+import '../../desktop_view/popular_products.dart';
+import '../../desktop_view/widgets/categories_page.dart';
+import '../../desktop_view/widgets/discount_page.dart';
+
 class ViewProductsPage extends ConsumerWidget {
   const ViewProductsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BaseWidget(
-        child: Container(
-      height: Get.height * 0.7,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Apply Filters',
-            style: TextStyle(
-              fontFamily: 'Cabin',
-              color: Colors.black,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
+        child: SingleChildScrollView(
+      child: Container(
+        height: Get.height * 0.7,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Text(
+              //   'Apply Filters',
+              //   style: TextStyle(
+              //     fontFamily: 'Cabin',
+              //     color: Colors.black,
+              //     fontSize: 20,
+              //     fontWeight: FontWeight.w900,
+              //   ),
+              // ),
+              // SizedBox(
+              //   height: 10,
+              //   width: 15,
+              // ),
+              // FilterTitle(
+              //   title: 'By price',
+              // ),
+              // SizedBox(
+              //   height: 10,
+              //   width: 5,
+              // ),
+              // Center(
+              //   child: PriceFilter(),
+              // ),
+              Column(
+                children: [
+                  CategoriesPage(),
+                  PopularProducts(),
+                  DiscountsPage(),
+                ],
+              ),
+            ],
           ),
-          FilterTitle(
-            title: 'By price',
-          ),
-          SizedBox(height: 10),
-          PriceFilter()
-        ],
+        ),
       ),
     ));
   }
