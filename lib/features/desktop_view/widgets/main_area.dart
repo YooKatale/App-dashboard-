@@ -15,16 +15,18 @@ class MainArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      color: const Color(0Xffefefef),
-      width: Get.width * 0.75,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: const Column(
-        children: [
-          CategoriesPage(),
-          PopularProducts(),
-          DiscountsPage(),
-        ],
+    return SingleChildScrollView(
+      child: Container(
+        color: const Color(0Xffefefef),
+        width: Get.width * 0.75,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: const Column(
+          children: [
+            CategoriesPage(),
+            PopularProducts(),
+            DiscountsPage(),
+          ],
+        ),
       ),
     );
   }

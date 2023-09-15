@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -56,6 +58,7 @@ class MyApp extends ConsumerWidget {
   }
 }
 
+// ignore: must_be_immutable
 class App extends ConsumerStatefulWidget {
   App({super.key, this.uid});
   String? uid;
@@ -137,6 +140,5 @@ class DesktopView extends ConsumerWidget {
         ),
       ),
     );
-    ;
   }
 }
