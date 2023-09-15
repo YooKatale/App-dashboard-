@@ -61,7 +61,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     log('User: $email $password');
     try {
       UserCredential userCredential = await auth!
-          .signInWithEmailAndPassword(email: email, password: password);
+          .createUserWithEmailAndPassword(email: email, password: password);
       log('user: ${userCredential.user!.displayName}');
       if (userCredential.user != null) {
         navigator.push(MaterialPageRoute(builder: (context) => App()));
