@@ -4,6 +4,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:yookatale/features/authentication/widgets/sign_up.dart';
 
 import 'features/authentication/providers/auth_provider.dart';
 import 'features/common/controller/utility_method.dart';
@@ -114,6 +115,7 @@ class _AppState extends ConsumerState<App> {
               // DesktopView(),
               BaseWidget(
             child: HomePage(),
+            // child: SignUpPage(),
           ),
           tablet: const DesktopView(),
           desktop: const DesktopView(),
