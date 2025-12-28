@@ -15,15 +15,15 @@ class NotificationServices {
       [
         NotificationChannel(
           channelKey: 'alerts',
-          channelName: 'Alerts',
-          channelDescription: 'Notification tests as alerts',
+          channelName: 'YooKatale Notifications',
+          channelDescription: 'YooKatale meal reminders and updates',
           playSound: true,
           onlyAlertOnce: true,
           groupAlertBehavior: GroupAlertBehavior.Children,
           importance: NotificationImportance.High,
           defaultPrivacy: NotificationPrivacy.Private,
-          defaultColor: Colors.deepPurple,
-          ledColor: Colors.deepPurple,
+          defaultColor: const Color.fromRGBO(24, 95, 45, 1), // YooKatale green
+          ledColor: Colors.green,
         )
       ],
       debug: true,

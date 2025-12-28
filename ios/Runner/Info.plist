@@ -5,6 +5,12 @@
     <key>NSFaceIDUsageDescription</key>
     <string>We need your face ID to authenticate you.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need your location to show delivery locations.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+        <string>fetch</string>
+    </array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -8,7 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '/app.dart';
-
+import 'services/push_notification_service.dart';
+import 'backend/notifications.dart';
 import 'firebase_options.dart';
 
 FirebaseAnalytics? analytics;
@@ -56,5 +57,14 @@ Future preInitialize() async {
     remoteConfig.onConfigUpdated.listen((event) async {
       await remoteConfig.activate();
     });
+  }
+
+  // Initialize local notifications (Awesome Notifications)
+  await NotificationServices.initializeLocalNotifications();
+  await NotificationServices.startListeningNotificationEvents();
+
+  // Initialize push notifications (Firebase Cloud Messaging)
+  if (!kIsWeb) {
+    await PushNotificationService.initialize();
   }
 }
