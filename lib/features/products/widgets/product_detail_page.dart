@@ -7,7 +7,6 @@ import '../../../services/auth_service.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../cart/services/cart_service.dart';
-import 'product_rating_widget.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
   final String productId;
@@ -116,7 +115,13 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         if (errorMessage.contains('Product already added to cart') || 
             errorMessage.contains('already added')) {
           // Product is already in cart - show friendly message and update cart count
-          _refreshCartCount(userId, token);
+          // Get userId and token again for refresh
+          final userData = await AuthService.getUserData();
+          final token = await AuthService.getToken();
+          final userId = userData?['_id']?.toString() ?? userData?['id']?.toString();
+          if (userId != null) {
+            _refreshCartCount(userId, token);
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Product is already in your cart. You can update quantity from the cart page.'),
@@ -343,8 +348,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Ratings & Reviews
-                  ProductRatingsWidget(productId: widget.productId),
+                  // Ratings & Reviews section can be added here later
                   
                   const SizedBox(height: 24),
                 ],

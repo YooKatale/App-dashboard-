@@ -52,7 +52,7 @@ class _MobileSubscriptionPageState
     // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
     // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
     // Webapp uses: createSubscription({ user: userInfo._id, packageId: ID })
-    final userData = await AuthService.getUserData();
+    var userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
     
     // EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == "")
