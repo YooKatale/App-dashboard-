@@ -41,14 +41,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         user = userCredential!.user;
         log('user: ${user!.uid}');
       } else {
-        googleSignInAccount = await googleSignIn.signIn();
+        googleSignInAccount = await googleSignIn.authenticate();
         log('googleSignInAccount: $googleSignInAccount');
 
-        await googleSignInAccount!.authentication;
+        final googleAuth = googleSignInAccount!.authentication;
+        final clientAuth = await googleSignInAccount!.authorizationClient
+            .authorizationForScopes(<String>['email', 'profile', 'openid']);
+
         userCredential = await auth!.signInWithCredential(
-            GoogleAuthProvider.credential(
-                idToken: googleSignInAuthentication!.idToken,
-                accessToken: googleSignInAuthentication!.accessToken));
+          GoogleAuthProvider.credential(
+            idToken: googleAuth.idToken,
+            accessToken: clientAuth?.accessToken,
+          ),
+        );
       }
 
       if (userCredential!.user != null) {

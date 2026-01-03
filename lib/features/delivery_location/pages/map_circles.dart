@@ -31,8 +31,8 @@ class _MapCirclesState extends State<MapCircles> {
               circleId: const CircleId('red'),
               center: latLng,
               radius: 300,
-              fillColor: Colors.red.shade500.withOpacity(.5),
-              strokeColor: Colors.red.shade300.withOpacity(.7),
+              fillColor: Colors.red.shade500.withAlpha(128),
+              strokeColor: Colors.red.shade300.withAlpha(179),
               strokeWidth: 5,
             ));
           });
@@ -43,8 +43,8 @@ class _MapCirclesState extends State<MapCircles> {
             circleId: const CircleId('blue'),
             center: latLng,
             radius: 500.0,
-            fillColor: Colors.blue.shade500.withOpacity(.5),
-            strokeColor: Colors.blue.shade700.withOpacity(.7),
+            fillColor: Colors.blue.shade500.withAlpha(128),
+            strokeColor: Colors.blue.shade700.withAlpha(179),
             strokeWidth: 5,
           ));
 

@@ -24,7 +24,7 @@ class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() => _SignUpPageState();
+  ConsumerState<SignUpPage> createState() => _SignUpPageState();
 }
 
 class _SignUpPageState extends ConsumerState<SignUpPage> {
@@ -50,12 +50,8 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   // TextEditingController? passwordController;
   // TextEditingController? passwordController;
 
-  void signup(
-      {required BuildContext context,
-      required String userEmail,
-      required String userPassword}) async {
-    var navigator = Navigator.of(context);
-
+  Future<bool> signup(
+      {required String userEmail, required String userPassword}) async {
     String email = userEmail;
     String password = userPassword;
     log('User: $email $password');
@@ -63,18 +59,10 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       UserCredential userCredential = await auth!
           .createUserWithEmailAndPassword(email: email, password: password);
       log('user: ${userCredential.user!.displayName}');
-      if (userCredential.user != null) {
-        navigator.push(MaterialPageRoute(builder: (context) => App()));
-      }
+      return userCredential.user != null;
     } catch (err) {
       log('Error: $err');
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error signing up: $err'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      return false;
     }
   }
 
@@ -165,7 +153,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Cabin',
                           ),
-                          value: gender,
+                          initialValue: gender,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 0),
@@ -223,7 +211,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                       },
                     ),
                     const SizedBox(height: 15),
-                    Container(
+                    SizedBox(
                       width: MediaQuery.of(context).size.width,
                       child: const Align(
                         alignment: Alignment.centerLeft,
@@ -239,7 +227,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                         ),
                       ),
                     ),
-                    DatePicker(),
+                    const DatePicker(),
                     const SizedBox(height: 12),
                     AuthForm(
                       label: 'Password *',
@@ -282,7 +270,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => LoginPage(),
+                                  builder: (context) => const LoginPage(),
                                 ));
                           },
                         )
@@ -295,14 +283,30 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                     Align(
                         alignment: Alignment.centerLeft,
                         child: CustomButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (_formKey.currentState!.validate()) {
                               _formKey.currentState!.save();
                               log('Email: $email, password: $password');
-                              signup(
-                                  context: context,
-                                  userEmail: email,
-                                  userPassword: password);
+                              final success = await signup(
+                                  userEmail: email, userPassword: password);
+                              if (success) {
+                                if (!mounted) return;
+                                final navigator = Navigator.of(context);
+                                navigator.push(
+                                  MaterialPageRoute(
+                                    builder: (context) => App(),
+                                  ),
+                                );
+                              } else {
+                                if (!mounted) return;
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Error signing up'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             }
                           },
                           title: 'Sign Up',
@@ -320,7 +324,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 }
 
 class DatePicker extends StatefulWidget {
-  DatePicker({
+  const DatePicker({
     super.key,
   });
 
@@ -383,7 +387,9 @@ class _DatePickerState extends State<DatePicker> {
                     color: Color.fromRGBO(61, 60, 60, 0.2),
                   ),
                 ),
-                hintText: dateController.text ?? 'dd/mm/yyyy',
+                hintText: dateController.text.isEmpty
+                    ? 'dd/mm/yyyy'
+                    : dateController.text,
                 hintStyle: const TextStyle(
                   fontFamily: 'Cabin',
                   fontWeight: FontWeight.w500,

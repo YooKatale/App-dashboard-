@@ -14,7 +14,7 @@ class SliderMenu extends ConsumerWidget {
     super.key,
   });
 
-  final List<String> links = ['Contact', 'About', 'News Blog', 'Careers'];
+  final List<String> links = const ['Contact', 'About', 'News Blog', 'Careers'];
   final QuickOrderController orderController = QuickOrderController();
 
   @override
@@ -92,7 +92,7 @@ class SliderMenu extends ConsumerWidget {
                     width: 130,
                     onPressed: () {
                       Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => LoginPage()));
+                          MaterialPageRoute(builder: (_) => const LoginPage()));
                       ref
                           .read(visibilityProvider.notifier)
                           .toggleVisibility(value: false);

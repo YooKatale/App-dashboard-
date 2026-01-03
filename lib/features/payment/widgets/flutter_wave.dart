@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterwave_standard/flutterwave.dart';
-import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 import '/features/common/widgets/custom_button.dart';
 import '/main.dart';
@@ -309,7 +308,7 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
     );
   }
 
-  _onPressed() {
+  void _onPressed() {
     final currentState = formKey.currentState;
     if (currentState != null && currentState.validate()) {
       _handlePaymentInitialization();
@@ -328,7 +327,6 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
 
     try {
       final Flutterwave flutterwave = Flutterwave(
-        context: context,
         publicKey: 'FLWPUBK_TEST-07d1b505448d1358e34d597736dd6b8a-X',
         currency: selectedCurrency,
         redirectUrl: 'https://facebook.com',
@@ -340,13 +338,13 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
         isTestMode: true,
       );
 
-      final ChargeResponse response = await flutterwave.charge();
+      final ChargeResponse response = await flutterwave.charge(context);
       showLoading(response.toString());
       log("${response.toJson()}");
       analytics!.logPurchase(
         currency: currencyController.text.trim(),
         value: double.parse(amountController.text.trim()),
-        transactionId: Uuid().v1(),
+        transactionId: const Uuid().v1(),
       );
     } on Exception catch (err) {
       log('Error is $err');
@@ -425,5 +423,22 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
         );
       },
     );
+  }
+}
+
+// Wrapper class for easier integration
+class FlutterWavePayment extends StatelessWidget {
+  final String orderId;
+  final double amount;
+
+  const FlutterWavePayment({
+    super.key,
+    required this.orderId,
+    this.amount = 0.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FlutterWavePage(title: 'Payment - Order #$orderId');
   }
 }

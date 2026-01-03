@@ -2,7 +2,6 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -17,8 +16,7 @@ class AuthException implements Exception {
 
 class AuthBackend {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FacebookAuth _facebookSignIn = FacebookAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final SecureRandom _secureRandom = SecureRandom();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -101,7 +99,17 @@ class AuthBackend {
   Future<void> logEvent(String eventName,
       [Map<String, dynamic>? eventData]) async {
     try {
-      await _analytics.logEvent(name: eventName, parameters: eventData);
+      Map<String, Object>? params;
+      if (eventData != null) {
+        params = <String, Object>{};
+        eventData.forEach((key, value) {
+          if (value != null) params![key] = value as Object;
+        });
+      }
+      await _analytics.logEvent(
+        name: eventName,
+        parameters: params,
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Logging Error: $e');
@@ -177,13 +185,18 @@ class AuthBackend {
 
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser =
+          await _googleSignIn.authenticate();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final GoogleSignInClientAuthorization? clientAuth =
+          await googleUser.authorizationClient.authorizationForScopes(
+        <String>['email', 'profile', 'openid'],
+      );
+
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: clientAuth?.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -202,28 +215,29 @@ class AuthBackend {
     }
   }
 
-  Future<User?> signInWithFacebook() async {
-    try {
-      final LoginResult result = await _facebookSignIn.login();
-      if (result.status != LoginStatus.success) return null;
-
-      final AuthCredential credential =
-          FacebookAuthProvider.credential(result.accessToken!.token);
-
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
-
-      // Log Facebook sign-in event
-      _analytics.logEvent(name: 'facebook_sign_in', parameters: null);
-
-      return userCredential.user;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Facebook Sign-In Error: $e');
-      }
-      throw AuthException('Failed to sign in with Facebook: $e');
-    }
-  }
+  // Facebook sign-in removed - package causing build issues
+  // Future<User?> signInWithFacebook() async {
+  //   try {
+  //     final LoginResult result = await _facebookSignIn.login();
+  //     if (result.status != LoginStatus.success) return null;
+  //
+  //     final AuthCredential credential =
+  //         FacebookAuthProvider.credential(result.accessToken!.token);
+  //
+  //     final UserCredential userCredential =
+  //         await _auth.signInWithCredential(credential);
+  //
+  //     // Log Facebook sign-in event
+  //     _analytics.logEvent(name: 'facebook_sign_in', parameters: null);
+  //
+  //     return userCredential.user;
+  //   } catch (e) {
+  //     if (kDebugMode) {
+  //       print('Facebook Sign-In Error: $e');
+  //     }
+  //     throw AuthException('Failed to sign in with Facebook: $e');
+  //   }
+  // }
 
   Future<User?> signInWithPhoneNumber(String phoneNumber) async {
     try {
@@ -272,12 +286,9 @@ class AuthBackend {
     try {
       final bool isAuthenticated = await _localAuth.authenticate(
         localizedReason: 'Scan your fingerprint to authenticate.',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          sensitiveTransaction: true,
-          biometricOnly: true,
-          useErrorDialogs: true,
-        ),
+        biometricOnly: true,
+        sensitiveTransaction: true,
+        persistAcrossBackgrounding: true,
       );
       return isAuthenticated;
     } catch (e) {

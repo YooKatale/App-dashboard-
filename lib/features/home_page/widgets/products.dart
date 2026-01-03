@@ -12,11 +12,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../common/models/products_model.dart';
 import '../../common/widgets/custom_button.dart';
 import '../../payment/widgets/flutter_wave.dart';
+import '../../products/widgets/mobile_product_card.dart';
+import '../../products/widgets/product_detail_page.dart';
+import '../../products/widgets/mobile_products_page.dart';
+import '../notifiers/product_notifier.dart';
 
 class ProductsPage extends ConsumerWidget {
-  ProductsPage({super.key, this.productProvider, this.title});
-  AsyncValue<Products>? productProvider;
-  String? title;
+  const ProductsPage({super.key, this.productProvider, this.title});
+  final AsyncValue<Products>? productProvider;
+  final String? title;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +47,7 @@ class ProductsPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title!,
+                        title ?? 'Products',
                         style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -62,74 +66,58 @@ class ProductsPage extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
+                        color: Color.fromRGBO(24, 95, 45, 1),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      // Navigate to all products page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MobileProductsPage(
+                            title: title ?? 'All Products',
+                            category: null, // Show all products
+                          ),
+                        ),
+                      );
+                    },
                   )
                 ],
               ),
             ),
-            productProvider!.when(
+            (productProvider != null ? productProvider! : ref.watch(productsProvider)).when(
               data: (value) {
+                if (value.popularProducts.isEmpty) {
+                  return const SizedBox(
+                    height: 100,
+                    child: Center(
+                      child: Text('No products available'),
+                    ),
+                  );
+                }
                 return SizedBox(
-                  height: 300,
+                  height: 320,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     itemCount: value.popularProducts.length,
                     itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 200,
-                        child: Card(
-                          color: Colors.white,
-                          surfaceTintColor: Colors.white,
-                          elevation: 3,
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                height: 170,
-                                width: 200,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.asset(
-                                    'assets/${value.popularProducts[index].image}',
-                                    fit: BoxFit.cover,
-                                  ),
+                      final product = value.popularProducts[index];
+                      return SizedBox(
+                        width: 180,
+                        child: MobileProductCard(
+                          product: product,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailPage(
+                                  productId: product.id.toString(),
+                                  product: product,
                                 ),
                               ),
-                              Text(
-                                value.popularProducts[index].title,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              Text(
-                                'UGX${value.popularProducts[index].price}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color.fromRGBO(24, 95, 45, 1),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              CustomButton(
-                                width: 170,
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const FlutterWavePage(
-                                              title: 'Payment Page'),
-                                    ),
-                                  );
-                                },
-                                title: 'Add To cart',
-                                icon: const FaIcon(
-                                  FontAwesomeIcons.cartPlus,
-                                  color: Color.fromRGBO(247, 245, 245, 1),
-                                ),
-                              )
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       );
                     },
@@ -138,77 +126,27 @@ class ProductsPage extends ConsumerWidget {
               },
               error: (err, stackTrace) {
                 log('Error: $err');
-                return const Text('No Data found');
+                return const SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Text('No Data found'),
+                  ),
+                );
               },
-              loading: () => CircularProgressIndicator(
-                color: Colors.green.shade900,
+              loading: () => const SizedBox(
+                height: 100,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Color.fromRGBO(24, 95, 45, 1),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            CustomButton(
-                width: 180,
-                onPressed: () async {
-                  FilePickerResult? result =
-                      await FilePicker.platform.pickFiles();
-
-                  if (result != null) {
-                    try {
-                      File file = File(result.files.single.path!);
-                      final bytes = await file.readAsBytes();
-
-                      TaskSnapshot snap = await upload_file(file, bytes);
-                      if (snap.state == TaskState.success) {
-                        // ignore: use_build_context_synchronously
-                        showDialog(
-                            context: context,
-                            builder: (context) => SimpleDialog(
-                                  alignment: Alignment.center,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  title:
-                                      const Text('File uploaded successfully'),
-                                  titleTextStyle:
-                                      const TextStyle(color: Colors.green),
-                                ));
-                      } else if (snap.state == TaskState.running) {
-                        return const CircularProgressIndicator(
-                            color: Colors.green);
-                      }
-                      String downloadUrl = await snap.ref.getDownloadURL();
-
-                      await FirebaseFirestore.instance
-                          .collection('images')
-                          .add({
-                        'name': file.uri,
-                        'url': downloadUrl,
-                      });
-                    } on Exception catch (err) {
-                      log('Error: $err');
-
-                      // ignore: use_build_context_synchronously
-                      showDialog(
-                          context: context,
-                          builder: (context) => const SimpleDialog(
-                                title: Center(
-                                  child: Text('Opps! Something went Wrong'),
-                                ),
-                                titleTextStyle: TextStyle(color: Colors.red),
-                              ));
-                    }
-                  } else {
-                    log('Opps! something went wrong');
-                  }
-                },
-                title: 'Upload Products'),
           ],
         ));
   }
 
-  Future<TaskSnapshot> upload_file(File file, Uint8List bytes) async {
+  Future<TaskSnapshot> uploadFile(File file, Uint8List bytes) async {
     UploadTask task =
         FirebaseStorage.instance.ref('images/${file.path}').putData(bytes);
 

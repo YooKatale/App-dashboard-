@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 GoogleAuthProvider authProvider = GoogleAuthProvider();
 GoogleSignInAccount? googleSignInAccount;
-GoogleSignIn googleSignIn = GoogleSignIn();
+GoogleSignIn googleSignIn = GoogleSignIn.instance;
 GoogleSignInAuthentication? googleSignInAuthentication;
 UserCredential? userCredential;
 User? user;

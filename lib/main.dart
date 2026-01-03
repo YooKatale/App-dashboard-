@@ -23,48 +23,91 @@ void main() async {
 
   await preInitialize();
 
-  runApp(ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 Future preInitialize() async {
-  app = await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    app = await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  auth = FirebaseAuth.instanceFor(app: app);
-  analytics = FirebaseAnalytics.instance;
-  observer = FirebaseAnalyticsObserver(analytics: analytics!);
-
-  final remoteConfig = FirebaseRemoteConfig.instance;
-  await remoteConfig.setConfigSettings(
-    RemoteConfigSettings(
-      fetchTimeout: const Duration(minutes: 1),
-      minimumFetchInterval: const Duration(hours: 1),
-    ),
-  );
-  // Default settings
-  // await remoteConfig.setDefaults(const {
-  //   "sitewide_discount": 10,
-  //   "first_purchase_discount": 20,
-  //   "referral_bonus": 5
-  // });
-
-// Fetch and activate the remote settings
-  await remoteConfig.fetchAndActivate();
-
-// Listen to real time update on remote config
-  if (!kIsWeb) {
-    remoteConfig.onConfigUpdated.listen((event) async {
-      await remoteConfig.activate();
-    });
+    auth = FirebaseAuth.instanceFor(app: app);
+    analytics = FirebaseAnalytics.instance;
+    observer = FirebaseAnalyticsObserver(analytics: analytics!);
+  } catch (e) {
+    if (kDebugMode) {
+      print('Firebase initialization error: $e');
+    }
+    // Continue even if Firebase initialization fails
   }
 
-  // Initialize local notifications (Awesome Notifications)
-  await NotificationServices.initializeLocalNotifications();
-  await NotificationServices.startListeningNotificationEvents();
+  try {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    await remoteConfig.setConfigSettings(
+      RemoteConfigSettings(
+        fetchTimeout: const Duration(minutes: 1),
+        minimumFetchInterval: const Duration(hours: 1),
+      ),
+    );
+    // Default settings
+    // await remoteConfig.setDefaults(const {
+    //   "sitewide_discount": 10,
+    //   "first_purchase_discount": 20,
+    //   "referral_bonus": 5
+    // });
 
-  // Initialize push notifications (Firebase Cloud Messaging)
-  if (!kIsWeb) {
-    await PushNotificationService.initialize();
+    // Fetch and activate the remote settings - wrapped in try-catch to prevent blocking
+    try {
+      await remoteConfig.fetchAndActivate();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Firebase Remote Config fetch error (non-blocking): $e');
+      }
+      // Set defaults if fetch fails
+      await remoteConfig.setDefaults(const {
+        "sitewide_discount": 10,
+        "first_purchase_discount": 20,
+        "referral_bonus": 5
+      });
+    }
+
+    // Listen to real time update on remote config
+    if (!kIsWeb) {
+      remoteConfig.onConfigUpdated.listen((event) async {
+        try {
+          await remoteConfig.activate();
+        } catch (e) {
+          if (kDebugMode) {
+            print('Remote Config activate error: $e');
+          }
+        }
+      });
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Firebase Remote Config setup error (non-blocking): $e');
+    }
+  }
+
+  try {
+    // Initialize local notifications (Awesome Notifications)
+    await NotificationServices.initializeLocalNotifications();
+    await NotificationServices.startListeningNotificationEvents();
+  } catch (e) {
+    if (kDebugMode) {
+      print('Notification services initialization error (non-blocking): $e');
+    }
+  }
+
+  try {
+    // Initialize push notifications (Firebase Cloud Messaging)
+    if (!kIsWeb) {
+      await PushNotificationService.initialize();
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Push notification service initialization error (non-blocking): $e');
+    }
   }
 }

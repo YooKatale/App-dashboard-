@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'dart:async';
 
 class CustomButton extends ConsumerWidget {
   const CustomButton({
     super.key,
-    required this.onPressed,
+    this.onPressed,
     required this.title,
     this.width = 160,
     this.height = 40,
@@ -12,7 +13,7 @@ class CustomButton extends ConsumerWidget {
     this.color = const Color.fromRGBO(24, 95, 45, 1),
   });
 
-  final Function() onPressed;
+  final FutureOr<void> Function()? onPressed;
   final String title;
   final double height;
   final double width;
@@ -29,7 +30,15 @@ class CustomButton extends ConsumerWidget {
           borderRadius: BorderRadius.circular(4),
         ),
       ),
-      onPressed: onPressed,
+      onPressed: onPressed != null
+          ? () {
+              final res = onPressed!();
+              if (res is Future) {
+                // ignore: unawaited_futures
+                res;
+              }
+            }
+          : null,
       child: Row(
         mainAxisAlignment: icon != null
             ? MainAxisAlignment.spaceBetween

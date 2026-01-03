@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -13,8 +12,9 @@ PreferredSizeWidget? CustomAppBar(BuildContext context) {
     preferredSize: Size(MediaQuery.of(context).size.width, 70),
     child: AppBar(
       toolbarHeight: 70,
-      backgroundColor: const Color.fromRGBO(0, 0, 0, 9),
+      backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
       title: SearchBar(),
+      automaticallyImplyLeading: false,
     ),
   );
 }
@@ -33,27 +33,29 @@ class SearchBar extends ConsumerWidget {
     return Stack(
       children: [
         Container(
-          height: 40,
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 45,
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.grey),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 0.0),
-                child: Icon(
-                  Icons.search_sharp,
-                  color: Colors.white,
-                  size: 28,
-                ),
+              const Icon(
+                Icons.search,
+                color: Colors.grey,
+                size: 24,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
                   focusNode: focusNode,
@@ -63,16 +65,21 @@ class SearchBar extends ConsumerWidget {
                     log('focusNode: ${focusController.focusNode}');
                     if (isVisible) focusController.closeSliderMenu(ref);
                   },
-                  textAlignVertical: TextAlignVertical.bottom,
+                  textAlignVertical: TextAlignVertical.center,
                   controller: controller,
-                  style: const TextStyle(color: Colors.white),
-                  cursorColor: Colors.white,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                  ),
+                  cursorColor: const Color.fromRGBO(24, 95, 45, 1),
                   decoration: const InputDecoration(
-                    hintText: 'search product by name',
-                    hintStyle:
-                        TextStyle(color: Color.fromARGB(255, 121, 135, 143)),
-                    fillColor: Colors.white,
+                    hintText: 'Search on YooKatale',
+                    hintStyle: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
                     border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),

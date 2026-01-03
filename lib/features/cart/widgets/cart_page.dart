@@ -1,0 +1,479 @@
+import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../models/cart_model.dart';
+import '../services/cart_service.dart';
+import '../../../services/auth_service.dart';
+import '../../../features/common/widgets/custom_button.dart';
+import '../../common/widgets/bottom_navigation_bar.dart';
+import '../../authentication/providers/auth_provider.dart';
+import '../../authentication/providers/redirect_provider.dart';
+import '../providers/cart_provider.dart';
+
+class CartPage extends ConsumerStatefulWidget {
+  const CartPage({super.key});
+
+  @override
+  ConsumerState<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends ConsumerState<CartPage> {
+  List<CartItem> _cartItems = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCart();
+  }
+
+  Future<void> _loadCart() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Always check stored user data first (like webapp checks localStorage first)
+      final userData = await AuthService.getUserData();
+      final token = await AuthService.getToken();
+
+      if (userData != null && token != null) {
+        final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+        if (userId != null) {
+          // Update auth state if we have user data but auth state is not set
+          final authState = ref.read(authStateProvider);
+          if (!authState.isLoggedIn) {
+            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+              userId: userId,
+              email: userData['email']?.toString(),
+              firstName: userData['firstname']?.toString(),
+              lastName: userData['lastname']?.toString(),
+            );
+          }
+          
+          final cartItems = await CartService.fetchCart(
+            userId,
+            token: token,
+          );
+
+          setState(() {
+            _cartItems = cartItems;
+            _isLoading = false;
+          });
+          
+          // Update cart count provider
+          ref.read(cartCountProvider.notifier).state = cartItems.length;
+          return;
+        }
+      }
+      
+      // Fallback: Check auth state
+      final authState = ref.read(authStateProvider);
+      if (authState.isLoggedIn && authState.userId != null) {
+        final authToken = await AuthService.getToken();
+        
+        if (authToken != null) {
+          final cartItems = await CartService.fetchCart(
+            authState.userId!,
+            token: authToken,
+          );
+
+          setState(() {
+            _cartItems = cartItems;
+            _isLoading = false;
+          });
+          
+          // Update cart count provider
+          ref.read(cartCountProvider.notifier).state = cartItems.length;
+          return;
+        }
+      }
+
+      // Not logged in - set redirect route and redirect to sign in
+      // Only redirect if we're sure user is not logged in
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Double check one more time before redirecting
+      final finalCheck = await AuthService.getUserData();
+      final finalToken = await AuthService.getToken();
+      
+      if (finalCheck == null || finalToken == null) {
+        if (mounted) {
+          // Remember where user was trying to go
+          ref.read(redirectRouteProvider.notifier).state = '/cart';
+          Navigator.of(context).pushReplacementNamed('/signin');
+        }
+      } else {
+        // Data exists, reload cart
+        _loadCart();
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load cart: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateQuantity(CartItem item, int newQuantity) async {
+    if (newQuantity < 1) return;
+
+    try {
+      final token = await AuthService.getToken();
+      final success = await CartService.updateCartItem(
+        cartId: item.cartId,
+        quantity: newQuantity,
+        token: token,
+      );
+
+      if (success) {
+        _loadCart();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update quantity')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteItem(CartItem item) async {
+    try {
+      final token = await AuthService.getToken();
+      final success = await CartService.deleteCartItem(
+        item.cartId,
+        token: token,
+      );
+
+      if (success) {
+        _loadCart();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Item removed from cart')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to remove item')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  double _calculateTotal() {
+    return CartService.calculateTotal(_cartItems);
+  }
+
+  String _formatCurrency(double amount) {
+    return 'UGX ${amount.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        )}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watch auth state in build method (like webapp watches Redux state)
+    final authState = ref.watch(authStateProvider);
+    
+    // Reload cart if auth state changed to logged in
+    if (authState.isLoggedIn && _cartItems.isEmpty && !_isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadCart();
+        }
+      });
+    }
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Cart'),
+        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+        foregroundColor: Colors.white,
+      ),
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 2),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_error!),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadCart,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : _cartItems.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.shopping_cart_outlined,
+                              size: 80, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Your cart is empty',
+                            style: TextStyle(fontSize: 24, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Add Products'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _cartItems.length,
+                            itemBuilder: (context, index) {
+                              final item = _cartItems[index];
+                              return _CartItemCard(
+                                item: item,
+                                onQuantityChanged: (newQuantity) =>
+                                    _updateQuantity(item, newQuantity),
+                                onDelete: () => _deleteItem(item),
+                              );
+                            },
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withAlpha(77),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, -3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Cart Items:',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                  Text(
+                                    '${_cartItems.length}',
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              const Divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Cart SubTotal:',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                  Text(
+                                    _formatCurrency(_calculateTotal()),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color.fromRGBO(24, 95, 45, 1),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: CustomButton(
+                                  title: 'Checkout',
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/checkout',
+                                      arguments: {
+                                        'total': _calculateTotal(),
+                                        'cartItems': _cartItems,
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+    );
+  }
+}
+
+class _CartItemCard extends StatelessWidget {
+  final CartItem item;
+  final Function(int) onQuantityChanged;
+  final VoidCallback onDelete;
+
+  const _CartItemCard({
+    required this.item,
+    required this.onQuantityChanged,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                item.image.isNotEmpty
+                    ? item.image
+                    : 'https://via.placeholder.com/80',
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image_not_supported),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Product Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'UGX ${item.price}${item.unit != null ? ' / ${item.unit}' : ''}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Quantity Controls
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: item.quantity > 1
+                            ? () => onQuantityChanged(item.quantity - 1)
+                            : null,
+                        color: const Color.fromRGBO(24, 95, 45, 1),
+                      ),
+                      Text(
+                        '${item.quantity}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () => onQuantityChanged(item.quantity + 1),
+                        color: const Color.fromRGBO(24, 95, 45, 1),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatCurrency(item.totalPrice),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(24, 95, 45, 1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Delete Button
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Remove Item'),
+                    content: Text('Remove ${item.name} from cart?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          onDelete();
+                        },
+                        child: const Text('Remove',
+                            style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCurrency(double amount) {
+    return 'UGX ${amount.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        )}';
+  }
+}

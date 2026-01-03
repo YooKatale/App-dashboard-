@@ -21,8 +21,6 @@ class _DeliveryLocationsState extends State<DeliveryLocations> {
 
   final Set<Marker> _markers = {};
   late GoogleMapController _controller;
-  final DeliveryLocationsService _deliveryLocationsService =
-      DeliveryLocationsService();
 
   final List<Map<String, dynamic>> _deliveryLocations = [
     {

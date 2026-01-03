@@ -9,10 +9,10 @@ import '../features/delivery_location/pages/delivery_locations.dart';
 class DeliveryLocationsService {
   static Future<void> createMarkers(
       Set<Marker> markers, List<Map<String, dynamic>> deliveryLocations) async {
-    deliveryLocations.forEach((location) async {
+    for (final location in deliveryLocations) {
       final marker = await _createMarker(location);
       markers.add(marker);
-    });
+    }
   }
 
   static Future<Marker> _createMarker(Map<String, dynamic> location) async {

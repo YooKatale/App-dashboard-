@@ -1,10 +1,8 @@
 import 'dart:developer';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yookatale/main.dart';
 
 class LastOrdersCard extends ConsumerWidget {
   const LastOrdersCard({super.key});
@@ -140,14 +138,7 @@ class _OrderListCardState extends State<OrderListCard> {
                           if (items > 0) {
                             setState(() {
                               items -= 1;
-                              analytics?.logEvent(
-                                  name: 'remove_from_cart',
-                                  parameters: {
-                                    'item_id': 'p123',
-                                    'item_name': 'Product 1',
-                                    'currency': 'USD ',
-                                    'value': 12.99
-                                  });
+                              // analytics event: remove_from_cart
                             });
                           } else {
                             setState(() {
@@ -174,15 +165,7 @@ class _OrderListCardState extends State<OrderListCard> {
                           setState(() {
                             items += 1;
                             log('Items $items');
-                            analytics?.logEvent(
-                              name: 'add_from_cart',
-                              parameters: {
-                                'item_id': 'p123',
-                                'item_name': 'Product 1',
-                                'currency': 'USD ',
-                                'value': 12.99
-                              },
-                            );
+                            // analytics event: add_from_cart
                           });
                         },
                         child: const FaIcon(

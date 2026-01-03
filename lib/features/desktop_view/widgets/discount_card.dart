@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '/features/file_picker/controller/file_picker_controller.dart';
 import '/features/payment/widgets/flutter_wave.dart';
 
 class DiscountCard extends StatefulWidget {
@@ -26,7 +25,7 @@ class _DiscountCardState extends State<DiscountCard> {
         FilePickerResult? result = await FilePicker.platform.pickFiles();
 
         if (result != null) {
-          log('Result:  ${result!.files.first.name}');
+          log('Result:  ${result.files.first.name}');
           File file = File(result.files.single.path!);
           Uint8List fileBytes = await file.readAsBytes();
           log('Files: ${file.uri}');
@@ -51,7 +50,7 @@ class _DiscountCardState extends State<DiscountCard> {
             // height: 100,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withAlpha(51),
               image: const DecorationImage(
                 image: AssetImage(
                   'assets/grocery.jpeg',
@@ -65,7 +64,7 @@ class _DiscountCardState extends State<DiscountCard> {
               height: 100,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                color: Colors.green.withOpacity(0.7),
+                color: Colors.green.withAlpha(179),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -86,7 +85,7 @@ class _DiscountCardState extends State<DiscountCard> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.8),
+                      backgroundColor: Colors.white.withAlpha(204),
                       padding: EdgeInsets.zero,
                       fixedSize: const Size(90, 40),
                       shape: RoundedRectangleBorder(
