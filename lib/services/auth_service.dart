@@ -61,39 +61,53 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         
-        // Save token (like webapp saves to localStorage)
+        // Save token FIRST (like webapp saves to localStorage)
         if (data['token'] != null) {
           await saveToken(data['token'] as String);
         }
         
         // Handle different response structures (like webapp saves { ...res } to localStorage)
+        // The webapp does: dispatch(setCredentials({ ...res })) - saves entire response
         Map<String, dynamic>? userDataToSave;
         
-        // Try response['user'] first
+        // Try response['user'] first (most common structure)
         if (data['user'] != null && data['user'] is Map) {
           userDataToSave = data['user'] as Map<String, dynamic>;
+          // Also include token in user data for consistency
+          if (data['token'] != null) {
+            userDataToSave!['token'] = data['token'];
+          }
         } 
         // Try response['data']
         else if (data['data'] != null) {
           if (data['data'] is Map<String, dynamic>) {
             userDataToSave = data['data'] as Map<String, dynamic>;
-          } else if (data['data'] is Map && (data['data'] as Map).containsKey('user')) {
-            userDataToSave = data['data']['user'] as Map<String, dynamic>;
+            // Check if it has user nested
+            if (userDataToSave.containsKey('user') && userDataToSave['user'] is Map) {
+              userDataToSave = userDataToSave['user'] as Map<String, dynamic>;
+            }
+            // Include token
+            if (data['token'] != null) {
+              userDataToSave!['token'] = data['token'];
+            }
           }
         }
         // Response might be the user data itself (check for common user fields)
         else if (data['_id'] != null || data['id'] != null || data['email'] != null) {
-          userDataToSave = data;
+          userDataToSave = Map<String, dynamic>.from(data);
         }
         
         // Save user data (like webapp saves entire response to localStorage)
-        // If we found user data, save it. Otherwise, save the entire response (like webapp does)
+        // ALWAYS save something - even if it's the entire response
         if (userDataToSave != null && userDataToSave.isNotEmpty) {
           await saveUserData(userDataToSave);
         } else if (data.isNotEmpty) {
           // Save entire response if no user data found (like webapp saves { ...res })
           await saveUserData(data);
         }
+        
+        // Ensure data is persisted
+        await Future.delayed(const Duration(milliseconds: 100));
         
         return data;
       } else {

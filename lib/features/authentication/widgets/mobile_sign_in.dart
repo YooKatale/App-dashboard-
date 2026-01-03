@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/push_notification_service.dart';
 import '../../../app.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
@@ -44,41 +45,68 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         password: _passwordController.text,
       );
 
-      // AuthService.login already saved token and user data
-      // Wait a moment for data to be fully saved
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Extract user name from response (like webapp: res?.lastname || res?.firstname || 'User')
+      String? userName;
+      if (response['lastname'] != null) {
+        userName = response['lastname'].toString();
+      } else if (response['firstname'] != null) {
+        userName = response['firstname'].toString();
+      } else if (response['user'] != null && response['user'] is Map) {
+        final user = response['user'] as Map<String, dynamic>;
+        userName = user['lastname']?.toString() ?? 
+                  user['firstname']?.toString() ?? 
+                  user['email']?.toString();
+      } else if (response['data'] != null && response['data'] is Map) {
+        final data = response['data'] as Map<String, dynamic>;
+        if (data['user'] != null && data['user'] is Map) {
+          final user = data['user'] as Map<String, dynamic>;
+          userName = user['lastname']?.toString() ?? 
+                    user['firstname']?.toString() ?? 
+                    user['email']?.toString();
+        } else {
+          userName = data['lastname']?.toString() ?? 
+                    data['firstname']?.toString() ?? 
+                    data['email']?.toString();
+        }
+      }
+      
+      if (userName == null || userName.isEmpty) {
+        userName = 'User';
+      }
+      
+      // Wait for data to be saved
+      await Future.delayed(const Duration(milliseconds: 500));
       
       // Get user data from storage (like webapp gets from localStorage)
       final userData = await AuthService.getUserData();
       final token = await AuthService.getToken();
       
       // Update auth state provider (like webapp updates Redux state)
-      String? userName;
       if (userData != null && token != null) {
         final userId = userData['_id']?.toString() ?? 
                       userData['id']?.toString();
         if (userId != null) {
-          final firstName = userData['firstname']?.toString() ?? '';
-          final lastName = userData['lastname']?.toString() ?? '';
-          userName = '$firstName $lastName'.trim();
-          if (userName.isEmpty) {
-            userName = userData['email']?.toString() ?? 'User';
-          }
-          
           ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
             userId: userId,
             email: userData['email']?.toString(),
-            firstName: firstName,
-            lastName: lastName,
+            firstName: userData['firstname']?.toString(),
+            lastName: userData['lastname']?.toString(),
           );
+          
+          // Initialize push notifications after login (like webapp)
+          try {
+            await PushNotificationService.initialize();
+          } catch (e) {
+            // Non-blocking - notifications will work even if init fails
+          }
         }
       }
 
       if (mounted) {
-        // Show success message (like webapp shows toast)
+        // Show success message (like webapp shows toast: "Successfully logged in as ${res?.lastname || res?.firstname || 'User'}")
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Logged in as ${userName ?? 'User'}'),
+            content: Text('Successfully logged in as $userName'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
           ),
@@ -92,7 +120,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         ref.read(redirectRouteProvider.notifier).state = null;
         
         // Small delay to show success message
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 800));
         
         if (mounted) {
           Navigator.of(context).pushReplacementNamed(targetRoute);
