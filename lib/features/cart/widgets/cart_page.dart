@@ -34,68 +34,84 @@ class _CartPageState extends ConsumerState<CartPage> {
     });
 
     try {
-      // Check stored user data (like webapp: const { userInfo } = useSelector((state) => state.auth))
-      // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
+      // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
+      // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
+      // Webapp uses: fetchCart(userInfo?._id)
       final userData = await AuthService.getUserData();
       final token = await AuthService.getToken();
+      final authState = ref.read(authStateProvider);
 
-      // Check if user is logged in (like webapp checks userInfo?._id)
-      if (userData != null && userData.isNotEmpty) {
-        final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-        
-        // If we have userId, user is logged in (like webapp: userInfo?._id)
-        if (userId != null && token != null) {
-          // Update auth state if not already set
-          final authState = ref.read(authStateProvider);
-          if (!authState.isLoggedIn) {
-            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-              userId: userId,
-              email: userData['email']?.toString(),
-              firstName: userData['firstname']?.toString(),
-              lastName: userData['lastname']?.toString(),
-            );
-          }
-          
-          // Fetch cart (like webapp fetches cart with userInfo?._id)
-          final cartItems = await CartService.fetchCart(
-            userId,
-            token: token,
+      // Check if user is logged in (EXACT webapp check: userInfo?._id)
+      String? userId;
+      
+      // First check auth state provider (most reliable)
+      if (authState.isLoggedIn && authState.userId != null) {
+        userId = authState.userId;
+      }
+      
+      // If not in auth state, check stored user data (EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == ""))
+      if (userId == null && userData != null && userData.isNotEmpty) {
+        // Ensure we have a valid _id or id (like webapp checks userInfo?._id)
+        final id = userData['_id']?.toString() ?? userData['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          userId = id;
+          // Sync auth state with stored data
+          ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+            userId: userId,
+            email: userData['email']?.toString(),
+            firstName: userData['firstname']?.toString(),
+            lastName: userData['lastname']?.toString(),
           );
-
-          setState(() {
-            _cartItems = cartItems;
-            _isLoading = false;
-          });
-          
-          // Update cart count provider
-          ref.read(cartCountProvider.notifier).state = cartItems.length;
-          return;
         }
       }
       
-      // Fallback: Check auth state
-      final authState = ref.read(authStateProvider);
-      if (authState.isLoggedIn && authState.userId != null) {
-        final authToken = await AuthService.getToken();
+      // If we have userId, try to fetch cart (EXACT webapp: fetchCart(userInfo?._id))
+      // Even if token is null, try to fetch - token might be in userData
+      if (userId != null) {
+        // Use token from parameter or try to get from userData
+        String? authToken = token;
+        if (authToken == null && userData != null) {
+          authToken = userData['token']?.toString();
+        }
         
+        // If we have a token, fetch cart
         if (authToken != null) {
-          final cartItems = await CartService.fetchCart(
-            authState.userId!,
-            token: authToken,
-          );
+          try {
+            final cartItems = await CartService.fetchCart(
+              userId,
+              token: authToken,
+            );
 
+            setState(() {
+              _cartItems = cartItems;
+              _isLoading = false;
+            });
+            
+            // Update cart count provider
+            ref.read(cartCountProvider.notifier).state = cartItems.length;
+            return;
+          } catch (e) {
+            // If fetch fails, show empty cart instead of redirecting
+            setState(() {
+              _cartItems = [];
+              _isLoading = false;
+            });
+            ref.read(cartCountProvider.notifier).state = 0;
+            return;
+          }
+        } else {
+          // No token but user is logged in - show empty cart
           setState(() {
-            _cartItems = cartItems;
+            _cartItems = [];
             _isLoading = false;
           });
-          
-          // Update cart count provider
-          ref.read(cartCountProvider.notifier).state = cartItems.length;
+          ref.read(cartCountProvider.notifier).state = 0;
           return;
         }
       }
 
-      // Not logged in (like webapp: if (!userInfo || userInfo == {} || userInfo == ""))
+      // Not logged in (EXACT webapp: if (!userInfo || userInfo == {} || userInfo == ""))
+      // Only redirect if truly not logged in
       setState(() {
         _isLoading = false;
       });

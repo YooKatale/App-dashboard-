@@ -99,9 +99,10 @@ www.yookatale.app/subscription''';
         padding: const EdgeInsets.all(24),
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   // Icon
                   Container(
                     width: 80,
@@ -250,7 +251,9 @@ www.yookatale.app/subscription''';
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Close'),
                   ),
-                ],
+                  const SizedBox(height: 8), // Add small padding at bottom
+                  ],
+                ),
               ),
       ),
     );

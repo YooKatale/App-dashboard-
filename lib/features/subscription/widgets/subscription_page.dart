@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/api_service.dart';
+import '../../../services/auth_service.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
 import '../../payment/widgets/flutter_wave.dart';
@@ -31,9 +32,14 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
     });
 
     try {
+      // Use AuthService token (like webapp and cart)
+      final token = await AuthService.getToken();
       final user = FirebaseAuth.instance.currentUser;
+      // Try Firebase token first, fallback to AuthService token
+      final authToken = await user?.getIdToken() ?? token;
+      
       final response = await ApiService.fetchSubscriptionPackages(
-        token: await user?.getIdToken(),
+        token: authToken,
       );
 
       if (response['status'] == 'Success' && response['data'] != null) {
@@ -57,22 +63,57 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
 
   Future<void> _subscribeToPackage(String packageId) async {
     try {
+      // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
+      // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
+      final userData = await AuthService.getUserData();
+      final token = await AuthService.getToken();
       final authState = ref.read(authStateProvider);
       final user = FirebaseAuth.instance.currentUser;
 
-      if (user == null || authState.userId == null) {
+      // Check if user is logged in (EXACT webapp check: userInfo?._id)
+      String? userId;
+      
+      // First check auth state provider (most reliable)
+      if (authState.isLoggedIn && authState.userId != null) {
+        userId = authState.userId;
+      }
+      
+      // If not in auth state, check stored user data (EXACT webapp check)
+      if (userId == null && userData != null && userData.isNotEmpty) {
+        final id = userData['_id']?.toString() ?? userData['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          userId = id;
+          // Sync auth state with stored data
+          ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+            userId: userId,
+            email: userData['email']?.toString(),
+            firstName: userData['firstname']?.toString(),
+            lastName: userData['lastname']?.toString(),
+          );
+        }
+      }
+
+      if (userId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please login to subscribe')),
           );
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              Navigator.pushNamed(context, '/signin');
+            }
+          });
         }
         return;
       }
 
+      // Use Firebase token if available, otherwise use AuthService token
+      final authToken = await user?.getIdToken() ?? token ?? userData?['token']?.toString();
+
       final response = await ApiService.createSubscription(
-        userId: authState.userId!,
+        userId: userId,
         packageId: packageId,
-        token: await user.getIdToken(),
+        token: authToken,
       );
 
       if (response['status'] == 'Success' && response['data'] != null) {
