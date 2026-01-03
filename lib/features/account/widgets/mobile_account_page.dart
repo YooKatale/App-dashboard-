@@ -253,7 +253,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
     final isLoggedIn = authState.isLoggedIn || _userData != null;
     
     if (!isLoggedIn) {
-      // Not logged in - Show Jumia-style welcome screen
+      // Not logged in - Show welcome screen with greenish theme
       return Scaffold(
         appBar: AppBar(
           title: const Text('Account'),
@@ -265,10 +265,19 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // Welcome Section
+              // Welcome Section with greenish theme
               Container(
                 padding: const EdgeInsets.all(20),
-                color: Colors.white,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color.fromRGBO(24, 95, 45, 1),
+                      const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.8),
+                    ],
+                  ),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -277,7 +286,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -285,7 +294,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                       'Enter your account',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey,
+                        color: Colors.white70,
                       ),
                     ),
                     const SizedBox(height: 16),

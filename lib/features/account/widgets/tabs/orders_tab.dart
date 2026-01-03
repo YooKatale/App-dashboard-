@@ -81,7 +81,10 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(_error!),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.black87),
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _loadOrders,
@@ -99,7 +102,11 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                         SizedBox(height: 16),
                         Text(
                           'No orders yet',
-                          style: TextStyle(fontSize: 24, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -113,11 +120,21 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                         final order = _orders[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
+                          color: Colors.white,
+                          elevation: 2,
                           child: ListTile(
-                            leading: const Icon(Icons.receipt_long, size: 40),
+                            leading: const Icon(
+                              Icons.receipt_long,
+                              size: 40,
+                              color: Color.fromRGBO(24, 95, 45, 1),
+                            ),
                             title: Text(
                               'Order #${order['_id']?.toString().substring(0, 8) ?? 'N/A'}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                                fontSize: 16,
+                              ),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,16 +142,26 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Total: ${_formatCurrency(order['orderTotal'] ?? 0)}',
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 14,
+                                  ),
                                 ),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Status: ${order['status'] ?? 'Pending'}',
                                   style: TextStyle(
                                     color: _getStatusColor(order['status'] ?? 'Pending'),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
-                            trailing: const Icon(Icons.chevron_right),
+                            trailing: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.black87,
+                            ),
                             onTap: () {
                               // TODO: Navigate to order details
                               ScaffoldMessenger.of(context).showSnackBar(

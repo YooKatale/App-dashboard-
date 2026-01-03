@@ -80,22 +80,11 @@ class _MobileSubscriptionPageState
       final authState = ref.read(authStateProvider);
       if (authState.isLoggedIn && authState.userId != null) {
         userId = authState.userId;
-        // Get token from stored data if not available
-        if (token == null) {
-          final storedToken = await AuthService.getToken();
-          if (storedToken != null) {
-            // Continue with subscription
-          } else {
-            // No token but logged in - show error
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Session expired. Please login again'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-            return;
+        // Sync with stored data
+        if (userData == null) {
+          final storedData = await AuthService.getUserData();
+          if (storedData != null) {
+            userData = storedData;
           }
         }
       } else {
@@ -120,8 +109,15 @@ class _MobileSubscriptionPageState
       }
     }
     
-    // Ensure we have a token
-    final finalToken = token ?? await AuthService.getToken();
+    // Ensure we have a token - try multiple sources
+    String? finalToken = token;
+    if (finalToken == null) {
+      finalToken = await AuthService.getToken();
+    }
+    if (finalToken == null && userData != null) {
+      finalToken = userData['token']?.toString();
+    }
+    
     if (finalToken == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

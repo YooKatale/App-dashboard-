@@ -26,10 +26,29 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
   bool _isLoading = false;
 
   Future<void> _addToCart() async {
+    // Use AuthService (like webapp) instead of Firebase
+    final userData = await AuthService.getUserData();
+    final token = await AuthService.getToken();
     final authState = ref.read(authStateProvider);
-    final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null || authState.userId == null) {
+    // Check auth state first, then stored data
+    String? userId;
+    if (authState.isLoggedIn && authState.userId != null) {
+      userId = authState.userId;
+    } else if (userData != null && userData.isNotEmpty) {
+      userId = userData['_id']?.toString() ?? userData['id']?.toString();
+      if (userId != null) {
+        // Sync auth state
+        ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+          userId: userId,
+          email: userData['email']?.toString(),
+          firstName: userData['firstname']?.toString(),
+          lastName: userData['lastname']?.toString(),
+        );
+      }
+    }
+
+    if (userId == null || token == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please login to add items to cart')),
@@ -44,11 +63,21 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
 
     try {
       final success = await CartService.addToCart(
-        userId: authState.userId!,
+        userId: userId,
         productId: widget.productId,
         quantity: widget.quantity,
-        token: await user.getIdToken(),
+        token: token,
       );
+      
+      // Update cart count after adding
+      if (success) {
+        try {
+          final cartItems = await CartService.fetchCart(userId, token: token);
+          ref.read(cartCountProvider.notifier).state = cartItems.length;
+        } catch (e) {
+          // Ignore count update errors
+        }
+      }
 
       if (mounted) {
         if (success) {

@@ -26,6 +26,17 @@ class _CartPageState extends ConsumerState<CartPage> {
     super.initState();
     _loadCart();
   }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload cart when page becomes visible (e.g., after adding items)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadCart();
+      }
+    });
+  }
 
   Future<void> _loadCart() async {
     setState(() {
@@ -202,16 +213,29 @@ class _CartPageState extends ConsumerState<CartPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch auth state in build method (like webapp watches Redux state)
+    // Watch auth state and cart count in build method (like webapp watches Redux state)
     final authState = ref.watch(authStateProvider);
+    final cartCount = ref.watch(cartCountProvider);
     
-    // Reload cart if auth state changed to logged in
-    if (authState.isLoggedIn && _cartItems.isEmpty && !_isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _loadCart();
-        }
-      });
+    // Reload cart if:
+    // 1. Auth state changed to logged in
+    // 2. Cart count changed (item was added)
+    if (authState.isLoggedIn) {
+      if (cartCount > 0 && _cartItems.isEmpty && !_isLoading) {
+        // Cart count shows items but cart page is empty - reload
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _loadCart();
+          }
+        });
+      } else if (cartCount != _cartItems.length && !_isLoading) {
+        // Cart count doesn't match items - reload
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _loadCart();
+          }
+        });
+      }
     }
     
     return Scaffold(
@@ -301,24 +325,34 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 children: [
                                   const Text(
                                     'Cart Items:',
-                                    style: TextStyle(fontSize: 18),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   Text(
                                     '${_cartItems.length}',
                                     style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
                                   ),
                                 ],
                               ),
-                              const Divider(),
+                              const Divider(color: Colors.grey),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Cart SubTotal:',
-                                    style: TextStyle(fontSize: 18),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   Text(
                                     _formatCurrency(_calculateTotal()),
@@ -407,14 +441,15 @@ class _CartItemCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'UGX ${item.price}${item.unit != null ? ' / ${item.unit}' : ''}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -433,6 +468,7 @@ class _CartItemCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
                       IconButton(
