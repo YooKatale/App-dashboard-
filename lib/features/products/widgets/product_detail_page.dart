@@ -7,7 +7,7 @@ import '../../../services/auth_service.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../cart/services/cart_service.dart';
-import 'product_ratings_widget.dart';
+import 'product_rating_widget.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
   final String productId;
