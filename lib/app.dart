@@ -21,6 +21,7 @@ import 'features/schedule/widgets/schedule_page.dart';
 import 'features/schedule/widgets/meal_calendar_page.dart';
 import 'features/checkout/widgets/checkout_page.dart';
 import 'features/payment/widgets/flutter_wave.dart';
+import 'features/payment/widgets/payment_page.dart';
 import 'features/onboarding/widgets/welcome_screen.dart';
 import 'features/account/widgets/mobile_account_page.dart';
 import 'features/account/widgets/service_ratings_page.dart';
@@ -194,9 +195,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         if (settings.name?.startsWith('/payment/') == true) {
           final orderId = settings.name?.split('/').last;
           final args = settings.arguments as Map<String, dynamic>?;
-          final amount = args?['amount'] as double? ?? 0.0;
+          final amount = args?['amount'] as double?;
           return MaterialPageRoute(
-            builder: (context) => FlutterWavePayment(
+            builder: (context) => PaymentPage(
               orderId: orderId ?? '',
               amount: amount,
             ),

@@ -98,7 +98,7 @@ class _CartPageState extends ConsumerState<CartPage> {
               _isLoading = false;
             });
             
-            // Update cart count provider
+            // Update cart count provider (EXACT WEBAPP LOGIC: sync cart count)
             ref.read(cartCountProvider.notifier).state = cartItems.length;
             return;
           } catch (e) {
@@ -107,7 +107,8 @@ class _CartPageState extends ConsumerState<CartPage> {
               _cartItems = [];
               _isLoading = false;
             });
-            ref.read(cartCountProvider.notifier).state = 0;
+            // Update cart count to 0 when cart is empty
+          ref.read(cartCountProvider.notifier).state = 0;
             return;
           }
         } else {
@@ -116,6 +117,7 @@ class _CartPageState extends ConsumerState<CartPage> {
             _cartItems = [];
             _isLoading = false;
           });
+          // Update cart count to 0 when cart is empty
           ref.read(cartCountProvider.notifier).state = 0;
           return;
         }

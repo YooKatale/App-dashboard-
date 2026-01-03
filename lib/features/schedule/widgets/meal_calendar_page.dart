@@ -444,7 +444,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       }
     }
     
-    if (userId == null || token == null) {
+    // EXACT WEBAPP LOGIC: Only check userId, token is optional
+    if (userId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -459,6 +460,12 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         });
       }
       return;
+    }
+    
+    // Token is optional - try to get it but don't block
+    String? finalToken = token;
+    if (finalToken == null) {
+      finalToken = await AuthService.getToken();
     }
     
     // Update auth state if not already set (sync with stored data)
@@ -503,20 +510,17 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       
       final response = await ApiService.createSchedule(
         scheduleData: scheduleData,
-        token: token,
+        token: finalToken,
       );
       
       if (mounted) {
         if (response['status'] == 'Success' && response['data']?['Order'] != null) {
-          // Navigate to payment page (like webapp)
-          Navigator.push(
+          // Navigate to payment page (EXACT WEBAPP LOGIC: router.push(`/payment/${res.data.Order}`))
+          final orderId = response['data']['Order'].toString();
+          Navigator.pushNamed(
             context,
-            MaterialPageRoute(
-              builder: (context) => FlutterWavePayment(
-                orderId: response['data']['Order'].toString(),
-                amount: orderTotal.toDouble(),
-              ),
-            ),
+            '/payment/$orderId',
+            arguments: {'amount': orderTotal.toDouble()},
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

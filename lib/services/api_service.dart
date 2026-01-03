@@ -461,6 +461,76 @@ class ApiService {
     }
   }
 
+  // Fetch order by ID
+  static Future<Map<String, dynamic>> fetchOrder(String orderId, {String? token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/products/order/$orderId'),
+        headers: getHeaders(token: token),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to fetch order: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching order: $e');
+    }
+  }
+
+  // Update order
+  static Future<Map<String, dynamic>> updateOrder({
+    required String orderId,
+    required Map<String, dynamic> paymentData,
+    String? token,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/products/order'),
+        headers: getHeaders(token: token),
+        body: json.encode(paymentData),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to update order: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error updating order: $e');
+    }
+  }
+
+  // Validate coupon
+  static Future<Map<String, dynamic>> validateCoupon({
+    required String couponCode,
+    required String orderId,
+    String? token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/coupon/validate'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'couponCode': couponCode,
+          'orderId': orderId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to validate coupon: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error validating coupon: $e');
+    }
+  }
+
   // Update user profile
   static Future<Map<String, dynamic>> updateUserProfile({
     required String userId,
