@@ -365,11 +365,12 @@ class ApiService {
     String? token,
   }) async {
     try {
+      // EXACT WEBAPP LOGIC: Webapp sends { user: userInfo._id, packageId: ID }
       final response = await http.post(
         Uri.parse('$baseUrl/subscription'),
         headers: getHeaders(token: token),
         body: json.encode({
-          'user': userId,
+          'user': userId, // Webapp uses 'user' not 'userId'
           'packageId': packageId,
         }),
       );

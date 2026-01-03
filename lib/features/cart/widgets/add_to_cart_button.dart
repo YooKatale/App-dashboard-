@@ -62,47 +62,90 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
     });
 
     try {
-      final success = await CartService.addToCart(
+      final result = await CartService.addToCart(
         userId: userId,
         productId: widget.productId,
         quantity: widget.quantity,
         token: token,
       );
       
-      // Update cart count after adding
-      if (success) {
-        try {
-          final cartItems = await CartService.fetchCart(userId, token: token);
-          ref.read(cartCountProvider.notifier).state = cartItems.length;
-        } catch (e) {
-          // Ignore count update errors
-        }
+      // Update cart count after adding (even if already in cart, refresh to show current state)
+      try {
+        final cartItems = await CartService.fetchCart(userId, token: token);
+        ref.read(cartCountProvider.notifier).state = cartItems.length;
+      } catch (e) {
+        // Ignore count update errors
       }
-
+      
       if (mounted) {
-        if (success) {
+        if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${widget.productName} added to cart'),
+              backgroundColor: Colors.green,
               action: SnackBarAction(
                 label: 'View Cart',
+                textColor: Colors.white,
                 onPressed: () {
                   Navigator.pushNamed(context, '/cart');
                 },
               ),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to add to cart')),
-          );
+          // Handle "already in cart" case gracefully
+          if (result['alreadyInCart'] == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Product is already in your cart. You can update quantity from the cart page.'),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message']?.toString() ?? 'Failed to add to cart'),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        final errorMessage = e.toString().replaceAll('Exception: ', '');
+        
+        // EXACT WEBAPP LOGIC: Handle errors gracefully
+        if (errorMessage.contains('Product already added to cart') || 
+            errorMessage.contains('already added')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product is already in your cart. You can update quantity from the cart page.'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else if (errorMessage.contains('not found') || 
+                   errorMessage.contains('Resource not found')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product not found. Please try again or contact support.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $errorMessage'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) {

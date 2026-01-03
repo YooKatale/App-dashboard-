@@ -109,26 +109,14 @@ class _MobileSubscriptionPageState
       }
     }
     
-    // Ensure we have a token - try multiple sources
+    // EXACT WEBAPP LOGIC: Backend subscription endpoint doesn't require token
+    // Webapp sends: { user: userInfo._id, packageId: ID } - no token needed
+    // Token is optional - try to get it but don't block subscription
     String? finalToken = token;
     if (finalToken == null) {
       finalToken = await AuthService.getToken();
     }
-    if (finalToken == null && userData != null) {
-      finalToken = userData['token']?.toString();
-    }
-    
-    if (finalToken == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Session expired. Please login again'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
+    // Token is optional for subscription endpoint
     
     // Update auth state if not already set (sync with stored data)
     final authState = ref.read(authStateProvider);
@@ -144,10 +132,12 @@ class _MobileSubscriptionPageState
     setState(() => _isSubscribing = true);
 
     try {
+      // EXACT WEBAPP LOGIC: Backend expects { user: userId, packageId: packageId }
+      // Token is optional - subscription endpoint doesn't require authentication
       final response = await ApiService.createSubscription(
         userId: userId!,
         packageId: packageId,
-        token: finalToken,
+        token: finalToken, // Optional - pass if available
       );
 
       if (response['status'] == 'Success') {

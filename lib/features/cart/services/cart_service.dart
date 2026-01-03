@@ -45,7 +45,8 @@ class CartService {
   }
 
   // Add item to cart
-  static Future<bool> addToCart({
+  // Returns Map with 'success' boolean and optional 'message' and 'error'
+  static Future<Map<String, dynamic>> addToCart({
     required String userId,
     required String productId,
     required int quantity,
@@ -60,10 +61,37 @@ class CartService {
         token: token,
       );
       
-      return response['status'] == 'Success';
+      // EXACT WEBAPP LOGIC: Check response.status or response.message
+      if (response['status'] == 'Success' || response['message'] != null) {
+        return {
+          'success': true,
+          'message': response['message']?.toString() ?? 'Product added to cart',
+        };
+      }
+      
+      return {
+        'success': false,
+        'message': response['message']?.toString() ?? 'Failed to add to cart',
+      };
     } catch (e) {
       log('Error adding to cart: $e');
-      return false;
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      
+      // Handle specific error cases
+      if (errorMessage.contains('Product already added to cart') || 
+          errorMessage.contains('already added')) {
+        return {
+          'success': false,
+          'message': 'Product already added to cart',
+          'alreadyInCart': true,
+        };
+      }
+      
+      return {
+        'success': false,
+        'message': errorMessage,
+        'error': errorMessage,
+      };
     }
   }
 

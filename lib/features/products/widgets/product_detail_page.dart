@@ -85,14 +85,17 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
       );
 
       if (mounted) {
+        // EXACT WEBAPP LOGIC: Check response.data?.message or response.status
+        // Webapp shows success if res.data?.message exists
         if (response['status'] == 'Success' || response['message'] != null) {
           // Refresh cart count
           _refreshCartCount(userId, token);
           
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Product added to cart successfully!'),
+            SnackBar(
+              content: Text(response['message']?.toString() ?? 'Product added to cart successfully!'),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
             ),
           );
         } else {
@@ -106,12 +109,41 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        final errorMessage = e.toString().replaceAll('Exception: ', '');
+        
+        // EXACT WEBAPP LOGIC: Handle "Product already added to cart" gracefully
+        // Webapp shows error but doesn't crash - we should handle it gracefully too
+        if (errorMessage.contains('Product already added to cart') || 
+            errorMessage.contains('already added')) {
+          // Product is already in cart - show friendly message and update cart count
+          _refreshCartCount(userId, token);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product is already in your cart. You can update quantity from the cart page.'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else if (errorMessage.contains('not found') || 
+                   errorMessage.contains('Resource not found')) {
+          // Product or user not found - show helpful message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product not found. Please try again or contact support.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          // Other errors - show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $errorMessage'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }

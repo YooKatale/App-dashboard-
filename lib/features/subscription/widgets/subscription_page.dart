@@ -105,7 +105,7 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         }
       }
       
-      if (userId == null || finalToken == null) {
+      if (userId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please login to subscribe')),
@@ -117,6 +117,12 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
           });
         }
         return;
+      }
+      
+      // Token is optional for subscription - backend might work with just userId
+      // But try to get token if available
+      if (finalToken == null) {
+        finalToken = await AuthService.getToken();
       }
 
       final response = await ApiService.createSubscription(
