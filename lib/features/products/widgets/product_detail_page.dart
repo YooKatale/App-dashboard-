@@ -43,9 +43,30 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         });
       } else {
         setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message']?.toString() ?? 'Product not found'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => _isLoading = false);
+      if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        if (!errorMsg.contains('404') && !errorMsg.contains('not found')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error loading product: $errorMsg'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
 

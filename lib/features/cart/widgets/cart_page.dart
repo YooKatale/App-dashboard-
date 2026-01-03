@@ -77,7 +77,7 @@ class _CartPageState extends ConsumerState<CartPage> {
       }
       
       // If we have userId, try to fetch cart (EXACT webapp: fetchCart(userInfo?._id))
-      // Even if token is null, try to fetch - token might be in userData
+      // EXACT WEBAPP LOGIC: Webapp doesn't always require token for cart fetch
       if (userId != null) {
         // Use token from parameter or try to get from userData
         String? authToken = token;
@@ -85,41 +85,55 @@ class _CartPageState extends ConsumerState<CartPage> {
           authToken = userData['token']?.toString();
         }
         
-        // If we have a token, fetch cart
-        if (authToken != null) {
-          try {
-            final cartItems = await CartService.fetchCart(
-              userId,
-              token: authToken,
-            );
+        // Try to fetch cart - try with token first, then without if it fails
+        try {
+          final cartItems = await CartService.fetchCart(
+            userId,
+            token: authToken, // Token is optional
+          );
 
-            setState(() {
-              _cartItems = cartItems;
-              _isLoading = false;
-            });
-            
-            // Update cart count provider (EXACT WEBAPP LOGIC: sync cart count)
-            ref.read(cartCountProvider.notifier).state = cartItems.length;
-            return;
-          } catch (e) {
-            // If fetch fails, show empty cart instead of redirecting
+          setState(() {
+            _cartItems = cartItems;
+            _isLoading = false;
+          });
+          
+          // Update cart count provider (EXACT WEBAPP LOGIC: sync cart count)
+          ref.read(cartCountProvider.notifier).state = cartItems.length;
+          return;
+        } catch (e) {
+          // If fetch fails with token, try without token (some endpoints work without it)
+          if (authToken != null) {
+            try {
+              final cartItems = await CartService.fetchCart(
+                userId,
+                token: null, // Try without token
+              );
+
+              setState(() {
+                _cartItems = cartItems;
+                _isLoading = false;
+              });
+              
+              ref.read(cartCountProvider.notifier).state = cartItems.length;
+              return;
+            } catch (e2) {
+              // Both attempts failed - show empty cart
+              setState(() {
+                _cartItems = [];
+                _isLoading = false;
+              });
+              ref.read(cartCountProvider.notifier).state = 0;
+              return;
+            }
+          } else {
+            // No token and fetch failed - show empty cart
             setState(() {
               _cartItems = [];
               _isLoading = false;
             });
-            // Update cart count to 0 when cart is empty
-          ref.read(cartCountProvider.notifier).state = 0;
+            ref.read(cartCountProvider.notifier).state = 0;
             return;
           }
-        } else {
-          // No token but user is logged in - show empty cart
-          setState(() {
-            _cartItems = [];
-            _isLoading = false;
-          });
-          // Update cart count to 0 when cart is empty
-          ref.read(cartCountProvider.notifier).state = 0;
-          return;
         }
       }
 

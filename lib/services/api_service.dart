@@ -404,13 +404,14 @@ class ApiService {
   }
 
   // Schedule operations
+  // EXACT WEBAPP LOGIC: Backend route is /products/schedule
   static Future<Map<String, dynamic>> createSchedule({
     required Map<String, dynamic> scheduleData,
     String? token,
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/schedules'),
+        Uri.parse('$baseUrl/products/schedule'),
         headers: getHeaders(token: token),
         body: json.encode(scheduleData),
       );

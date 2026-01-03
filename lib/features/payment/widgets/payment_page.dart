@@ -243,6 +243,108 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         )}';
   }
 
+  // Professional Payment Method Card Widget
+  Widget _buildPaymentMethodCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () {
+        setState(() => _paymentMethod = value);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? const Color.fromRGBO(24, 95, 45, 1)
+                : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color.fromRGBO(24, 95, 45, 1)
+                    : Colors.grey[200],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.grey[700],
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected 
+                          ? const Color.fromRGBO(24, 95, 45, 1)
+                          : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle,
+                color: Color.fromRGBO(24, 95, 45, 1),
+                size: 24,
+              )
+            else
+              Icon(
+                Icons.radio_button_unchecked,
+                color: Colors.grey[400],
+                size: 24,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -281,33 +383,70 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Amount to be paid
+                          // Amount to be paid - Professional Design
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green[200]!),
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                  const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.3),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
-                                const Text(
-                                  'Amount to be paid',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
-                                  ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromRGBO(24, 95, 45, 1),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(
+                                        Icons.payment,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Amount to be paid',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 16),
                                 Text(
                                   _formatCurrency(
                                     _order!['total']?.toDouble() ?? widget.amount ?? 0.0,
                                   ),
                                   style: const TextStyle(
-                                    fontSize: 28,
+                                    fontSize: 36,
                                     fontWeight: FontWeight.bold,
                                     color: Color.fromRGBO(24, 95, 45, 1),
+                                    letterSpacing: 1,
                                   ),
                                 ),
                               ],
@@ -315,32 +454,70 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Apply Coupon Section
+                          // Apply Coupon Section - Professional UI
                           Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Apply Coupon',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange[50],
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.local_offer,
+                                          color: Colors.orange,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Apply Coupon',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 16),
                                   Row(
                                     children: [
                                       Expanded(
                                         child: TextField(
-                                          decoration: const InputDecoration(
+                                          decoration: InputDecoration(
                                             hintText: 'Enter coupon code',
-                                            border: OutlineInputBorder(),
-                                            contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 12,
+                                            prefixIcon: const Icon(Icons.confirmation_number),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(10),
                                             ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                              borderSide: BorderSide(color: Colors.grey[300]!),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                              borderSide: const BorderSide(
+                                                color: Color.fromRGBO(24, 95, 45, 1),
+                                                width: 2,
+                                              ),
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 14,
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.grey[50],
                                           ),
                                           onChanged: (value) {
                                             setState(() => _couponCode = value);
@@ -348,16 +525,20 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                           controller: TextEditingController(text: _couponCode),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 12),
                                       ElevatedButton(
                                         onPressed: _isValidatingCoupon ? null : _validateCoupon,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
                                           foregroundColor: Colors.white,
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 12,
+                                            horizontal: 24,
+                                            vertical: 16,
                                           ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          elevation: 2,
                                         ),
                                         child: _isValidatingCoupon
                                             ? const SizedBox(
@@ -368,7 +549,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                                 ),
                                               )
-                                            : const Text('Apply'),
+                                            : const Text(
+                                                'Apply',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                       ),
                                     ],
                                   ),
@@ -378,54 +564,44 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Payment Method Selection
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Select payment option',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  DropdownButtonFormField<String>(
-                                    value: _paymentMethod.isEmpty ? null : _paymentMethod,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Payment Method',
-                                      border: OutlineInputBorder(),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                        value: 'mobileMoney',
-                                        child: Text('Mobile Money'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'card',
-                                        child: Text('Debit/Credit Card'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'cash_on_delivery',
-                                        child: Text('Cash on Delivery'),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(() => _paymentMethod = value);
-                                      }
-                                    },
-                                  ),
-                                ],
+                          // Payment Method Selection - Professional UI with Icons
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Select payment option',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              // Payment Method Cards
+                              _buildPaymentMethodCard(
+                                icon: Icons.phone_android,
+                                title: 'Mobile Money',
+                                subtitle: 'MTN, Airtel, and more',
+                                value: 'mobileMoney',
+                                isSelected: _paymentMethod == 'mobileMoney',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildPaymentMethodCard(
+                                icon: Icons.credit_card,
+                                title: 'Debit/Credit Card',
+                                subtitle: 'Visa, Mastercard, and more',
+                                value: 'card',
+                                isSelected: _paymentMethod == 'card',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildPaymentMethodCard(
+                                icon: Icons.local_shipping,
+                                title: 'Cash on Delivery',
+                                subtitle: 'Pay when you receive',
+                                value: 'cash_on_delivery',
+                                isSelected: _paymentMethod == 'cash_on_delivery',
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 24),
 
