@@ -27,6 +27,9 @@ import 'features/account/widgets/mobile_account_page.dart';
 import 'features/account/widgets/service_ratings_page.dart';
 import 'features/authentication/widgets/mobile_sign_in.dart';
 import 'features/authentication/widgets/multi_page_signup.dart';
+import 'features/legal/widgets/privacy_policy_page.dart';
+import 'features/legal/widgets/terms_page.dart';
+import 'features/account/widgets/faqs_page.dart';
 import 'features/categories/widgets/mobile_categories_page.dart';
 import 'features/products/widgets/product_detail_page.dart';
 import 'features/common/models/products_model.dart';
@@ -190,6 +193,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         },
         '/wishlist': (context) => const WishlistPage(),
         '/help': (context) => const HelpSupportPage(),
+        '/faqs': (context) => const FAQsPage(),
+        '/privacy': (context) => const PrivacyPolicyPage(),
+        '/terms': (context) => const TermsPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/payment/') == true) {

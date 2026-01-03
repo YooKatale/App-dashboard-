@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
+      body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
@@ -56,16 +56,43 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Original Logo from assets - well positioned
+                const Spacer(flex: 2),
+                
+                // Original Logo from assets - centered and well positioned
                 Image.asset(
                   'assets/logo1.webp',
-                  width: 200,
-                  height: 200,
+                  width: 220,
+                  height: 220,
                   fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.shopping_cart,
+                      size: 120,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    );
+                  },
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 
-                // Loading Indicator
+                // Fruits below logo - arranged like screenshot
+                // Using a more natural arrangement with multiple fruits
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildFruitImage('assets/fruits/oranges.jpeg', 50),
+                    _buildFruitImage('assets/fruits/banana.jpeg', 50),
+                    _buildFruitImage('assets/fruits/passion_fruit.jpeg', 50),
+                    _buildFruitImage('assets/fruits/avacodo.jpeg', 50),
+                    _buildFruitImage('assets/fruits/matooke.jpeg', 50),
+                    _buildFruitImage('assets/fruits/tomatos.jpeg', 50),
+                  ],
+                ),
+                
+                const Spacer(flex: 2),
+                
+                // Loading Indicator at bottom
                 const SizedBox(
                   width: 40,
                   height: 40,
@@ -77,48 +104,23 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 40),
-                
-                // Fruits below logo - using assets
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/fruits/oranges.jpeg',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                    ),
-                    const SizedBox(width: 12),
-                    Image.asset(
-                      'assets/fruits/banana.jpeg',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                    ),
-                    const SizedBox(width: 12),
-                    Image.asset(
-                      'assets/fruits/passion_fruit.jpeg',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                    ),
-                    const SizedBox(width: 12),
-                    Image.asset(
-                      'assets/fruits/avacodo.jpeg',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+  
+  Widget _buildFruitImage(String path, double size) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.asset(
+        path,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const SizedBox(),
       ),
     );
   }

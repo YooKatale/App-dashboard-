@@ -30,11 +30,42 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   String _couponCode = '';
   bool _isValidatingCoupon = false;
   String? _error;
+  
+  // Card payment fields
+  final _cardNumberController = TextEditingController();
+  final _cardNameController = TextEditingController();
+  final _cardExpiryController = TextEditingController();
+  final _cardCVVController = TextEditingController();
+  
+  // Mobile money fields
+  final _phoneNumberController = TextEditingController();
+  String _mobileMoneyProvider = 'MTN';
 
   @override
   void initState() {
     super.initState();
     _loadOrder();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final userData = await AuthService.getUserData();
+    if (userData != null && mounted) {
+      setState(() {
+        _phoneNumberController.text = userData['phone']?.toString() ?? '';
+        _cardNameController.text = '${userData['firstname'] ?? ''} ${userData['lastname'] ?? ''}'.trim();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _cardNumberController.dispose();
+    _cardNameController.dispose();
+    _cardExpiryController.dispose();
+    _cardCVVController.dispose();
+    _phoneNumberController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadOrder() async {
@@ -604,6 +635,248 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                             ],
                           ),
                           const SizedBox(height: 24),
+
+                          // Card Details Form (shown when card is selected)
+                          if (_paymentMethod == 'card') ...[
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.credit_card,
+                                          color: Color.fromRGBO(24, 95, 45, 1),
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Card Details',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _cardNumberController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Card Number',
+                                        hintText: '1234 5678 9012 3456',
+                                        prefixIcon: const Icon(Icons.credit_card),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[50],
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      maxLength: 19,
+                                      onChanged: (value) {
+                                        // Format card number with spaces
+                                        final formatted = value.replaceAll(' ', '');
+                                        if (formatted.length > 0 && formatted.length % 4 == 0) {
+                                          _cardNumberController.value = TextEditingValue(
+                                            text: formatted.replaceAllMapped(
+                                              RegExp(r'.{4}'),
+                                              (match) => '${match.group(0)} ',
+                                            ).trim(),
+                                            selection: TextSelection.collapsed(
+                                              offset: formatted.length + (formatted.length ~/ 4),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: _cardNameController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Cardholder Name',
+                                        hintText: 'John Doe',
+                                        prefixIcon: const Icon(Icons.person),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[50],
+                                      ),
+                                      textCapitalization: TextCapitalization.words,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _cardExpiryController,
+                                            decoration: InputDecoration(
+                                              labelText: 'Expiry Date',
+                                              hintText: 'MM/YY',
+                                              prefixIcon: const Icon(Icons.calendar_today),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.grey[50],
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 5,
+                                            onChanged: (value) {
+                                              // Format expiry date
+                                              if (value.length == 2 && !value.contains('/')) {
+                                                _cardExpiryController.value = TextEditingValue(
+                                                  text: '$value/',
+                                                  selection: TextSelection.collapsed(offset: 3),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _cardCVVController,
+                                            decoration: InputDecoration(
+                                              labelText: 'CVV',
+                                              hintText: '123',
+                                              prefixIcon: const Icon(Icons.lock),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.grey[50],
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 3,
+                                            obscureText: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+                          // Mobile Money Form (shown when mobile money is selected)
+                          if (_paymentMethod == 'mobileMoney') ...[
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.phone_android,
+                                          color: Color.fromRGBO(24, 95, 45, 1),
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Mobile Money Details',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    DropdownButtonFormField<String>(
+                                      value: _mobileMoneyProvider,
+                                      decoration: InputDecoration(
+                                        labelText: 'Mobile Money Provider',
+                                        prefixIcon: const Icon(Icons.account_balance_wallet),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[50],
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'MTN',
+                                          child: Text('MTN Mobile Money'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Airtel',
+                                          child: Text('Airtel Money'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Africell',
+                                          child: Text('Africell Money'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() => _mobileMoneyProvider = value);
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _phoneNumberController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Phone Number',
+                                        hintText: '256 772 123456',
+                                        prefixIcon: const Icon(Icons.phone),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.grey[50],
+                                      ),
+                                      keyboardType: TextInputType.phone,
+                                      maxLength: 15,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[50],
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.blue[200]!),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'You will receive a prompt on your phone to complete the payment',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.blue[900],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
 
                           // Make Payment Button
                           SizedBox(

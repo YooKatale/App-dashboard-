@@ -566,11 +566,47 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.grey[300]!),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: const Icon(
-                          FontAwesomeIcons.google,
-                          color: Colors.red,
-                          size: 24,
+                        child: Image.asset(
+                          'assets/google_logo.png',
+                          width: 24,
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to modern Google "G" icon
+                            return Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF4285F4), // Blue
+                                    Color(0xFF34A853), // Green
+                                    Color(0xFFFBBC05), // Yellow
+                                    Color(0xFFEA4335), // Red
+                                  ],
+                                  stops: [0.0, 0.33, 0.66, 1.0],
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'G',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

@@ -385,7 +385,17 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                       leading: const Icon(Icons.info_outline),
                       title: const Text('Help & Support'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushNamed(context, '/help');
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.help_outline),
+                      title: const Text('FAQs'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.pushNamed(context, '/faqs');
+                      },
                     ),
                   ],
                 ),

@@ -283,7 +283,7 @@ class _MobileSignUpPageState extends State<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Terms and Conditions
+                // Terms and Conditions - Required checkbox (EXACT WEBAPP LOGIC)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -298,26 +298,42 @@ class _MobileSignUpPageState extends State<MobileSignUpPage> {
                       child: Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
+                          text: TextSpan(
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
                             ),
                             children: [
-                              TextSpan(text: 'By sign up you agree to our '),
-                              TextSpan(
-                                text: 'terms of use',
-                                style: TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  color: Colors.blue,
+                              const TextSpan(text: 'I agree to the '),
+                              WidgetSpan(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/terms');
+                                  },
+                                  child: const Text(
+                                    'terms and conditions',
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: Color.fromRGBO(24, 95, 45, 1),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              TextSpan(text: ' and '),
-                              TextSpan(
-                                text: 'Privacy policy',
-                                style: TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  color: Colors.blue,
+                              const TextSpan(text: ' and '),
+                              WidgetSpan(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(context, '/privacy');
+                                  },
+                                  child: const Text(
+                                    'Privacy Policy',
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: Color.fromRGBO(24, 95, 45, 1),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],

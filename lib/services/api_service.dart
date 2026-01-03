@@ -595,11 +595,11 @@ class ApiService {
     }
   }
 
-  // Fetch service comments/ratings
+  // Fetch service comments/ratings - Use platform feedback endpoint
   static Future<Map<String, dynamic>> fetchServiceComments({String? token}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/comments'),
+        Uri.parse('$baseUrl/ratings/platform'),
         headers: getHeaders(token: token),
       );
 
@@ -613,7 +613,7 @@ class ApiService {
     }
   }
 
-  // Create service comment/rating
+  // Create service comment/rating - Use platform feedback endpoint
   static Future<Map<String, dynamic>> createServiceComment({
     required String name,
     required String message,
@@ -622,7 +622,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/comments'),
+        Uri.parse('$baseUrl/ratings/platform'),
         headers: getHeaders(token: token),
         body: json.encode({
           'name': name,
