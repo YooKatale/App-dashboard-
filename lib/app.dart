@@ -82,6 +82,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final token = await AuthService.getToken();
     
     // If we have both user data and token, user is logged in
+    // PERSISTENT SIGN-IN: Once logged in, user stays logged in
     if (userData != null && token != null) {
       final userId = userData['_id']?.toString() ?? userData['id']?.toString();
       if (userId != null) {
@@ -93,11 +94,21 @@ class _MyAppState extends ConsumerState<MyApp> {
           firstName: userData['firstname']?.toString(),
           lastName: userData['lastname']?.toString(),
         );
+        
+        // PERSISTENT SIGN-IN: If logged in, always go to home, never show signin/signup
+        // Increment app open count for ratings
+        await RatingsService.incrementAppOpenCount();
+        
+        setState(() {
+          initialRoute = '/home'; // Always go to home if logged in
+          isLoading = false;
+        });
+        return;
       }
-    } else {
-      // Ensure auth state is logged out if no data
-      ref.read(authStateProvider.notifier).state = const AuthState.loggedOut();
     }
+    
+    // Not logged in - ensure auth state is logged out
+    ref.read(authStateProvider.notifier).state = const AuthState.loggedOut();
     
     // Increment app open count for ratings
     await RatingsService.incrementAppOpenCount();
@@ -150,7 +161,14 @@ class _MyAppState extends ConsumerState<MyApp> {
       ),
       initialRoute: initialRoute ?? '/',
       routes: {
-        '/': (context) => const WelcomeScreen(),
+        '/': (context) {
+          // PERSISTENT SIGN-IN: Check if logged in, redirect to home if so
+          final authState = ref.read(authStateProvider);
+          if (authState.isLoggedIn) {
+            return App();
+          }
+          return const WelcomeScreen();
+        },
         '/home': (context) => App(),
         '/cart': (context) => const CartPage(),
         '/account': (context) => const MobileAccountPage(),
@@ -161,7 +179,14 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/categories': (context) => const MobileCategoriesPage(),
         '/settings': (context) => const SettingsPage(),
         '/service-ratings': (context) => const ServiceRatingsPage(),
-        '/signin': (context) => MobileSignInPage(),
+        '/signin': (context) {
+          // PERSISTENT SIGN-IN: If already logged in, redirect to home
+          final authState = ref.read(authStateProvider);
+          if (authState.isLoggedIn) {
+            return App();
+          }
+          return MobileSignInPage();
+        },
         '/wishlist': (context) => const WishlistPage(),
         '/help': (context) => const HelpSupportPage(),
       },

@@ -420,33 +420,27 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
   }
   
   Future<void> _handleCheckout() async {
-    // Check auth state first (like webapp checks Redux state)
-    final authState = ref.read(authStateProvider);
+    // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
+    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
+    final userData = await AuthService.getUserData();
+    final token = await AuthService.getToken();
     
+    // EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == "")
     String? userId;
-    String? token;
     
-    // If logged in via auth state, use that
-    if (authState.isLoggedIn && authState.userId != null) {
-      userId = authState.userId;
-      token = await AuthService.getToken();
-    } else {
-      // Fallback: Check stored user data
-      final userData = await AuthService.getUserData();
-      token = await AuthService.getToken();
-      
-      if (userData != null && token != null) {
-        userId = userData['_id']?.toString() ?? userData['id']?.toString();
-        
-        // Update auth state if we have user data but auth state is not set
-        if (userId != null) {
-          ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-            userId: userId,
-            email: userData['email']?.toString(),
-            firstName: userData['firstname']?.toString(),
-            lastName: userData['lastname']?.toString(),
-          );
-        }
+    if (userData != null && userData.isNotEmpty) {
+      // Ensure we have a valid _id or id (like webapp checks userInfo?._id)
+      final id = userData['_id']?.toString() ?? userData['id']?.toString();
+      if (id != null && id.isNotEmpty) {
+        userId = id;
+      }
+    }
+    
+    // If no userId from stored data, check auth state
+    if (userId == null) {
+      final authState = ref.read(authStateProvider);
+      if (authState.isLoggedIn && authState.userId != null) {
+        userId = authState.userId;
       }
     }
     
@@ -465,6 +459,17 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         });
       }
       return;
+    }
+    
+    // Update auth state if not already set (sync with stored data)
+    final authState = ref.read(authStateProvider);
+    if (!authState.isLoggedIn && userData != null) {
+      ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+        userId: userId,
+        email: userData['email']?.toString(),
+        firstName: userData['firstname']?.toString(),
+        lastName: userData['lastname']?.toString(),
+      );
     }
     
     setState(() => _isLoading = true);

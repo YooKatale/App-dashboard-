@@ -126,6 +126,7 @@ www.yookatale.app/subscription''';
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Raleway',
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -136,7 +137,7 @@ www.yookatale.app/subscription''';
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -158,7 +159,7 @@ www.yookatale.app/subscription''';
                           'Your Referral Code',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: Colors.black87,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -237,7 +238,7 @@ www.yookatale.app/subscription''';
                             'You earn rewards when your friends sign up using your code!',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.blue[900],
+                              color: Colors.black87,
                             ),
                           ),
                         ),
@@ -249,7 +250,10 @@ www.yookatale.app/subscription''';
                   // Close Button
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(color: Colors.black87),
+                    ),
                   ),
                   const SizedBox(height: 8), // Add small padding at bottom
                   ],

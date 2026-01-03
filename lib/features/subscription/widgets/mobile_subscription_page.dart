@@ -49,60 +49,100 @@ class _MobileSubscriptionPageState
   }
 
   Future<void> _subscribeToPackage(String packageId) async {
-    // Check stored user data (like webapp: const { userInfo } = useSelector((state) => state.auth))
-    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
+    // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
+    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
+    // Webapp uses: createSubscription({ user: userInfo._id, packageId: ID })
     final userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
     
+    // EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == "")
     String? userId;
     
-    // Check if user is logged in (like webapp checks userInfo?._id)
     if (userData != null && userData.isNotEmpty) {
-      userId = userData['_id']?.toString() ?? userData['id']?.toString();
-      
-      // If we have userId, user is logged in (like webapp: userInfo?._id)
-      if (userId != null && token != null) {
-        // Update auth state if not already set
-        final authState = ref.read(authStateProvider);
-        if (!authState.isLoggedIn) {
-          ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-            userId: userId,
-            email: userData['email']?.toString(),
-            firstName: userData['firstname']?.toString(),
-            lastName: userData['lastname']?.toString(),
-          );
-        }
+      // Ensure we have a valid _id or id (like webapp checks userInfo?._id)
+      final id = userData['_id']?.toString() ?? userData['id']?.toString();
+      if (id != null && id.isNotEmpty) {
+        userId = id;
       }
     }
     
-    // Fallback: Check auth state
-    if (userId == null || token == null) {
+    // If no userId from stored data, check auth state
+    if (userId == null) {
       final authState = ref.read(authStateProvider);
       if (authState.isLoggedIn && authState.userId != null) {
         userId = authState.userId;
-        token = await AuthService.getToken();
       }
     }
     
-    // Not logged in (like webapp: if (!userInfo || userInfo == {} || userInfo == ""))
-    if (userId == null || token == null) {
+    // Not logged in (EXACT webapp: if (!userInfo || userInfo == {} || userInfo == ""))
+    // But check auth state first - if logged in, use that
+    if (userId == null) {
+      final authState = ref.read(authStateProvider);
+      if (authState.isLoggedIn && authState.userId != null) {
+        userId = authState.userId;
+        // Get token from stored data if not available
+        if (token == null) {
+          final storedToken = await AuthService.getToken();
+          if (storedToken != null) {
+            // Continue with subscription
+          } else {
+            // No token but logged in - show error
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Session expired. Please login again'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+        }
+      } else {
+        // Truly not logged in
+        if (mounted) {
+          // Remember where user was trying to go
+          ref.read(redirectRouteProvider.notifier).state = '/subscription';
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please login to subscribe'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              Navigator.pushNamed(context, '/signin');
+            }
+          });
+        }
+        return;
+      }
+    }
+    
+    // Ensure we have a token
+    final finalToken = token ?? await AuthService.getToken();
+    if (finalToken == null) {
       if (mounted) {
-        // Remember where user was trying to go
-        ref.read(redirectRouteProvider.notifier).state = '/subscription';
-        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please login to subscribe'),
+            content: Text('Session expired. Please login again'),
             backgroundColor: Colors.orange,
           ),
         );
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            Navigator.pushNamed(context, '/signin');
-          }
-        });
       }
       return;
+    }
+    
+    // Update auth state if not already set (sync with stored data)
+    final authState = ref.read(authStateProvider);
+    if (!authState.isLoggedIn && userData != null) {
+      ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+        userId: userId,
+        email: userData['email']?.toString(),
+        firstName: userData['firstname']?.toString(),
+        lastName: userData['lastname']?.toString(),
+      );
     }
 
     setState(() => _isSubscribing = true);
@@ -111,7 +151,7 @@ class _MobileSubscriptionPageState
       final response = await ApiService.createSubscription(
         userId: userId!,
         packageId: packageId,
-        token: token,
+        token: finalToken,
       );
 
       if (response['status'] == 'Success') {

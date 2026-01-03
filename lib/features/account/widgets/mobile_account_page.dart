@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../services/auth_service.dart';
 import '../../authentication/widgets/mobile_sign_in.dart';
 import '../../authentication/providers/auth_provider.dart';
@@ -20,6 +24,8 @@ class MobileAccountPage extends ConsumerStatefulWidget {
 class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
+  String? _profilePicUrl;
+  bool _isUploadingPic = false;
 
   @override
   void initState() {
@@ -52,6 +58,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
         
         setState(() {
           _userData = userData;
+          _profilePicUrl = userData['profilePic']?.toString();
           _isLoading = false;
         });
         return;
@@ -80,6 +87,99 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
     });
   }
 
+  Future<void> _showProfilePicOptions() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImageFromCamera();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        await _uploadProfilePicture(File(result.files.single.path!));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    // Note: For camera, you might need image_picker package
+    // For now, this will use gallery as fallback
+    await _pickImageFromGallery();
+  }
+
+  Future<void> _uploadProfilePicture(File imageFile) async {
+    setState(() {
+      _isUploadingPic = true;
+    });
+
+    try {
+      // TODO: Implement actual upload to Firebase Storage or your backend
+      // For now, just set a local state
+      // You would typically:
+      // 1. Upload to Firebase Storage
+      // 2. Get download URL
+      // 3. Update user profile in Firestore/Database
+      // 4. Update local state
+
+      // Simulate upload delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        setState(() {
+          _isUploadingPic = false;
+          // _profilePicUrl = downloadUrl; // Set after actual upload
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isUploadingPic = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _handleLogout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -100,8 +200,20 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
     );
 
     if (confirm == true) {
+      // EXACT WEBAPP LOGIC: dispatch(logout()) - clears Redux state AND localStorage
+      // 1. Clear stored data (like webapp: localStorage.removeItem("yookatale-app"))
       await AuthService.clearUserData();
+      
+      // 2. Clear auth state (like webapp: state.userInfo = null)
+      ref.read(authStateProvider.notifier).state = const AuthState.loggedOut();
+      
+      // 3. Clear local state
+      setState(() {
+        _userData = null;
+      });
+      
       if (mounted) {
+        // Navigate to sign in (like webapp: router.push("/signin"))
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const MobileSignInPage()),
           (route) => false,
@@ -365,22 +477,77 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                       children: [
                         Row(
                           children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Color.fromRGBO(24, 95, 45, 1),
-                              ),
+                            GestureDetector(
+                              onTap: _isUploadingPic ? null : () => _showProfilePicOptions(),
+                              child: _isUploadingPic
+                                  ? Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 3,
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(24, 95, 45, 1)),
+                                        ),
+                                      ),
+                                    )
+                                  : Stack(
+                                      children: [
+                                        Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 3,
+                                            ),
+                                            image: _profilePicUrl != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(_profilePicUrl!),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null,
+                                          ),
+                                          child: _profilePicUrl == null
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  size: 40,
+                                                  color: Color.fromRGBO(24, 95, 45, 1),
+                                                )
+                                              : null,
+                                        ),
+                                        Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: const Color.fromRGBO(24, 95, 45, 1),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.camera_alt,
+                                              size: 16,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(

@@ -251,7 +251,13 @@ class _CartPageState extends ConsumerState<CartPage> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              // Navigate to home/categories to add products (no auth check needed)
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/home',
+                                (route) => false,
+                              );
+                            },
                             child: const Text('Add Products'),
                           ),
                         ],

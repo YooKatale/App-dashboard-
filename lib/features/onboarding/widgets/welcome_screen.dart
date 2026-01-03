@@ -1,21 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../authentication/widgets/mobile_sign_in.dart';
+import '../../authentication/providers/auth_provider.dart';
+import '../../../app.dart';
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // PERSISTENT SIGN-IN: Check if already logged in on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthAndNavigate();
+    });
+  }
+  
+  Future<void> _checkAuthAndNavigate() async {
+    final authState = ref.read(authStateProvider);
+    // If already logged in, go directly to home
+    if (authState.isLoggedIn) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_onboarding', true);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => App()),
+        );
+      }
+    }
+  }
+  
   Future<void> _navigateToSignIn() async {
+    // PERSISTENT SIGN-IN: Check if already logged in before navigating
+    final authState = ref.read(authStateProvider);
+    if (authState.isLoggedIn) {
+      // Already logged in, go to home
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_seen_onboarding', true);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => App()),
+        );
+      }
+      return;
+    }
+    
     // Mark that user has seen onboarding
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_seen_onboarding', true);
     
-    // Navigate to sign in page
+    // Navigate to sign in page (only if not logged in)
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const MobileSignInPage()),
@@ -37,41 +77,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             // Logo and Branding Section
             Column(
               children: [
-                // Actual Yookatale Logo from assets
+                // Actual Yookatale Logo from assets - well positioned
                 Image.asset(
                   'assets/logo1.webp',
-                  width: 140,
-                  height: 140,
+                  width: 180,
+                  height: 180,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 20),
-                
-                // YOOKATALE Brand Name
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'YOO',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber,
-                          fontFamily: 'Raleway',
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'KATALE',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(24, 95, 45, 1), // Green
-                          fontFamily: 'Raleway',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 
                 // Welcome Message
                 const Text(

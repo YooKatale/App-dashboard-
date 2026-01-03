@@ -132,15 +132,24 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _nameController,
+                        style: const TextStyle(color: Colors.black87),
                         decoration: const InputDecoration(
                           labelText: 'Your Name (Optional)',
-                          prefixIcon: Icon(Icons.person),
+                          labelStyle: TextStyle(color: Colors.black54),
+                          prefixIcon: Icon(Icons.person, color: Colors.black54),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color.fromRGBO(24, 95, 45, 1)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -149,6 +158,7 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -172,11 +182,20 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _messageController,
+                        style: const TextStyle(color: Colors.black87),
                         decoration: const InputDecoration(
                           labelText: 'Your Feedback',
+                          labelStyle: TextStyle(color: Colors.black54),
                           hintText: 'Tell us about your experience...',
-                          prefixIcon: Icon(Icons.message),
+                          hintStyle: TextStyle(color: Colors.grey),
+                          prefixIcon: Icon(Icons.message, color: Colors.black54),
                           border: OutlineInputBorder(),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Color.fromRGBO(24, 95, 45, 1)),
+                          ),
                         ),
                         maxLines: 5,
                         validator: (value) {
@@ -227,6 +246,7 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 16),
@@ -286,6 +306,7 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
                                               ),
                                             ),
                                             if (comment['rating'] != null)
@@ -311,7 +332,10 @@ class _ServiceRatingsPageState extends ConsumerState<ServiceRatingsPage> {
                                     const SizedBox(height: 12),
                                     Text(
                                       comment['message'].toString(),
-                                      style: const TextStyle(fontSize: 14),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                   ],
                                   if (comment['createdAt'] != null)

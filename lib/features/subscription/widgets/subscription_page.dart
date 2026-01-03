@@ -93,7 +93,19 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         }
       }
 
-      if (userId == null) {
+      // Ensure we have a token
+      String? finalToken;
+      if (userId != null) {
+        // Use Firebase token if available, otherwise use AuthService token
+        finalToken = await user?.getIdToken() ?? token ?? userData?['token']?.toString();
+        
+        if (finalToken == null) {
+          // Try to get token again
+          finalToken = await AuthService.getToken();
+        }
+      }
+      
+      if (userId == null || finalToken == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please login to subscribe')),
@@ -107,13 +119,10 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         return;
       }
 
-      // Use Firebase token if available, otherwise use AuthService token
-      final authToken = await user?.getIdToken() ?? token ?? userData?['token']?.toString();
-
       final response = await ApiService.createSubscription(
         userId: userId,
         packageId: packageId,
-        token: authToken,
+        token: finalToken!,
       );
 
       if (response['status'] == 'Success' && response['data'] != null) {

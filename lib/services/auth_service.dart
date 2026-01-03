@@ -38,9 +38,13 @@ class AuthService {
     if (userDataString != null && userDataString.isNotEmpty) {
       try {
         final data = json.decode(userDataString) as Map<String, dynamic>;
+        // EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == "")
         // Check if it's a valid user object (has _id or id, like webapp checks userInfo?._id)
-        if (data['_id'] != null || data['id'] != null || data['email'] != null) {
-          return data;
+        if (data.isNotEmpty && (data['_id'] != null || data['id'] != null || data['email'] != null)) {
+          // Additional validation: ensure it's not an empty object
+          if (data['_id'] != null || data['id'] != null) {
+            return data;
+          }
         }
       } catch (e) {
         // Invalid JSON, return null

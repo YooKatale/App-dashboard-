@@ -56,58 +56,14 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // YooKatale Logo
+                // Original Logo from assets - well positioned
                 Image.asset(
                   'assets/logo1.webp',
-                  width: 150,
-                  height: 150,
+                  width: 200,
+                  height: 200,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(24, 95, 45, 1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.shopping_cart,
-                        size: 80,
-                        color: Colors.white,
-                      ),
-                    );
-                  },
                 ),
-                const SizedBox(height: 24),
-                
-                // YOO KATALE Text (styled nicely)
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'YOO',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber,
-                          fontFamily: 'Raleway',
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'KATALE',
-                        style: TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(24, 95, 45, 1),
-                          fontFamily: 'Raleway',
-                          letterSpacing: 3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
                 
                 // Loading Indicator
                 const SizedBox(
@@ -120,16 +76,44 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 40),
                 
-                // Tagline
-                const Text(
-                  'Your Digital Mobile Food Market',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                    fontFamily: 'Raleway',
-                  ),
+                // Fruits below logo - using assets
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/fruits/oranges.jpeg',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/fruits/banana.jpeg',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/fruits/passion_fruit.jpeg',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/fruits/avacodo.jpeg',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    ),
+                  ],
                 ),
               ],
             ),

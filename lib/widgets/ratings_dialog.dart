@@ -72,53 +72,118 @@ class RatingsDialog {
 
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
-        title: const Row(
-          children: [
-            Icon(Icons.feedback_outlined, color: Color.fromRGBO(24, 95, 45, 1), size: 32),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Rate Our Service',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+        backgroundColor: Colors.white,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.feedback_outlined,
+                  color: Color.fromRGBO(24, 95, 45, 1),
+                  size: 40,
                 ),
               ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'How would you rate your experience with YooKatale? Your feedback helps us serve you better!',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('Skip'),
+              const SizedBox(height: 20),
+              
+              // Title
+              const Text(
+                'Rate YooKatale Service',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  fontFamily: 'Raleway',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // Description
+              Text(
+                'How would you rate your experience with YooKatale? Your feedback helps us serve you better!',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      ),
+                      child: Text(
+                        'Skip',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await RatingsService.markServiceRated();
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          // Navigate to service ratings page
+                          Navigator.pushNamed(context, '/service-ratings');
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Rate Service',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              await RatingsService.markServiceRated();
-              if (context.mounted) {
-                Navigator.pop(context);
-                // Navigate to service ratings page
-                Navigator.pushNamed(context, '/service-ratings');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Rate Service'),
-          ),
-        ],
+        ),
       ),
     );
   }
