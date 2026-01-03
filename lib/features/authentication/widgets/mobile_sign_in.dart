@@ -74,18 +74,23 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         userName = 'User';
       }
       
-      // Wait for data to be saved
+      // AuthService.login already saved the entire response (like webapp: dispatch(setCredentials({ ...res })))
+      // Wait for data to be fully persisted
       await Future.delayed(const Duration(milliseconds: 500));
       
-      // Get user data from storage (like webapp gets from localStorage)
+      // Get user data from storage (like webapp: useSelector((state) => state.auth).userInfo)
+      // The webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
       final userData = await AuthService.getUserData();
       final token = await AuthService.getToken();
       
-      // Update auth state provider (like webapp updates Redux state)
-      if (userData != null && token != null) {
+      // Check if we have valid user data (like webapp checks userInfo?._id)
+      if (userData != null && userData.isNotEmpty) {
+        // Check if it has _id or id (like webapp checks userInfo?._id)
         final userId = userData['_id']?.toString() ?? 
                       userData['id']?.toString();
+        
         if (userId != null) {
+          // Update auth state provider (like webapp updates Redux state)
           ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
             userId: userId,
             email: userData['email']?.toString(),

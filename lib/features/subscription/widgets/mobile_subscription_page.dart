@@ -49,45 +49,22 @@ class _MobileSubscriptionPageState
   }
 
   Future<void> _subscribeToPackage(String packageId) async {
-    // Always check stored user data first (like webapp checks localStorage)
-    var userData = await AuthService.getUserData();
-    var token = await AuthService.getToken();
+    // Check stored user data (like webapp: const { userInfo } = useSelector((state) => state.auth))
+    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
+    final userData = await AuthService.getUserData();
+    final token = await AuthService.getToken();
     
     String? userId;
     
-    // If we have data, use it
-    if (userData != null && token != null) {
+    // Check if user is logged in (like webapp checks userInfo?._id)
+    if (userData != null && userData.isNotEmpty) {
       userId = userData['_id']?.toString() ?? userData['id']?.toString();
       
-      // Update auth state if we have user data but auth state is not set
-      final authState = ref.read(authStateProvider);
-      if (userId != null && !authState.isLoggedIn) {
-        ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-          userId: userId,
-          email: userData['email']?.toString(),
-          firstName: userData['firstname']?.toString(),
-          lastName: userData['lastname']?.toString(),
-        );
-      }
-    } else {
-      // Fallback: Check auth state and try to get token
-      final authState = ref.read(authStateProvider);
-      if (authState.isLoggedIn && authState.userId != null) {
-        userId = authState.userId;
-        token = await AuthService.getToken();
-      }
-    }
-    
-    // Final check - if still no data, redirect to login
-    if (userId == null || token == null) {
-      // Double check one more time
-      userData = await AuthService.getUserData();
-      token = await AuthService.getToken();
-      
-      if (userData != null && token != null) {
-        userId = userData['_id']?.toString() ?? userData['id']?.toString();
-        // Update auth state
-        if (userId != null) {
+      // If we have userId, user is logged in (like webapp: userInfo?._id)
+      if (userId != null && token != null) {
+        // Update auth state if not already set
+        final authState = ref.read(authStateProvider);
+        if (!authState.isLoggedIn) {
           ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
             userId: userId,
             email: userData['email']?.toString(),
@@ -95,26 +72,37 @@ class _MobileSubscriptionPageState
             lastName: userData['lastname']?.toString(),
           );
         }
-      } else {
-        // Really not logged in, redirect
-        if (mounted) {
-          // Remember where user was trying to go
-          ref.read(redirectRouteProvider.notifier).state = '/subscription';
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please login to subscribe'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              Navigator.pushNamed(context, '/signin');
-            }
-          });
-        }
-        return;
       }
+    }
+    
+    // Fallback: Check auth state
+    if (userId == null || token == null) {
+      final authState = ref.read(authStateProvider);
+      if (authState.isLoggedIn && authState.userId != null) {
+        userId = authState.userId;
+        token = await AuthService.getToken();
+      }
+    }
+    
+    // Not logged in (like webapp: if (!userInfo || userInfo == {} || userInfo == ""))
+    if (userId == null || token == null) {
+      if (mounted) {
+        // Remember where user was trying to go
+        ref.read(redirectRouteProvider.notifier).state = '/subscription';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to subscribe'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.pushNamed(context, '/signin');
+          }
+        });
+      }
+      return;
     }
 
     setState(() => _isSubscribing = true);

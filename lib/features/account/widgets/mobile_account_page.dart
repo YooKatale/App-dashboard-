@@ -28,17 +28,20 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
   }
 
   Future<void> _loadUserData() async {
-    // Always check stored user data first (like webapp checks localStorage first)
+    // Check stored user data (like webapp: const { userInfo } = useSelector((state) => state.auth))
+    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
     final userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
     
-    // If we have user data and token, user is logged in
-    if (userData != null && token != null) {
-      // Update auth state if not already set
-      final authState = ref.read(authStateProvider);
-      if (!authState.isLoggedIn) {
-        final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-        if (userId != null) {
+    // Check if user is logged in (like webapp checks userInfo?._id)
+    if (userData != null && userData.isNotEmpty) {
+      final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+      
+      // If we have userId, user is logged in (like webapp: userInfo?._id)
+      if (userId != null) {
+        // Update auth state if not already set
+        final authState = ref.read(authStateProvider);
+        if (!authState.isLoggedIn) {
           ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
             userId: userId,
             email: userData['email']?.toString(),
@@ -46,13 +49,13 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
             lastName: userData['lastname']?.toString(),
           );
         }
+        
+        setState(() {
+          _userData = userData;
+          _isLoading = false;
+        });
+        return;
       }
-      
-      setState(() {
-        _userData = userData;
-        _isLoading = false;
-      });
-      return;
     }
     
     // Fallback: Check auth state
@@ -70,7 +73,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
       return;
     }
     
-    // User is not logged in
+    // User is not logged in (like webapp: if (!userInfo || userInfo == {} || userInfo == ""))
     setState(() {
       _userData = null;
       _isLoading = false;

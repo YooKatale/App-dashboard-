@@ -17,27 +17,44 @@ class AuthService {
     return prefs.getString('auth_token');
   }
   
-  // Save user data
+  // Save user data (like webapp saves to localStorage: localStorage.setItem("yookatale-app", JSON.stringify(action.payload)))
   static Future<void> saveUserData(Map<String, dynamic> userData) async {
     final prefs = await SharedPreferences.getInstance();
+    // Save entire response object (like webapp saves { ...res })
     await prefs.setString('user_data', json.encode(userData));
+    // Also save as 'yookatale-app' key to match webapp exactly
+    await prefs.setString('yookatale-app', json.encode(userData));
   }
   
-  // Get user data
+  // Get user data (like webapp gets from localStorage: localStorage?.getItem("yookatale-app"))
   static Future<Map<String, dynamic>?> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    final userDataString = prefs.getString('user_data');
-    if (userDataString != null) {
-      return json.decode(userDataString) as Map<String, dynamic>;
+    // Try 'yookatale-app' first (matches webapp key)
+    var userDataString = prefs.getString('yookatale-app');
+    if (userDataString == null) {
+      // Fallback to 'user_data' for backward compatibility
+      userDataString = prefs.getString('user_data');
+    }
+    if (userDataString != null && userDataString.isNotEmpty) {
+      try {
+        final data = json.decode(userDataString) as Map<String, dynamic>;
+        // Check if it's a valid user object (has _id or id, like webapp checks userInfo?._id)
+        if (data['_id'] != null || data['id'] != null || data['email'] != null) {
+          return data;
+        }
+      } catch (e) {
+        // Invalid JSON, return null
+      }
     }
     return null;
   }
   
-  // Clear user data (logout)
+  // Clear user data (logout) - like webapp: localStorage.removeItem("yookatale-app")
   static Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('user_data');
+    await prefs.remove('yookatale-app'); // Match webapp key
   }
   
   // Login with email and password

@@ -34,14 +34,18 @@ class _CartPageState extends ConsumerState<CartPage> {
     });
 
     try {
-      // Always check stored user data first (like webapp checks localStorage first)
+      // Check stored user data (like webapp: const { userInfo } = useSelector((state) => state.auth))
+      // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
       final userData = await AuthService.getUserData();
       final token = await AuthService.getToken();
 
-      if (userData != null && token != null) {
+      // Check if user is logged in (like webapp checks userInfo?._id)
+      if (userData != null && userData.isNotEmpty) {
         final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-        if (userId != null) {
-          // Update auth state if we have user data but auth state is not set
+        
+        // If we have userId, user is logged in (like webapp: userInfo?._id)
+        if (userId != null && token != null) {
+          // Update auth state if not already set
           final authState = ref.read(authStateProvider);
           if (!authState.isLoggedIn) {
             ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
@@ -52,6 +56,7 @@ class _CartPageState extends ConsumerState<CartPage> {
             );
           }
           
+          // Fetch cart (like webapp fetches cart with userInfo?._id)
           final cartItems = await CartService.fetchCart(
             userId,
             token: token,
@@ -90,25 +95,15 @@ class _CartPageState extends ConsumerState<CartPage> {
         }
       }
 
-      // Not logged in - set redirect route and redirect to sign in
-      // Only redirect if we're sure user is not logged in
+      // Not logged in (like webapp: if (!userInfo || userInfo == {} || userInfo == ""))
       setState(() {
         _isLoading = false;
       });
       
-      // Double check one more time before redirecting
-      final finalCheck = await AuthService.getUserData();
-      final finalToken = await AuthService.getToken();
-      
-      if (finalCheck == null || finalToken == null) {
-        if (mounted) {
-          // Remember where user was trying to go
-          ref.read(redirectRouteProvider.notifier).state = '/cart';
-          Navigator.of(context).pushReplacementNamed('/signin');
-        }
-      } else {
-        // Data exists, reload cart
-        _loadCart();
+      if (mounted) {
+        // Remember where user was trying to go
+        ref.read(redirectRouteProvider.notifier).state = '/cart';
+        Navigator.of(context).pushReplacementNamed('/signin');
       }
     } catch (e) {
       setState(() {
