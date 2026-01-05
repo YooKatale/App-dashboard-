@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/notification_service.dart';
 import '../../payment/widgets/flutter_wave.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../schedule/widgets/meal_calendar_page.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
-import 'food_algae_box.dart';
 
 class MobileSubscriptionPage extends ConsumerStatefulWidget {
   const MobileSubscriptionPage({super.key});
@@ -90,6 +92,10 @@ class _MobileSubscriptionPageState
       } else {
         // Truly not logged in
         if (mounted) {
+          // Save the package ID for auto-subscribe after login
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('pending_subscription_package', packageId);
+          
           // Remember where user was trying to go
           ref.read(redirectRouteProvider.notifier).state = '/subscription';
           
@@ -141,20 +147,34 @@ class _MobileSubscriptionPageState
       );
 
       if (response['status'] == 'Success') {
-        // Navigate to payment page
+        // Redirect to webapp for payment (as requested)
         final orderId = response['data']?['Order']?.toString() ?? 
                        response['data']?['_id']?.toString() ??
                        response['data']?['orderId']?.toString();
-        final packagePrice = response['data']?['price']?.toString() ??
-                            response['data']?['packagePrice']?.toString();
-        final amount = packagePrice != null ? double.tryParse(packagePrice) ?? 0.0 : 0.0;
         
         if (orderId != null && mounted) {
-          Navigator.pushNamed(
-            context,
-            '/payment/$orderId',
-            arguments: {'amount': amount},
-          );
+          // Save payment URL for redirect after login if needed
+          final prefs = await SharedPreferences.getInstance();
+          final webappUrl = 'https://yookatale.app/payment/$orderId';
+          await prefs.setString('pending_payment_url', webappUrl);
+          
+          final uri = Uri.parse(webappUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Redirecting to webapp to complete payment...'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            // Fallback to in-app payment
+            Navigator.pushNamed(
+              context,
+              '/payment/$orderId',
+            );
+          }
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -186,7 +206,7 @@ class _MobileSubscriptionPageState
     final authState = ref.watch(authStateProvider);
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Subscription Packages'),
         backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
@@ -256,35 +276,62 @@ class _MobileSubscriptionPageState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Header
+                          // Header - Improved Design
                           Container(
                             padding: const EdgeInsets.all(20),
-                            decoration: const BoxDecoration(
-                              color: Color.fromRGBO(24, 95, 45, 1),
-                              borderRadius: BorderRadius.vertical(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color.fromRGBO(24, 95, 45, 1),
+                                  const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(16),
                               ),
                             ),
-                            child: Column(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontFamily: 'Raleway',
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontFamily: 'Raleway',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'UGX ${_formatPrice(price)}',
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontFamily: 'Raleway',
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'UGX $price',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.card_membership,
                                     color: Colors.white,
-                                    fontFamily: 'Raleway',
+                                    size: 32,
                                   ),
                                 ),
                               ],
@@ -404,26 +451,6 @@ class _MobileSubscriptionPageState
                     );
                   },
                 ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Food Algae Box
-                      FutureBuilder<Map<String, dynamic>?>(
-                        future: AuthService.getUserData(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData && snapshot.data != null) {
-                            final userId = snapshot.data!['_id']?.toString() ?? 
-                                          snapshot.data!['id']?.toString();
-                            return FoodAlgaeBox(
-                              userId: userId,
-                              planType: _packages.isNotEmpty 
-                                  ? _packages[0]['name']?.toString() 
-                                  : null,
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
                       
                       const SizedBox(height: 24),
                       
@@ -568,5 +595,17 @@ class _MobileSubscriptionPageState
         ],
       ),
     );
+  }
+
+  String _formatPrice(String price) {
+    try {
+      final numPrice = double.parse(price);
+      return numPrice.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+    } catch (e) {
+      return price;
+    }
   }
 }

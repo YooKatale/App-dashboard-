@@ -9,8 +9,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '/app.dart';
 import 'services/push_notification_service.dart';
+import 'services/notification_service.dart';
 import 'backend/notifications.dart';
 import 'firebase_options.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 FirebaseAnalytics? analytics;
 FirebaseAnalyticsObserver? observer;
@@ -104,10 +106,22 @@ Future preInitialize() async {
     // Initialize push notifications (Firebase Cloud Messaging)
     if (!kIsWeb) {
       await PushNotificationService.initialize();
+      // Register background message handler
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      // Initialize notification service
+      await NotificationService.initialize();
     }
   } catch (e) {
     if (kDebugMode) {
       print('Push notification service initialization error (non-blocking): $e');
     }
   }
+}
+
+// Background message handler (must be top-level function)
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  // Handle background notification
+  // Notifications will be synced when app opens
 }

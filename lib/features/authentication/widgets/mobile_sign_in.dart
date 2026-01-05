@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:local_auth/local_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../backend/backend_auth_services.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/api_service.dart';
 import '../../../services/push_notification_service.dart';
 import '../../../app.dart';
 import '../../authentication/providers/auth_provider.dart';
@@ -24,7 +26,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isPhoneLogin = false;
-  final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
   void dispose() {
@@ -81,7 +82,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       // Get user data from storage (like webapp: useSelector((state) => state.auth).userInfo)
       // The webapp checks: if (!userInfo || userInfo == {} || userInfo == "") or userInfo?._id
       final userData = await AuthService.getUserData();
-      final token = await AuthService.getToken();
       
       // Check if we have valid user data (like webapp checks userInfo?._id)
       if (userData != null && userData.isNotEmpty) {
@@ -117,18 +117,38 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
           ),
         );
         
-        // Get redirect route or default to home
-        final redirectRoute = ref.read(redirectRouteProvider);
-        final targetRoute = redirectRoute ?? '/home';
+        // Check for pending payment URL first
+        final prefs = await SharedPreferences.getInstance();
+        final pendingPaymentUrl = prefs.getString('pending_payment_url');
         
-        // Clear redirect route
-        ref.read(redirectRouteProvider.notifier).state = null;
-        
-        // Small delay to show success message
-        await Future.delayed(const Duration(milliseconds: 800));
-        
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed(targetRoute);
+        if (pendingPaymentUrl != null && mounted) {
+          // Clear the pending payment URL
+          await prefs.remove('pending_payment_url');
+          
+          // Redirect to payment URL
+          final uri = Uri.parse(pendingPaymentUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            // Still navigate to home as fallback
+            Navigator.of(context).pushReplacementNamed('/home');
+          } else {
+            // Fallback to subscription page
+            Navigator.of(context).pushReplacementNamed('/subscription');
+          }
+        } else {
+          // Get redirect route or default to home
+          final redirectRoute = ref.read(redirectRouteProvider);
+          final targetRoute = redirectRoute ?? '/home';
+          
+          // Clear redirect route
+          ref.read(redirectRouteProvider.notifier).state = null;
+          
+          // Small delay to show success message
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed(targetRoute);
+          }
         }
       }
     } catch (e) {
@@ -192,31 +212,66 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
 
   Future<void> _handleFingerprintAuth() async {
     try {
-      final bool canAuthenticate = await _localAuth.canCheckBiometrics ||
-          await _localAuth.isDeviceSupported();
-      
-      if (!canAuthenticate) {
-        if (mounted) {
+      final authBackend = AuthBackend();
+      final result = await authBackend.authenticateWithFingerprint();
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        // Get saved credentials and login
+        final userData = await AuthService.getUserData();
+        if (userData != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Biometric authentication not available'),
+              content: Text('Authentication successful'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => App()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No saved credentials found. Please sign in manually.'),
               backgroundColor: Colors.orange,
             ),
           );
         }
-        return;
-      }
+      } else {
+        // Show user-friendly error message
+        final errorMessage = result['error'] ?? 'Authentication failed';
+        final errorType = result['errorType'] ?? 'unknown';
 
-      final bool didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to sign in',
-      );
-
-      if (didAuthenticate && mounted) {
-        // Get saved credentials and login
-        final userData = await AuthService.getUserData();
-        if (userData != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => App()),
+        // Show appropriate dialog for different error types
+        if (errorType == 'not_enrolled' || errorType == 'not_available') {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Biometric Setup Required'),
+                ],
+              ),
+              content: Text(errorMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: errorType == 'cancelled' ? Colors.grey : Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
           );
         }
       }
@@ -224,7 +279,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Authentication failed: $e'),
+            content: Text('Authentication error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -496,38 +551,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                   ),
                 ),
                 
-                if (!_isPhoneLogin) ...[
-                  const SizedBox(height: 16),
-                  
-                  // Terms Checkbox (for phone login)
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: false,
-                        onChanged: (value) {},
-                        activeColor: const Color.fromRGBO(24, 95, 45, 1),
-                      ),
-                      Expanded(
-                        child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                            children: [
-                              TextSpan(text: 'By clicking on Continue you are agreeing to our '),
-                              TextSpan(
-                                text: 'terms of use',
-                                style: TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                
                 const SizedBox(height: 24),
                 
                 // Or With Divider
@@ -551,68 +574,45 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                 const SizedBox(height: 24),
                 
                 // Social Login Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Google Login
-                    InkWell(
-                      onTap: () {
-                        // TODO: Implement Google login
-                      },
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey[300]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/google_logo.png',
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to modern Google "G" icon
-                            return Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF4285F4), // Blue
-                                    Color(0xFF34A853), // Green
-                                    Color(0xFFFBBC05), // Yellow
-                                    Color(0xFFEA4335), // Red
-                                  ],
-                                  stops: [0.0, 0.33, 0.66, 1.0],
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'G',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                // Google Sign In Button - Modern Design with Original Google Logo
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: _isLoading ? null : _handleGoogleSignIn,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF1F1F1F),
+                      side: BorderSide(color: Colors.grey[300]!, width: 1),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      elevation: 0,
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Original Google "G" Logo
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: _buildGoogleLogo(),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Sign in with Google',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1F1F1F),
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                
                 const SizedBox(height: 24),
                 
                 // Fingerprint Authentication
@@ -700,4 +700,254 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       ),
     );
   }
+
+  // Handle Google Sign In - Integrated with Backend
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final authBackend = AuthBackend();
+      final user = await authBackend.signInWithGoogle();
+      
+      if (user != null && mounted) {
+        // Get user data from Firebase
+        final displayName = user.displayName ?? '';
+        final nameParts = displayName.split(' ');
+        final firstname = nameParts.isNotEmpty ? nameParts[0] : '';
+        final lastname = nameParts.length > 1 
+            ? nameParts.sublist(1).join(' ')
+            : '';
+
+        // Get Firebase ID token for backend authentication
+        final idToken = await user.getIdToken();
+        
+        if (idToken == null) {
+          throw Exception('Failed to get authentication token');
+        }
+
+        // Register/Login with backend using Google auth
+        try {
+          final backendResponse = await ApiService.googleAuth(
+            idToken: idToken,
+            email: user.email ?? '',
+            firstName: firstname,
+            lastName: lastname,
+            photoUrl: user.photoURL ?? '',
+          );
+
+          // Save backend token and user data
+          if (backendResponse['token'] != null) {
+            await AuthService.saveToken(backendResponse['token'] as String);
+          }
+
+          // Get user data from backend response (preferred) or use Firebase data
+          Map<String, dynamic> userData;
+          if (backendResponse['user'] != null && backendResponse['user'] is Map) {
+            userData = backendResponse['user'] as Map<String, dynamic>;
+            if (backendResponse['token'] != null) {
+              userData['token'] = backendResponse['token'];
+            }
+          } else {
+            // Fallback to Firebase user data
+            userData = {
+              'id': user.uid,
+              '_id': user.uid,
+              'email': user.email ?? '',
+              'firstname': firstname,
+              'lastname': lastname,
+              'phone': user.phoneNumber ?? '',
+              'photoUrl': user.photoURL ?? '',
+            };
+            if (backendResponse['token'] != null) {
+              userData['token'] = backendResponse['token'];
+            }
+          }
+
+          await AuthService.saveUserData(userData);
+
+          // Update auth state
+          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+          if (userId != null) {
+            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+              userId: userId,
+              email: userData['email']?.toString(),
+              firstName: userData['firstname']?.toString(),
+              lastName: userData['lastname']?.toString(),
+            );
+          }
+
+          // Initialize push notifications
+          try {
+            await PushNotificationService.initialize();
+          } catch (e) {
+            // Non-blocking
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Successfully signed in with Google'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            // Check for pending payment URL
+            final prefs = await SharedPreferences.getInstance();
+            final pendingPaymentUrl = prefs.getString('pending_payment_url');
+            
+            if (pendingPaymentUrl != null && mounted) {
+              await prefs.remove('pending_payment_url');
+              final uri = Uri.parse(pendingPaymentUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                Navigator.of(context).pushReplacementNamed('/home');
+              } else {
+                Navigator.of(context).pushReplacementNamed('/subscription');
+              }
+            } else {
+              // Get redirect route or default to home
+              final redirectRoute = ref.read(redirectRouteProvider);
+              final targetRoute = redirectRoute ?? '/home';
+              ref.read(redirectRouteProvider.notifier).state = null;
+              
+              await Future.delayed(const Duration(milliseconds: 800));
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed(targetRoute);
+              }
+            }
+          }
+        } catch (backendError) {
+          // If backend auth fails, still save Firebase data as fallback
+          final userData = {
+            'id': user.uid,
+            '_id': user.uid,
+            'email': user.email ?? '',
+            'firstname': firstname,
+            'lastname': lastname,
+            'phone': user.phoneNumber ?? '',
+            'photoUrl': user.photoURL ?? '',
+          };
+          if (idToken != null) {
+            await AuthService.saveToken(idToken);
+            userData['token'] = idToken;
+          }
+          await AuthService.saveUserData(userData);
+
+          // Update auth state
+          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+          if (userId != null) {
+            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+              userId: userId,
+              email: userData['email']?.toString(),
+              firstName: userData['firstname']?.toString(),
+              lastName: userData['lastname']?.toString(),
+            );
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Signed in with Google (backend sync may be delayed): ${backendError.toString().replaceAll('Exception: ', '')}'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => App()),
+            );
+          }
+        }
+      } else {
+        throw Exception('Google sign-in was cancelled or failed');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to sign in with Google: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Build Google Logo - Original Google G Logo
+  Widget _buildGoogleLogo() {
+    return CustomPaint(
+      size: const Size(20, 20),
+      painter: GoogleLogoPainter(),
+    );
+  }
+}
+
+// Google Logo Painter - Draws the original multicolored Google "G" logo
+class GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    
+    // Original Google G logo colors and structure
+    // Blue section (top-left quadrant)
+    paint.color = const Color(0xFF4285F4);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width * 0.5, size.height * 0.5),
+      paint,
+    );
+    
+    // Green section (bottom-left quadrant)
+    paint.color = const Color(0xFF34A853);
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.5, size.width * 0.5, size.height * 0.5),
+      paint,
+    );
+    
+    // Yellow section (top-right quadrant)
+    paint.color = const Color(0xFFFBBC05);
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.5, 0, size.width * 0.5, size.height * 0.5),
+      paint,
+    );
+    
+    // Red section (bottom-right quadrant)
+    paint.color = const Color(0xFFEA4335);
+    canvas.drawRect(
+      Rect.fromLTWH(size.width * 0.5, size.height * 0.5, size.width * 0.5, size.height * 0.5),
+      paint,
+    );
+    
+    // Draw the white "G" shape - more accurate to original
+    final gPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    
+    // Draw the G shape using a more accurate path
+    final path = Path()
+      // Top horizontal line
+      ..moveTo(size.width * 0.35, size.height * 0.25)
+      ..lineTo(size.width * 0.65, size.height * 0.25)
+      // Right vertical line (top part)
+      ..lineTo(size.width * 0.65, size.height * 0.45)
+      // Horizontal line going left (middle)
+      ..lineTo(size.width * 0.5, size.height * 0.45)
+      // Vertical line going down (middle)
+      ..lineTo(size.width * 0.5, size.height * 0.6)
+      // Horizontal line going right (bottom)
+      ..lineTo(size.width * 0.65, size.height * 0.6)
+      // Right vertical line (bottom part)
+      ..lineTo(size.width * 0.65, size.height * 0.75)
+      // Bottom horizontal line
+      ..lineTo(size.width * 0.35, size.height * 0.75)
+      // Left vertical line
+      ..lineTo(size.width * 0.35, size.height * 0.25)
+      ..close();
+    
+    canvas.drawPath(path, gPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

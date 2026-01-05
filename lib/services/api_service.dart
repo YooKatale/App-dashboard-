@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import 'error_handler_service.dart';
 
 class ApiService {
   // Backend API base URL - update this with your production URL
@@ -19,21 +20,28 @@ class ApiService {
     };
   }
 
-  // Fetch all products
+  // Fetch all products with error handling
   static Future<Map<String, dynamic>> fetchProducts() async {
     try {
+      // Check if online
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
       final response = await http.get(
         Uri.parse('$baseUrl/products'),
         headers: getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Failed to load products: ${response.statusCode}');
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to load products: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error fetching products: $e');
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
     }
   }
 
@@ -301,15 +309,22 @@ class ApiService {
   static Future<Map<String, dynamic>> updateCartItem({
     required String cartId,
     required int quantity,
+    String? userId,
     String? token,
   }) async {
     try {
+      // Match webapp logic - include userId if available
+      final body = <String, dynamic>{
+        'quantity': quantity,
+      };
+      if (userId != null) {
+        body['userId'] = userId;
+      }
+
       final response = await http.put(
         Uri.parse('$baseUrl/product/cart/$cartId'),
         headers: getHeaders(token: token),
-        body: json.encode({
-          'quantity': quantity,
-        }),
+        body: json.encode(body),
       );
 
       if (response.statusCode == 200) {
@@ -651,7 +666,7 @@ class ApiService {
       final userId = userData['_id']?.toString() ?? userData['id']?.toString();
       if (userId == null) return;
 
-      await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/users/fcm-token'),
         headers: getHeaders(token: authToken),
         body: json.encode({
@@ -659,8 +674,30 @@ class ApiService {
           'fcmToken': token,
         }),
       );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Token saved successfully
+      }
     } catch (e) {
       // Handle error silently
+    }
+  }
+
+  // Fetch notifications from server
+  static Future<Map<String, dynamic>> fetchNotifications({String? token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/notifications'),
+        headers: getHeaders(token: token),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to fetch notifications: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching notifications: $e');
     }
   }
 
@@ -718,6 +755,38 @@ class ApiService {
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Google Sign-In/Sign-Up - Register or login with Google
+  static Future<Map<String, dynamic>> googleAuth({
+    required String idToken,
+    required String email,
+    String? firstName,
+    String? lastName,
+    String? photoUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: getHeaders(),
+        body: json.encode({
+          'idToken': idToken,
+          'email': email,
+          'firstname': firstName,
+          'lastname': lastName,
+          'photoUrl': photoUrl,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Google authentication failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error with Google authentication: $e');
     }
   }
 }

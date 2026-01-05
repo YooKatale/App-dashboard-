@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/notification_service.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
@@ -200,6 +201,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         );
 
         if (response['status'] == 'Success' || response['status'] == 'success') {
+          // Send payment completion notification
+          final amount = _order?['total']?.toDouble() ?? widget.amount ?? 0.0;
+          await NotificationService.notifyPaymentCompleted(
+            orderId: widget.orderId,
+            amount: amount,
+          );
+          
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -225,6 +233,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         );
 
         if (response['status'] == 'Success' || response['status'] == 'success') {
+          // Send payment completion notification for pay later
+          final amount = _order?['total']?.toDouble() ?? widget.amount ?? 0.0;
+          await NotificationService.notifyPaymentCompleted(
+            orderId: widget.orderId,
+            amount: amount,
+          );
+          
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(

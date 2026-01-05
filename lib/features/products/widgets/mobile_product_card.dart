@@ -81,16 +81,17 @@ class MobileProductCard extends StatelessWidget {
               ),
             ),
             
-            // Product Info - Use Expanded with constraints to prevent overflow
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Product Title
-                    Text(
+            // Product Info - Fixed height to prevent overflow
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Product Title
+                  SizedBox(
+                    height: 32,
+                    child: Text(
                       product.title,
                       style: const TextStyle(
                         fontSize: 12,
@@ -101,74 +102,76 @@ class MobileProductCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    
-                    // Price and Unit
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Flexible(
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Price and Unit
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'UGX ${product.price}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromRGBO(24, 95, 45, 1),
+                            fontFamily: 'Raleway',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (product.per != null && product.per!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2),
                           child: Text(
-                            'UGX ${product.price}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color.fromRGBO(24, 95, 45, 1),
-                              fontFamily: 'Raleway',
+                            '/${product.per}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.grey[600],
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (product.per != null && product.per!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 2),
-                            child: Text(
-                              '/${product.per}',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const Spacer(),
-                    
-                    // Add to Cart Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 30,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          // Add to cart functionality
-                          if (onTap != null) onTap!();
-                        },
-                        icon: const Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 12,
-                        ),
-                        label: const Text(
-                          'Add',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Raleway',
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Add to Cart Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 30,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Add to cart functionality
+                        if (onTap != null) onTap!();
+                      },
+                      icon: const Icon(
+                        Icons.shopping_cart_outlined,
+                        size: 12,
+                      ),
+                      label: const Text(
+                        'Add',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Raleway',
                         ),
                       ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -38,14 +38,50 @@ class PrivacyPolicyPage extends StatelessWidget {
                 _buildSubsection(
                   '1.1 The types of personal information collected includes but is not limited to;',
                   [
-                    _buildBoldText('Information You Give Us:'),
-                    ' We receive and store any information you provide in relation to our Services. This includes email addresses, phone numbers and location details. The user reserves the right not to provide certain information.',
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        children: [
+                          const TextSpan(
+                            text: 'Information You Give Us: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const TextSpan(
+                            text: 'We receive and store any information you provide in relation to our Services. This includes email addresses, phone numbers and location details. The user reserves the right not to provide certain information.',
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    _buildBoldText('Automatic Information:'),
-                    ' We automatically collect and store certain types of information about your use of our Services, including information about your interaction with content and services available through our Services. We use "cookies" and other unique identifiers, and we obtain certain types of information when your web browser or device accesses our Services and other content served by or on behalf of the Company on other websites.',
+                    RichText(
+                      text: const TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        children: [
+                          TextSpan(
+                            text: 'Automatic Information: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'We automatically collect and store certain types of information about your use of our Services, including information about your interaction with content and services available through our Services. We use "cookies" and other unique identifiers, and we obtain certain types of information when your web browser or device accesses our Services and other content served by or on behalf of the Company on other websites.',
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    _buildBoldText('Information from Other Sources:'),
-                    ' We might receive information about you from other sources, such as updated delivery and address information from our carriers, which we use to correct our records and deliver your next purchase more easily.',
+                    RichText(
+                      text: const TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        children: [
+                          TextSpan(
+                            text: 'Information from Other Sources: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'We might receive information about you from other sources, such as updated delivery and address information from our carriers, which we use to correct our records and deliver your next purchase more easily.',
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -182,6 +218,13 @@ class PrivacyPolicyPage extends StatelessWidget {
         fontWeight: FontWeight.bold,
         color: Colors.black87,
       ),
+    );
+  }
+
+  Widget _buildText(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
     );
   }
 

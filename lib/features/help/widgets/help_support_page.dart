@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
+import '../../../widgets/support_contact_widget.dart';
+import '../../authentication/providers/auth_provider.dart';
+import '../../../services/auth_service.dart';
 
-class HelpSupportPage extends StatelessWidget {
+class HelpSupportPage extends ConsumerWidget {
   const HelpSupportPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final isLoggedIn = authState.isLoggedIn;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
           'Help & Support',
@@ -25,38 +32,33 @@ class HelpSupportPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Contact Support Section
+          // Contact Support Section - Always show
+          const SupportContactWidget(),
+          const SizedBox(height: 24),
+          
           _HelpSection(
             title: 'Contact Support',
             children: [
               _HelpTile(
-                icon: Icons.phone,
-                title: 'Call Us',
-                subtitle: '+256 700 000 000',
+                icon: Icons.chat,
+                title: 'WhatsApp Support',
+                subtitle: '+256786118137',
                 onTap: () async {
-                  final uri = Uri.parse('tel:+256700000000');
+                  final uri = Uri.parse('https://wa.me/256786118137');
                   if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
               ),
               _HelpTile(
                 icon: Icons.email,
-                title: 'Email Us',
-                subtitle: 'support@yookatale.com',
+                title: 'Email Support',
+                subtitle: 'info@yookatale.app',
                 onTap: () async {
-                  final uri = Uri.parse('mailto:support@yookatale.com');
+                  final uri = Uri.parse('mailto:info@yookatale.app?subject=Support Request');
                   if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri);
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
-                },
-              ),
-              _HelpTile(
-                icon: Icons.chat_bubble_outline,
-                title: 'Live Chat',
-                subtitle: 'Available 24/7',
-                onTap: () {
-                  // Open live chat
                 },
               ),
             ],
@@ -72,7 +74,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'How do I place an order?',
                 subtitle: 'Learn how to order products',
                 onTap: () {
-                  _showFAQDialog(
+                  HelpSupportPage._showFAQDialog(
                     context,
                     'How do I place an order?',
                     '1. Browse products and add items to your cart\n2. Review your cart and proceed to checkout\n3. Enter your delivery address\n4. Choose payment method\n5. Confirm your order',
@@ -84,7 +86,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'What are the delivery charges?',
                 subtitle: 'Learn about delivery fees',
                 onTap: () {
-                  _showFAQDialog(
+                  HelpSupportPage._showFAQDialog(
                     context,
                     'What are the delivery charges?',
                     'Free delivery within 3km distance. Extra charges: 950 UGX per additional kilometer.',
@@ -96,7 +98,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'What payment methods do you accept?',
                 subtitle: 'Available payment options',
                 onTap: () {
-                  _showFAQDialog(
+                  HelpSupportPage._showFAQDialog(
                     context,
                     'What payment methods do you accept?',
                     'We accept mobile money, credit/debit cards, and cash on delivery.',
@@ -108,7 +110,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'Can I cancel my order?',
                 subtitle: 'Order cancellation policy',
                 onTap: () {
-                  _showFAQDialog(
+                  HelpSupportPage._showFAQDialog(
                     context,
                     'Can I cancel my order?',
                     'You can cancel your order within 30 minutes of placing it. After that, please contact support.',
@@ -120,7 +122,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'How do subscriptions work?',
                 subtitle: 'Learn about meal subscriptions',
                 onTap: () {
-                  _showFAQDialog(
+                  HelpSupportPage._showFAQDialog(
                     context,
                     'How do subscriptions work?',
                     'Subscribe to a meal plan and get 3 meals per day delivered to your door. You can view the weekly meal calendar and customize your preferences.',
@@ -131,7 +133,7 @@ class HelpSupportPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Account & Settings
+          // Account & Settings - Show same content whether logged in or not
           _HelpSection(
             title: 'Account & Settings',
             children: [
@@ -140,7 +142,11 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'How do I update my profile?',
                 subtitle: 'Manage your account information',
                 onTap: () {
-                  Navigator.pushNamed(context, '/account');
+                  if (isLoggedIn) {
+                    Navigator.pushNamed(context, '/account');
+                  } else {
+                    Navigator.pushNamed(context, '/signin');
+                  }
                 },
               ),
               _HelpTile(
@@ -148,7 +154,11 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'How do I change my delivery address?',
                 subtitle: 'Update your location',
                 onTap: () {
-                  Navigator.pushNamed(context, '/settings');
+                  if (isLoggedIn) {
+                    Navigator.pushNamed(context, '/settings');
+                  } else {
+                    Navigator.pushNamed(context, '/signin');
+                  }
                 },
               ),
             ],
@@ -164,7 +174,7 @@ class HelpSupportPage extends StatelessWidget {
                 title: 'About YooKatale',
                 subtitle: 'Version 1.0.0',
                 onTap: () {
-                  _showAboutDialog(context);
+                  showAboutDialog(context, isLoggedIn);
                 },
               ),
               _HelpTile(
@@ -190,38 +200,215 @@ class HelpSupportPage extends StatelessWidget {
     );
   }
 
-  void _showFAQDialog(BuildContext context, String title, String content) {
+  static void _showFAQDialog(BuildContext context, String title, String content) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  void _showAboutDialog(BuildContext context) {
+  static void showAboutDialog(BuildContext context, bool isLoggedIn) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About YooKatale'),
-        content: const Text(
-          'YooKatale - Your Digital Mobile Food Market\n\n'
-          'Version 1.0.0\n\n'
-          'YooKatale is your trusted grocery delivery partner, bringing fresh products and meal subscriptions right to your door.',
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'About YooKatale',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Content
+              const Text(
+                'YooKatale - Your Digital Mobile Food Market',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Version 1.0.0',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'YooKatale is your trusted grocery delivery partner, bringing fresh products and meal subscriptions right to your door.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // WhatsApp Button (if logged in)
+              if (isLoggedIn) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final uri = Uri.parse('https://wa.me/256786118137');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    icon: const Icon(Icons.chat, color: Colors.white),
+                    label: const Text(
+                      'Contact via WhatsApp',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              // Close Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                    side: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:bcrypt/bcrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -16,7 +17,11 @@ class AuthException implements Exception {
 
 class AuthBackend {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  // Configure Google Sign-In with serverClientId for Android
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    serverClientId: '573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com', // Web client ID from google-services.json
+  );
   final LocalAuthentication _localAuth = LocalAuthentication();
   final SecureRandom _secureRandom = SecureRandom();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -185,21 +190,29 @@ class AuthBackend {
 
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser =
-          await _googleSignIn.authenticate();
-      if (googleUser == null) return null;
+      // Sign in with Google
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
+      if (googleUser == null) {
+        // User cancelled the sign-in
+        return null;
+      }
 
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Get authorization client for access token
       final GoogleSignInClientAuthorization? clientAuth =
           await googleUser.authorizationClient.authorizationForScopes(
         <String>['email', 'profile', 'openid'],
       );
 
-      final AuthCredential credential = GoogleAuthProvider.credential(
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
         accessToken: clientAuth?.accessToken,
         idToken: googleAuth.idToken,
       );
 
+      // Sign in to Firebase with the Google credential
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
@@ -282,20 +295,115 @@ class AuthBackend {
     }
   }
 
-  Future<bool> authenticateWithFingerprint() async {
+  Future<Map<String, dynamic>> authenticateWithFingerprint() async {
     try {
+      // Check if device supports biometric authentication
+      final bool isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (!isDeviceSupported) {
+        return {
+          'success': false,
+          'error': 'Biometric authentication is not available on this device.',
+          'errorType': 'not_supported',
+        };
+      }
+
+      // Check available biometric types
+      final List<BiometricType> availableBiometrics = await _localAuth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) {
+        return {
+          'success': false,
+          'error': 'No biometric authentication methods are enrolled. Please set up fingerprint or face ID in device settings.',
+          'errorType': 'not_enrolled',
+        };
+      }
+
+      // Check if biometrics can be checked
+      final bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      if (!canCheckBiometrics) {
+        return {
+          'success': false,
+          'error': 'Biometric authentication is not available. Please enable it in device settings.',
+          'errorType': 'not_available',
+        };
+      }
+
+      // Perform authentication
       final bool isAuthenticated = await _localAuth.authenticate(
-        localizedReason: 'Scan your fingerprint to authenticate.',
+        localizedReason: 'Please authenticate to continue',
         biometricOnly: true,
         sensitiveTransaction: true,
-        persistAcrossBackgrounding: true,
       );
-      return isAuthenticated;
+
+      if (isAuthenticated) {
+        // Log successful authentication
+        _analytics.logEvent(
+          name: 'biometric_authentication_success',
+          parameters: {
+            'biometric_type': availableBiometrics.first.toString(),
+          },
+        );
+
+        return {
+          'success': true,
+          'message': 'Authentication successful',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Authentication failed or was cancelled.',
+          'errorType': 'failed',
+        };
+      }
+    } on PlatformException catch (e) {
+      String errorMessage = 'Biometric authentication failed.';
+      String errorType = 'unknown';
+
+      if (e.code == 'NotAvailable') {
+        errorMessage = 'Biometric authentication is not available on this device.';
+        errorType = 'not_available';
+      } else if (e.code == 'NotEnrolled') {
+        errorMessage = 'No biometric authentication methods are enrolled. Please set up fingerprint or face ID in device settings.';
+        errorType = 'not_enrolled';
+      } else if (e.code == 'LockedOut') {
+        errorMessage = 'Biometric authentication is temporarily locked. Please try again later or use your password.';
+        errorType = 'locked_out';
+      } else if (e.code == 'PermanentlyLockedOut') {
+        errorMessage = 'Biometric authentication is permanently locked. Please use your password.';
+        errorType = 'permanently_locked_out';
+      } else if (e.code == 'UserCancel') {
+        errorMessage = 'Authentication was cancelled.';
+        errorType = 'cancelled';
+      } else {
+        errorMessage = 'Biometric authentication error: ${e.message ?? 'Unknown error'}';
+      }
+
+      if (kDebugMode) {
+        print('Fingerprint authentication error: $e');
+      }
+
+      // Log authentication failure
+      _analytics.logEvent(
+        name: 'biometric_authentication_failed',
+        parameters: {
+          'error_code': e.code,
+          'error_type': errorType,
+        },
+      );
+
+      return {
+        'success': false,
+        'error': errorMessage,
+        'errorType': errorType,
+      };
     } catch (e) {
       if (kDebugMode) {
         print('Fingerprint authentication error: $e');
       }
-      return false;
+      return {
+        'success': false,
+        'error': 'An unexpected error occurred during authentication. Please try again.',
+        'errorType': 'unknown',
+      };
     }
   }
 }

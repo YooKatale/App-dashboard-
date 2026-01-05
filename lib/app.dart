@@ -20,13 +20,11 @@ import 'features/subscription/widgets/mobile_subscription_page.dart';
 import 'features/schedule/widgets/schedule_page.dart';
 import 'features/schedule/widgets/meal_calendar_page.dart';
 import 'features/checkout/widgets/checkout_page.dart';
-import 'features/payment/widgets/flutter_wave.dart';
 import 'features/payment/widgets/payment_page.dart';
 import 'features/onboarding/widgets/welcome_screen.dart';
 import 'features/account/widgets/mobile_account_page.dart';
 import 'features/account/widgets/service_ratings_page.dart';
 import 'features/authentication/widgets/mobile_sign_in.dart';
-import 'features/authentication/widgets/multi_page_signup.dart';
 import 'features/legal/widgets/privacy_policy_page.dart';
 import 'features/legal/widgets/terms_page.dart';
 import 'features/account/widgets/faqs_page.dart';
@@ -38,10 +36,12 @@ import 'features/common/widgets/splash_screen.dart';
 import 'features/settings/widgets/settings_page.dart';
 import 'features/wishlist/widgets/wishlist_page.dart';
 import 'features/help/widgets/help_support_page.dart';
+import 'features/notifications/widgets/notifications_page.dart';
 import 'services/auth_service.dart';
 import 'services/ratings_service.dart';
 import 'services/push_notification_service.dart';
-import 'widgets/ratings_dialog.dart';
+import 'services/notification_service.dart';
+import 'services/notification_scheduler_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 class MyApp extends ConsumerStatefulWidget {
@@ -69,6 +69,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       await Firebase.initializeApp();
       // Initialize push notifications
       await PushNotificationService.initialize();
+      // Initialize notification service
+      await NotificationService.initialize();
+      // Start notification scheduler for periodic checks (new products, inactive users)
+      NotificationSchedulerService.startPeriodicChecks();
     } catch (e) {
       // Firebase might not be configured, continue anyway
     }
@@ -196,6 +200,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/faqs': (context) => const FAQsPage(),
         '/privacy': (context) => const PrivacyPolicyPage(),
         '/terms': (context) => const TermsPage(),
+        '/notifications': (context) => const NotificationsPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/payment/') == true) {
@@ -248,11 +253,15 @@ class _AppState extends ConsumerState<App> {
   void initState() {
     super.initState();
     scrollController.addListener(scrollListener);
+    // Start notification scheduler
+    NotificationSchedulerService.startPeriodicChecks();
+    NotificationSchedulerService.updateLastActiveTime();
   }
 
   @override
   void dispose() {
     scrollController.removeListener(scrollListener);
+    NotificationSchedulerService.stopPeriodicChecks();
     super.dispose();
   }
 

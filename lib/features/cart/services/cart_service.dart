@@ -95,17 +95,19 @@ class CartService {
     }
   }
 
-  // Update cart item quantity
+  // Update cart item quantity - Match webapp logic
   static Future<bool> updateCartItem({
     required String cartId,
     required int quantity,
+    String? userId,
     String? token,
   }) async {
     try {
-      log('Updating cart item: cartId=$cartId, quantity=$quantity');
+      log('Updating cart item: cartId=$cartId, quantity=$quantity, userId=$userId');
       final response = await ApiService.updateCartItem(
         cartId: cartId,
         quantity: quantity,
+        userId: userId,
         token: token,
       );
       

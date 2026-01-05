@@ -11,19 +11,32 @@ class HeroBannerSlideshow extends StatefulWidget {
 class _HeroBannerSlideshowState extends State<HeroBannerSlideshow> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  late List<String> _bannerImages;
+  List<String> _bannerImages = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Banner images from webapp
-    _bannerImages = [
-      'assets/images/banner.jpg',
-      'assets/images/b1.jpeg',
-      'assets/images/b2.jpeg',
-      'assets/images/banner2.jpeg',
-      'assets/images/banner3.jpeg',
-    ];
+    _loadBannerImages();
+  }
+
+  Future<void> _loadBannerImages() async {
+    // Sync hero images from webapp
+    // Webapp hero image: /assets/images/banner.jpg
+    // Webapp URL: https://yookatale.app
+    final webappBaseUrl = 'https://yookatale.app';
+    
+    setState(() {
+      _bannerImages = [
+        '$webappBaseUrl/assets/images/banner.jpg', // Main hero image from webapp
+        '$webappBaseUrl/assets/images/new.jpeg', // New banner from webapp
+        '$webappBaseUrl/assets/images/b1.jpeg', // Webapp images
+        '$webappBaseUrl/assets/images/b2.jpeg',
+        '$webappBaseUrl/assets/images/banner2.jpeg',
+        '$webappBaseUrl/assets/images/banner3.jpeg',
+      ];
+      _isLoading = false;
+    });
     
     // Auto-scroll slideshow
     _startAutoScroll();
@@ -103,30 +116,89 @@ class _HeroBannerSlideshowState extends State<HeroBannerSlideshow> {
                 },
                 itemCount: _bannerImages.length,
                 itemBuilder: (context, index) {
+                  final imageUrl = _bannerImages[index];
+                  final isNetworkImage = imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+                  
                   return Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(0),
                     ),
-                    child: Image.asset(
-                      _bannerImages[index],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback gradient
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color.fromRGBO(24, 95, 45, 1),
-                                const Color.fromRGBO(40, 120, 60, 1),
-                              ],
+                    child: isNetworkImage
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color.fromRGBO(24, 95, 45, 1),
+                                    const Color.fromRGBO(40, 120, 60, 1),
+                                  ],
+                                ),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
+                            errorWidget: (context, url, error) {
+                              // Try fallback local image
+                              if (index < _bannerImages.length - 1) {
+                                return Image.asset(
+                                  'assets/images/banner.jpg',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            const Color.fromRGBO(24, 95, 45, 1),
+                                            const Color.fromRGBO(40, 120, 60, 1),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      const Color.fromRGBO(24, 95, 45, 1),
+                                      const Color.fromRGBO(40, 120, 60, 1),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      const Color.fromRGBO(24, 95, 45, 1),
+                                      const Color.fromRGBO(40, 120, 60, 1),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   );
                 },
               ),

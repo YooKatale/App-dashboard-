@@ -78,7 +78,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             
             // Banner 1
-            const BannerImage(imagePath: 'assets/images/b1.jpeg'),
+            const BannerImage(
+              imageUrl: 'https://yookatale.app/assets/images/b1.jpeg',
+            ),
             
             // Most Popular Products Section
             ProductsPage(
@@ -87,7 +89,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             
             // Banner 2
-            const BannerImage(imagePath: 'assets/images/b2.jpeg'),
+            const BannerImage(
+              imageUrl: 'https://yookatale.app/assets/images/b2.jpeg',
+            ),
             
             // Fruits Products Section
             ProductsPage(
@@ -96,7 +100,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             
             // Banner 3
-            const BannerImage(imagePath: 'assets/images/banner2.jpeg'),
+            const BannerImage(
+              imageUrl: 'https://yookatale.app/assets/images/banner2.jpeg',
+            ),
           ],
         ),
       ),

@@ -195,13 +195,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('Edit Profile'),
         backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -214,10 +216,25 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 children: [
                   TextFormField(
                     controller: _firstNameController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'First Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      prefixIcon: const Icon(Icons.person, color: Color.fromRGBO(24, 95, 45, 1)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -229,10 +246,25 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _lastNameController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'Last Name',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      prefixIcon: const Icon(Icons.person, color: Color.fromRGBO(24, 95, 45, 1)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -244,10 +276,25 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      prefixIcon: const Icon(Icons.email, color: Color.fromRGBO(24, 95, 45, 1)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
@@ -263,20 +310,50 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _phoneController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'Phone Number',
-                      prefixIcon: Icon(Icons.phone),
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      prefixIcon: const Icon(Icons.phone, color: Color.fromRGBO(24, 95, 45, 1)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _addressController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.black87),
+                    decoration: InputDecoration(
                       labelText: 'Delivery Address',
-                      prefixIcon: Icon(Icons.location_on),
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(color: Colors.black54),
+                      prefixIcon: const Icon(Icons.location_on, color: Color.fromRGBO(24, 95, 45, 1)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     maxLines: 3,
                   ),
@@ -285,12 +362,34 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               const SizedBox(height: 24),
 
               // Change Password Section
-              Card(
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: ExpansionTile(
-                  leading: const Icon(Icons.lock_outline),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.lock_outline, color: Color.fromRGBO(24, 95, 45, 1)),
+                  ),
                   title: const Text(
                     'Change Password',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   initiallyExpanded: _isPasswordSectionExpanded,
                   onExpansionChanged: (expanded) {
@@ -298,17 +397,32 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   },
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
                           TextFormField(
                             controller: _currentPasswordController,
-                            decoration: const InputDecoration(
-                              labelText: 'Current Password',
-                              prefixIcon: Icon(Icons.lock),
-                              border: OutlineInputBorder(),
-                            ),
+                            style: const TextStyle(color: Colors.black87),
                             obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Current Password',
+                              labelStyle: const TextStyle(color: Colors.black54),
+                              prefixIcon: const Icon(Icons.lock, color: Color.fromRGBO(24, 95, 45, 1)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
                             validator: (value) {
                               if (_isPasswordSectionExpanded &&
                                   (value == null || value.isEmpty)) {
@@ -320,12 +434,27 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _newPasswordController,
-                            decoration: const InputDecoration(
-                              labelText: 'New Password',
-                              prefixIcon: Icon(Icons.lock_outline),
-                              border: OutlineInputBorder(),
-                            ),
+                            style: const TextStyle(color: Colors.black87),
                             obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'New Password',
+                              labelStyle: const TextStyle(color: Colors.black54),
+                              prefixIcon: const Icon(Icons.lock_outline, color: Color.fromRGBO(24, 95, 45, 1)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
                             validator: (value) {
                               if (_isPasswordSectionExpanded &&
                                   (value == null || value.length < 6)) {
@@ -337,12 +466,27 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _confirmPasswordController,
-                            decoration: const InputDecoration(
-                              labelText: 'Confirm New Password',
-                              prefixIcon: Icon(Icons.lock_outline),
-                              border: OutlineInputBorder(),
-                            ),
+                            style: const TextStyle(color: Colors.black87),
                             obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Confirm New Password',
+                              labelStyle: const TextStyle(color: Colors.black54),
+                              prefixIcon: const Icon(Icons.lock_outline, color: Color.fromRGBO(24, 95, 45, 1)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
                             validator: (value) {
                               if (_isPasswordSectionExpanded &&
                                   value != _newPasswordController.text) {
@@ -351,7 +495,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -360,6 +504,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                                 backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
                               ),
                               child: _isLoading
                                   ? const SizedBox(
@@ -383,15 +531,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
               // Save Button
               SizedBox(
-                height: 50,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _updateProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    elevation: 3,
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -423,26 +572,46 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: const Color.fromRGBO(24, 95, 45, 1)),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: const Color.fromRGBO(24, 95, 45, 1), size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ...children,
           ],
         ),

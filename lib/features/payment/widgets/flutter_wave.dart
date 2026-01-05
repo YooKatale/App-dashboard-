@@ -6,13 +6,21 @@ import 'package:flutterwave_standard/flutterwave.dart';
 import 'package:uuid/uuid.dart';
 import '/features/common/widgets/custom_button.dart';
 import '/main.dart';
+import '/services/notification_service.dart';
 
 import '../models/user_model.dart';
 
 class FlutterWavePage extends StatefulWidget {
-  const FlutterWavePage({super.key, required this.title});
+  const FlutterWavePage({
+    super.key,
+    required this.title,
+    this.orderId,
+    this.amount = 0.0,
+  });
 
   final String title;
+  final String? orderId;
+  final double amount;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -341,6 +349,22 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
       final ChargeResponse response = await flutterwave.charge(context);
       showLoading(response.toString());
       log("${response.toJson()}");
+      
+      // Check if payment was successful
+      if (response.status == 'successful' || response.status == 'success') {
+        final paymentAmount = double.tryParse(amountController.text.trim()) ?? widget.amount;
+        final orderId = widget.orderId ?? widget.title.replaceAll('Payment - Order #', '');
+        
+        // Send payment completion notification
+        await NotificationService.notifyPaymentCompleted(
+          orderId: orderId,
+          amount: paymentAmount,
+        );
+        
+        // Check if this is a subscription payment and send subscription notification
+        // This will be handled by the backend when payment is verified
+      }
+      
       analytics!.logPurchase(
         currency: currencyController.text.trim(),
         value: double.parse(amountController.text.trim()),
@@ -427,7 +451,7 @@ class _FlutterWavePageState extends State<FlutterWavePage> {
 }
 
 // Wrapper class for easier integration
-class FlutterWavePayment extends StatelessWidget {
+class FlutterWavePayment extends StatefulWidget {
   final String orderId;
   final double amount;
 
@@ -438,7 +462,16 @@ class FlutterWavePayment extends StatelessWidget {
   });
 
   @override
+  State<FlutterWavePayment> createState() => _FlutterWavePaymentState();
+}
+
+class _FlutterWavePaymentState extends State<FlutterWavePayment> {
+  @override
   Widget build(BuildContext context) {
-    return FlutterWavePage(title: 'Payment - Order #$orderId');
+    return FlutterWavePage(
+      title: 'Payment - Order #${widget.orderId}',
+      orderId: widget.orderId,
+      amount: widget.amount,
+    );
   }
 }

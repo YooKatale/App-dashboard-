@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../../authentication/providers/auth_provider.dart';
@@ -134,13 +135,27 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
       if (response['status'] == 'Success' && response['data'] != null) {
         final orderId = response['data']['Order']?.toString();
         if (orderId != null && mounted) {
-          // Navigate to payment page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FlutterWavePayment(orderId: orderId),
-            ),
-          );
+          // Redirect to webapp for payment (as requested)
+          final webappUrl = 'https://yookatale.app/payment/$orderId';
+          final uri = Uri.parse(webappUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            // Show message to user
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Redirecting to webapp to complete payment...'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            // Fallback to in-app payment if webapp can't be opened
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FlutterWavePayment(orderId: orderId),
+              ),
+            );
+          }
         }
       } else {
         if (mounted) {

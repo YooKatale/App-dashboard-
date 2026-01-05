@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../common/widgets/custom_appbar.dart';
 import '../../account/widgets/mobile_account_page.dart';
+import '../../help/widgets/help_support_page.dart';
+import '../../../services/auth_service.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -15,6 +17,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   bool _biometricEnabled = false;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final userData = await AuthService.getUserData();
+    setState(() {
+      _isLoggedIn = userData != null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +93,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: 'Privacy Settings',
                 subtitle: 'Manage your privacy preferences',
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/privacy');
+                },
               ),
               _SettingsTile(
                 icon: Icons.fingerprint,
@@ -136,19 +154,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 subtitle: 'App version and information',
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('About YooKatale'),
-                      content: const Text('Version 1.0.0\n\nYooKatale - Your trusted grocery delivery partner.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK'),
-                        ),
-                      ],
-                    ),
-                  );
+                  HelpSupportPage.showAboutDialog(context, _isLoggedIn);
                 },
               ),
               _SettingsTile(
@@ -165,7 +171,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 title: 'Help & Support',
                 subtitle: 'Get help and contact support',
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(context, '/help');
+                },
               ),
             ],
           ),
