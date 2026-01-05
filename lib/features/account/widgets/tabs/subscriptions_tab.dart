@@ -96,87 +96,198 @@ class _SubscriptionsTabState extends ConsumerState<SubscriptionsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(_error!),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _loadSubscriptions,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              )
-            : _completedSubscriptions.isEmpty && _pendingSubscriptions.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.card_membership, size: 80, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No subscriptions',
-                          style: TextStyle(fontSize: 24, color: Colors.grey),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          _error!,
+                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/subscription');
-                          },
-                          child: const Text('Browse Subscriptions'),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadSubscriptions,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                      ],
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadSubscriptions,
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        // Pending Payments Section
-                        if (_pendingSubscriptions.isNotEmpty) ...[
+                      ),
+                    ],
+                  ),
+                )
+              : _completedSubscriptions.isEmpty && _pendingSubscriptions.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withValues(alpha: 0.2),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.card_membership,
+                              size: 64,
+                              color: Color.fromRGBO(24, 95, 45, 1),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                           const Text(
-                            'Pending Payments',
+                            'No Subscriptions Yet',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          ..._pendingSubscriptions.map((subscription) => _buildPendingSubscriptionCard(subscription, context)),
-                          const SizedBox(height: 24),
-                        ],
-                        
-                        // Completed Subscriptions Section
-                        const Text(
-                          'Active Subscriptions',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                          const SizedBox(height: 8),
+                          Text(
+                            'Browse our subscription packages',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        if (_completedSubscriptions.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text(
-                              'No active subscriptions. Complete a payment to activate your subscription.',
-                              style: TextStyle(color: Colors.grey),
-                              textAlign: TextAlign.center,
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/subscription');
+                            },
+                            icon: const Icon(Icons.explore),
+                            label: const Text('Browse Subscriptions'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          )
-                        else
-                          ..._completedSubscriptions.map((subscription) => _buildCompletedSubscriptionCard(subscription, context)),
-                      ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadSubscriptions,
+                      child: ListView(
+                        padding: const EdgeInsets.all(20),
+                        children: [
+                          // Pending Payments Section
+                          if (_pendingSubscriptions.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.pending_actions,
+                                    color: Colors.orange,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Pending Payments',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ..._pendingSubscriptions.map((subscription) => _buildPendingSubscriptionCard(subscription, context)),
+                            const SizedBox(height: 32),
+                          ],
+                          
+                          // Completed Subscriptions Section
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.check_circle_outline,
+                                  color: Color.fromRGBO(24, 95, 45, 1),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Active Subscriptions',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (_completedSubscriptions.isEmpty)
+                            Card(
+                              elevation: 0,
+                              color: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.grey[200]!, width: 1),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.info_outline, size: 48, color: Colors.grey[400]),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No active subscriptions',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Complete a payment to activate your subscription',
+                                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            ..._completedSubscriptions.map((subscription) => _buildCompletedSubscriptionCard(subscription, context)),
+                        ],
+                      ),
                     ),
-                  );
+    );
   }
 
   Widget _buildPendingSubscriptionCard(dynamic subscription, BuildContext context) {
@@ -283,72 +394,100 @@ class _SubscriptionsTabState extends ConsumerState<SubscriptionsTab> {
                        subscription['packageType'] ?? 
                        'N/A';
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(
-            Icons.card_membership,
-            color: Color.fromRGBO(24, 95, 45, 1),
-            size: 28,
-          ),
-        ),
-        title: Text(
-          packageName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Type: $packageType'),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'Active',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      child: InkWell(
         onTap: () {
-          // TODO: Navigate to subscription details
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Subscription details coming soon')),
           );
         },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color.fromRGBO(24, 95, 45, 1),
+                      const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.card_membership,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      packageName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.category, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          packageType,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.green[300]!),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Active',
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }

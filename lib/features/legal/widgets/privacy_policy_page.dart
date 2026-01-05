@@ -6,29 +6,85 @@ class PrivacyPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Privacy Policy'),
+        title: const Text('Privacy Policy', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Privacy Policy',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            // Gradient Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color.fromRGBO(24, 95, 45, 1),
+                    const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.8),
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.privacy_tip,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Privacy Policy',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your privacy matters to us',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'This Privacy Policy describes how Yookatale a product of Seconds Tech Limited ("We") collects and processes the User\'s ("You") your personal information through the Company\'s sites and services online and applications (collectively "our Services" or "Services") that reference this Privacy Policy. By using our services, you are consenting to the practices described in this Privacy Policy.',
-              style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
-            ),
+            
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    elevation: 0,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'This Privacy Policy describes how Yookatale a product of Seconds Tech Limited ("We") collects and processes the User\'s ("You") your personal information through the Company\'s sites and services online and applications (collectively "our Services" or "Services") that reference this Privacy Policy. By using our services, you are consenting to the practices described in this Privacy Policy.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey[800],
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
             const SizedBox(height: 24),
             
             _buildSection(
@@ -40,13 +96,13 @@ class PrivacyPolicyPage extends StatelessWidget {
                   [
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                         children: [
-                          const TextSpan(
+                          TextSpan(
                             text: 'Information You Give Us: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
-                          const TextSpan(
+                          TextSpan(
                             text: 'We receive and store any information you provide in relation to our Services. This includes email addresses, phone numbers and location details. The user reserves the right not to provide certain information.',
                           ),
                         ],
@@ -54,12 +110,12 @@ class PrivacyPolicyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                         children: [
                           TextSpan(
                             text: 'Automatic Information: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
                           TextSpan(
                             text: 'We automatically collect and store certain types of information about your use of our Services, including information about your interaction with content and services available through our Services. We use "cookies" and other unique identifiers, and we obtain certain types of information when your web browser or device accesses our Services and other content served by or on behalf of the Company on other websites.',
@@ -69,12 +125,12 @@ class PrivacyPolicyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                         children: [
                           TextSpan(
                             text: 'Information from Other Sources: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
                           TextSpan(
                             text: 'We might receive information about you from other sources, such as updated delivery and address information from our carriers, which we use to correct our records and deliver your next purchase more easily.',
@@ -107,9 +163,9 @@ class PrivacyPolicyPage extends StatelessWidget {
               [
                 _buildListItem('Information to sellers using the Services: We make available to you services and products provided by sellers for use on or through our Services. Users\' personal information related to those transactions is shared with the seller.'),
                 _buildListItem('Protection of the Company and Others: We release account and other personal information when we believe release is appropriate to comply with the law; enforce or apply our general terms and conditions and other agreements; or protect the rights, property, or safety of the Company, our users, or others. This includes exchanging information with other companies and organizations for fraud protection.'),
-                const Text(
+                Text(
                   'Other than as set out above, you will receive notice when personal information about you might be shared with third parties, and you will have an opportunity to choose not to share the information.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                  style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                 ),
               ],
             ),
@@ -143,19 +199,19 @@ class PrivacyPolicyPage extends StatelessWidget {
               '7.0 Conditions of Use',
               null,
               [
-                const Text(
+                Text(
                   '7.1 Upon registration of your account with the Company, this policy will apply to you in so far as your account is concerned.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                  style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                const SizedBox(height: 12),
+                Text(
                   '7.2 This policy will be applicable in conjunction with our General Terms and Conditions and all such other policies and notices made by the Company from time to time.',
-                  style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                  style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                 ),
               ],
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -163,30 +219,64 @@ class PrivacyPolicyPage extends StatelessWidget {
   }
 
   Widget _buildSection(String title, String? intro, List<Widget>? children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey[200]!, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.info_outline,
+                    color: Color.fromRGBO(24, 95, 45, 1),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (intro != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                intro,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey[700],
+                  height: 1.6,
+                ),
+              ),
+            ],
+            if (children != null) ...[
+              const SizedBox(height: 16),
+              ...children,
+            ],
+          ],
         ),
-        if (intro != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            intro,
-            style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
-          ),
-        ],
-        if (children != null) ...[
-          const SizedBox(height: 12),
-          ...children,
-        ],
-        const SizedBox(height: 24),
-      ],
+      ),
     );
   }
 
@@ -196,9 +286,14 @@ class PrivacyPolicyPage extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[800],
+            height: 1.5,
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Column(
@@ -230,15 +325,27 @@ class PrivacyPolicyPage extends StatelessWidget {
 
   Widget _buildListItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 14, color: Colors.black87)),
+          Container(
+            margin: const EdgeInsets.only(top: 6, right: 12),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(24, 95, 45, 1),
+              shape: BoxShape.circle,
+            ),
+          ),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey[800],
+                height: 1.6,
+              ),
             ),
           ),
         ],
