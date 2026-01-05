@@ -387,38 +387,6 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                         color: Colors.white70,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Login to see your balance',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MobileSignInPage(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: const Text('Login'),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -432,34 +400,24 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.chat_bubble_outline),
-                            label: const Text('Live Chat'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
+                    // WhatsApp button only (Live Chat removed)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final uri = Uri.parse('https://wa.me/256786118137');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        },
+                        icon: const Icon(Icons.chat),
+                        label: const Text('WhatsApp Support'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.chat),
-                            label: const Text('WhatsApp'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -826,6 +784,15 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                               builder: (context) => const ServiceRatingsPage(),
                             ),
                           );
+                        },
+                      ),
+                      _ProfileTile(
+                        icon: Icons.help_outline,
+                        title: 'FAQs',
+                        subtitle: 'Frequently asked questions',
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/faqs');
                         },
                       ),
                     ],

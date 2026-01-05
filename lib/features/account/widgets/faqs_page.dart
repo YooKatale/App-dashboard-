@@ -6,36 +6,66 @@ class FAQsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text('FAQs'),
         backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Center(
-              child: Text(
-                'Frequently Asked Questions',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+            // Header Section with Gradient
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.fromRGBO(24, 95, 45, 1),
+                    Color.fromRGBO(40, 120, 60, 1),
+                  ],
                 ),
-                textAlign: TextAlign.center,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.help_outline,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Frequently Asked Questions',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 80,
+                    height: 3,
+                    color: Colors.white,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 80,
-                height: 3,
-                color: const Color.fromRGBO(24, 95, 45, 1),
-              ),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             
             _buildFAQItem(
               'What is YooKatale?',
@@ -96,40 +126,60 @@ class FAQsPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(16),
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 4,
+            color: Colors.grey.withValues(alpha: 0.08),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.help_outline,
+            color: Color.fromRGBO(24, 95, 45, 1),
+            size: 20,
+          ),
+        ),
         title: Text(
           question,
           style: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
         children: [
+          const Divider(height: 1),
+          const SizedBox(height: 12),
           Text(
             answer,
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
-              height: 1.5,
+              height: 1.6,
             ),
           ),
         ],
         iconColor: const Color.fromRGBO(24, 95, 45, 1),
         collapsedIconColor: const Color.fromRGBO(24, 95, 45, 1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
