@@ -406,7 +406,8 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Google Sign Up Button - Modern Design with Original Google Logo
+                // Google Sign Up Button - COMMENTED OUT FOR FUTURE USE
+                /*
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -446,6 +447,7 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                */
                 
                 // Login Link
                 Row(
@@ -483,6 +485,8 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
   }
 
   // Handle Google Sign Up - Integrated with Backend
+  // COMMENTED OUT FOR FUTURE USE
+  /*
   Future<void> _handleGoogleSignUp() async {
     setState(() => _isLoading = true);
 
@@ -655,8 +659,11 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
       }
     }
   }
+  */
 
   // Build Google Logo - Original Google G Logo
+  // COMMENTED OUT FOR FUTURE USE
+  /*
   Widget _buildGoogleLogo() {
     return CustomPaint(
       size: const Size(20, 20),

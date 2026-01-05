@@ -356,6 +356,37 @@ class ApiService {
     }
   }
 
+  // Create cart checkout order - matches webapp createCartCheckout
+  static Future<Map<String, dynamic>> createCartCheckout({
+    required Map<String, dynamic> user,
+    required String customerName,
+    required List<Map<String, dynamic>> carts,
+    required Map<String, dynamic> order,
+    String? token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/product/cart/checkout'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'user': user,
+          'customerName': customerName,
+          'Carts': carts,
+          'order': order,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to create checkout: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
   // Subscription operations
   static Future<Map<String, dynamic>> fetchSubscriptionPackages({String? token}) async {
     try {

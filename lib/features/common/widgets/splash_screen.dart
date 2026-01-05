@@ -10,37 +10,11 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeIn,
-      ),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
-
-    _controller.forward();
-    
-    // Navigate after splash screen animation
+    // Navigate immediately after a short delay (no animations)
     Future.delayed(const Duration(milliseconds: 2500), () {
       _navigateToNext();
     });
@@ -67,7 +41,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
@@ -75,48 +48,45 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(flex: 3),
-            
-            // Original YooKatale Logo - centered and well positioned
-            Center(
-              child: Image.asset(
-                'assets/logo1.webp',
-                width: 200,
-                height: 200,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.shopping_cart,
-                    size: 120,
-                    color: Color.fromRGBO(24, 95, 45, 1),
-                  );
-                },
-              ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 3),
+          
+          // Original YooKatale Logo - centered and well positioned
+          Center(
+            child: Image.asset(
+              'assets/logo1.webp',
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.shopping_cart,
+                  size: 120,
+                  color: Color.fromRGBO(24, 95, 45, 1),
+                );
+              },
             ),
-            
-            const Spacer(flex: 2),
-            
-            // Original Fruits Image - exactly as shown in screenshot
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/categories/fruits.jpeg'),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.bottomCenter,
-                  ),
+          ),
+          
+          const Spacer(flex: 2),
+          
+          // Original Fruits Image - use same image from welcome screen
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/categories/fruits.jpeg'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

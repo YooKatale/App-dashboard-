@@ -574,7 +574,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                 const SizedBox(height: 24),
                 
                 // Social Login Buttons
-                // Google Sign In Button - Modern Design with Original Google Logo
+                // Google Sign In Button - COMMENTED OUT FOR FUTURE USE
+                /*
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -614,6 +615,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                */
                 
                 // Fingerprint Authentication
                 if (!_isPhoneLogin)
@@ -702,6 +704,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   }
 
   // Handle Google Sign In - Integrated with Backend
+  // COMMENTED OUT FOR FUTURE USE
+  /*
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
 
@@ -874,8 +878,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       }
     }
   }
+  */
 
   // Build Google Logo - Original Google G Logo
+  // COMMENTED OUT FOR FUTURE USE
+  /*
   Widget _buildGoogleLogo() {
     return CustomPaint(
       size: const Size(20, 20),

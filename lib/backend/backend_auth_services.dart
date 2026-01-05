@@ -17,12 +17,15 @@ class AuthException implements Exception {
 
 class AuthBackend {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Configure Google Sign-In with serverClientId for Android backend authentication
-  // The serverClientId (web client ID) is required for server-side verification
-  GoogleSignIn get _googleSignIn => GoogleSignIn(
-    scopes: <String>['email', 'profile'],
-    serverClientId: '573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com',
-  );
+  // Configure Google Sign-In - using instance pattern like utility_method.dart
+  // For serverClientId configuration, it should be set in google-services.json
+  // or configured via AndroidManifest.xml meta-data
+  // The web client ID from google-services.json will be used automatically
+  GoogleSignIn get _googleSignIn {
+    // Return configured instance - serverClientId is read from google-services.json
+    // For Android, the serverClientId is automatically configured from the web client ID
+    return GoogleSignIn.instance;
+  }
   final LocalAuthentication _localAuth = LocalAuthentication();
   final SecureRandom _secureRandom = SecureRandom();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -191,8 +194,8 @@ class AuthBackend {
 
   Future<User?> signInWithGoogle() async {
     try {
-      // Sign in with Google - use signIn() method
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      // Sign in with Google - use authenticate() method (as used in login.dart)
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
       if (googleUser == null) {
         // User cancelled the sign-in
         return null;
@@ -200,10 +203,14 @@ class AuthBackend {
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Get authorization client for access token (as used in login.dart)
+      final clientAuth = await googleUser.authorizationClient
+          .authorizationForScopes(<String>['email', 'profile', 'openid']);
 
       // Create a new credential using idToken and accessToken
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: clientAuth?.accessToken,
         idToken: googleAuth.idToken,
       );
 

@@ -213,8 +213,24 @@ class _CartPageState extends ConsumerState<CartPage> {
       );
 
       if (success) {
-        // Reload cart to ensure sync with backend
-        await _loadCart();
+        // Optimistically update UI without full reload
+        setState(() {
+          final index = _cartItems.indexWhere((cartItem) => cartItem.cartId == item.cartId);
+          if (index != -1) {
+            _cartItems[index] = CartItem(
+              cartId: _cartItems[index].cartId,
+              productId: _cartItems[index].productId,
+              productName: _cartItems[index].productName,
+              price: _cartItems[index].price,
+              quantity: newQuantity,
+              imageUrl: _cartItems[index].imageUrl,
+            );
+          }
+        });
+        
+        // Update cart count provider
+        ref.read(cartCountProvider.notifier).state = _cartItems.length;
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -225,7 +241,7 @@ class _CartPageState extends ConsumerState<CartPage> {
           );
         }
       } else {
-        // Revert optimistic update on failure
+        // Revert optimistic update on failure - reload from backend
         await _loadCart();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -237,7 +253,7 @@ class _CartPageState extends ConsumerState<CartPage> {
         }
       }
     } catch (e) {
-      // Revert optimistic update on error
+      // Revert optimistic update on error - reload from backend
       await _loadCart();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
