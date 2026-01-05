@@ -17,10 +17,11 @@ class AuthException implements Exception {
 
 class AuthBackend {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Configure Google Sign-In with serverClientId for Android
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    serverClientId: '573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com', // Web client ID from google-services.json
+  // Configure Google Sign-In with serverClientId for Android backend authentication
+  // The serverClientId (web client ID) is required for server-side verification
+  GoogleSignIn get _googleSignIn => GoogleSignIn(
+    scopes: <String>['email', 'profile'],
+    serverClientId: '573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com',
   );
   final LocalAuthentication _localAuth = LocalAuthentication();
   final SecureRandom _secureRandom = SecureRandom();
@@ -190,8 +191,8 @@ class AuthBackend {
 
   Future<User?> signInWithGoogle() async {
     try {
-      // Sign in with Google
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
+      // Sign in with Google - use signIn() method
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // User cancelled the sign-in
         return null;
@@ -199,16 +200,10 @@ class AuthBackend {
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      // Get authorization client for access token
-      final GoogleSignInClientAuthorization? clientAuth =
-          await googleUser.authorizationClient.authorizationForScopes(
-        <String>['email', 'profile', 'openid'],
-      );
 
-      // Create a new credential
+      // Create a new credential using idToken and accessToken
       final credential = GoogleAuthProvider.credential(
-        accessToken: clientAuth?.accessToken,
+        accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
