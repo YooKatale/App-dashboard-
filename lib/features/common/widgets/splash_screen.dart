@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../onboarding/widgets/welcome_screen.dart';
+import '../../../app.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,6 +39,30 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
+    
+    // Navigate after splash screen animation
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      _navigateToNext();
+    });
+  }
+
+  Future<void> _navigateToNext() async {
+    if (!mounted) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+    
+    if (mounted) {
+      if (hasSeenOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => App()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      }
+    }
   }
 
   @override
@@ -48,79 +75,48 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(flex: 2),
-                
-                // Original Logo from assets - centered and well positioned
-                Image.asset(
-                  'assets/logo1.webp',
-                  width: 220,
-                  height: 220,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.shopping_cart,
-                      size: 120,
-                      color: Color.fromRGBO(24, 95, 45, 1),
-                    );
-                  },
-                ),
-                const SizedBox(height: 30),
-                
-                // Fruits below logo - arranged like screenshot
-                // Using a more natural arrangement with multiple fruits
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFruitImage('assets/fruits/oranges.jpeg', 50),
-                    _buildFruitImage('assets/fruits/banana.jpeg', 50),
-                    _buildFruitImage('assets/fruits/passion_fruit.jpeg', 50),
-                    _buildFruitImage('assets/fruits/avacodo.jpeg', 50),
-                    _buildFruitImage('assets/fruits/matooke.jpeg', 50),
-                    _buildFruitImage('assets/fruits/tomatos.jpeg', 50),
-                  ],
-                ),
-                
-                const Spacer(flex: 2),
-                
-                // Loading Indicator at bottom
-                const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color.fromRGBO(24, 95, 45, 1),
-                    ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(flex: 3),
+            
+            // Original YooKatale Logo - centered and well positioned
+            Center(
+              child: Image.asset(
+                'assets/logo1.webp',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.shopping_cart,
+                    size: 120,
+                    color: Color.fromRGBO(24, 95, 45, 1),
+                  );
+                },
+              ),
+            ),
+            
+            const Spacer(flex: 2),
+            
+            // Original Fruits Image - exactly as shown in screenshot
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/categories/fruits.jpeg'),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.bottomCenter,
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
-      ),
-    );
-  }
-  
-  Widget _buildFruitImage(String path, double size) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.asset(
-        path,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => const SizedBox(),
       ),
     );
   }

@@ -72,68 +72,70 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Top spacing
-            const SizedBox(height: 40),
+            const SizedBox(height: 60),
             
-            // Logo and Branding Section
+            // Logo Section - Centered
             Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Actual Yookatale Logo from assets - well positioned
-                Image.asset(
-                  'assets/logo1.webp',
-                  width: 180,
-                  height: 180,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 24),
-                
-                // Welcome Message
-                const Text(
-                  'Welcome to Yookatale',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Color.fromRGBO(24, 95, 45, 1), // Green
-                    fontFamily: 'Raleway',
-                    fontWeight: FontWeight.w500,
+                // Original YooKatale Logo from assets - well positioned and centered
+                Center(
+                  child: Image.asset(
+                    'assets/logo1.webp',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.shopping_cart,
+                        size: 120,
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
             
-                // Get Started Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-                  child: SizedBox(
+            // Get Started Button Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+              child: Column(
+                children: [
+                  SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
                       onPressed: _navigateToSignIn,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromRGBO(24, 95, 45, 1), // Green
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: const Text(
+                        'Get Started',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Raleway',
+                        ),
+                      ),
                     ),
-                    elevation: 2,
                   ),
-                  child: const Text(
-                    'Get Started',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Raleway',
-                    ),
-                  ),
-                ),
+                ],
               ),
             ),
             
-            // Fresh Produce Image at Bottom
+            // Original Fruits Image at Bottom - exactly as in screenshot
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/vegetables.jpeg'),
+                    image: AssetImage('assets/categories/fruits.jpeg'),
                     fit: BoxFit.cover,
                     alignment: Alignment.bottomCenter,
                   ),
