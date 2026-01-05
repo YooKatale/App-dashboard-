@@ -217,14 +217,7 @@ class _CartPageState extends ConsumerState<CartPage> {
         setState(() {
           final index = _cartItems.indexWhere((cartItem) => cartItem.cartId == item.cartId);
           if (index != -1) {
-            _cartItems[index] = CartItem(
-              cartId: _cartItems[index].cartId,
-              productId: _cartItems[index].productId,
-              productName: _cartItems[index].productName,
-              price: _cartItems[index].price,
-              quantity: newQuantity,
-              imageUrl: _cartItems[index].imageUrl,
-            );
+            _cartItems[index] = _cartItems[index].copyWith(quantity: newQuantity);
           }
         });
         
