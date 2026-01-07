@@ -5,6 +5,7 @@ import '../notifiers/product_notifier.dart';
 import 'products.dart';
 import 'hero_banner_slideshow.dart';
 import 'banner_image.dart';
+import 'categories_section.dart';
 import '../../../widgets/ratings_dialog.dart';
 import '../../../services/ratings_service.dart';
 import '../../../services/api_service.dart';
@@ -60,7 +61,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    var productProvider = ref.watch(productsProvider);
+    var latestProducts = ref.watch(productsProvider);
+    var popularProducts = ref.watch(popularProductsProvider);
     var fruitProducts = ref.watch(fruitProvider);
     return SizedBox(
       child: SingleChildScrollView(
@@ -71,9 +73,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             // Hero Banner Slideshow
             const HeroBannerSlideshow(),
             
+            // Categories Section
+            const CategoriesSection(),
+            
             // Latest Products Section
             ProductsPage(
-              productProvider: productProvider,
+              productProvider: latestProducts,
               title: 'Latest Products',
             ),
             
@@ -84,7 +89,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             
             // Most Popular Products Section
             ProductsPage(
-              productProvider: productProvider,
+              productProvider: popularProducts,
               title: 'Most Popular',
             ),
             

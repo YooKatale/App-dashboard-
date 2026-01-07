@@ -539,335 +539,347 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
     final phone = _userData!['phone']?.toString() ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'Account',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Raleway',
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+      ),
       bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 4),
-      body: CustomScrollView(
-        slivers: [
-          // Profile Header
-          SliverAppBar(
-            expandedHeight: 180,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color.fromRGBO(24, 95, 45, 1),
-                      Color.fromRGBO(40, 120, 60, 1),
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: _isUploadingPic ? null : () => _showProfilePicOptions(),
-                              child: _isUploadingPic
-                                  ? Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 3,
-                                        ),
-                                      ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(24, 95, 45, 1)),
-                                        ),
-                                      ),
-                                    )
-                                  : Stack(
-                                      children: [
-                                        Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.white,
-                                            border: Border.all(
-                                              color: Colors.white,
-                                              width: 3,
-                                            ),
-                                            image: _profilePicUrl != null
-                                                ? DecorationImage(
-                                                    image: NetworkImage(_profilePicUrl!),
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : null,
-                                          ),
-                                          child: _profilePicUrl == null
-                                              ? const Icon(
-                                                  Icons.person,
-                                                  size: 40,
-                                                  color: Color.fromRGBO(24, 95, 45, 1),
-                                                )
-                                              : null,
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: BoxDecoration(
-                                              color: const Color.fromRGBO(24, 95, 45, 1),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.camera_alt,
-                                              size: 16,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Profile Header Card
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color.fromRGBO(24, 95, 45, 1),
+                  const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _isUploadingPic ? null : () => _showProfilePicOptions(),
+                  child: _isUploadingPic
+                      ? Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 3,
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    fullName.isEmpty ? 'User' : fullName,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      fontFamily: 'Raleway',
-                                    ),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        )
+                      : Stack(
+                          children: [
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                image: _profilePicUrl != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(_profilePicUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _profilePicUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 35,
+                                      color: Color.fromRGBO(24, 95, 45, 1),
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color.fromRGBO(24, 95, 45, 1),
+                                    width: 2,
                                   ),
-                                  if (email.isNotEmpty)
-                                    Text(
-                                      email,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white.withValues(alpha: 0.9),
-                                      ),
-                                    ),
-                                ],
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 12,
+                                  color: Color.fromRGBO(24, 95, 45, 1),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
-            ),
-            backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-            foregroundColor: Colors.white,
-          ),
-
-          // Profile Options
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Personal Information Section
-                  _ProfileSection(
-                    title: 'Personal Information',
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ProfileTile(
-                        icon: Icons.person_outline,
-                        title: 'Edit Profile',
-                        subtitle: 'Update your personal information',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const EditProfilePage(),
-                            ),
-                          );
-                        },
+                      Text(
+                        fullName.isEmpty ? 'User' : fullName,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Raleway',
+                        ),
                       ),
-                      _ProfileTile(
-                        icon: Icons.email_outlined,
-                        title: 'Email',
-                        subtitle: email.isNotEmpty ? email : 'Not set',
-                        onTap: () {},
-                      ),
-                      _ProfileTile(
-                        icon: Icons.phone_outlined,
-                        title: 'Phone',
-                        subtitle: phone.isNotEmpty ? phone : 'Not set',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Orders & Subscriptions
-                  _ProfileSection(
-                    title: 'Orders & Subscriptions',
-                    children: [
-                      _ProfileTile(
-                        icon: Icons.shopping_bag_outlined,
-                        title: 'My Orders',
-                        subtitle: 'View your order history',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MobileOrdersTab(),
-                            ),
-                          );
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.card_membership,
-                        title: 'Subscriptions',
-                        subtitle: 'Manage your subscriptions',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MobileSubscriptionsTab(),
-                            ),
-                          );
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.calendar_today,
-                        title: 'Meal Calendar',
-                        subtitle: 'View your weekly meal plan',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/meal-calendar');
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Social & Referrals
-                  _ProfileSection(
-                    title: 'Social & Referrals',
-                    children: [
-                      _ProfileTile(
-                        icon: Icons.card_giftcard,
-                        title: 'Invite Friends',
-                        subtitle: 'Earn rewards by inviting friends',
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                      if (email.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.9),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Earn',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (phone.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          phone,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.9),
                           ),
                         ),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => InviteFriendDialog(
-                              userId: _userData!['_id']?.toString() ?? '',
-                            ),
-                          );
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.star_outline,
-                        title: 'Rate Our Service',
-                        subtitle: 'Share your feedback about YooKatale',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ServiceRatingsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.help_outline,
-                        title: 'FAQs',
-                        subtitle: 'Frequently asked questions',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/faqs');
-                        },
-                      ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Settings
-                  _ProfileSection(
-                    title: 'Settings',
-                    children: [
-                      _ProfileTile(
-                        icon: Icons.phone_outlined,
-                        title: 'Call Us',
-                        subtitle: '+256 700 000 000',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () async {
-                          final phoneNumber = 'tel:+256700000000';
-                          final uri = Uri.parse(phoneNumber);
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri);
-                          } else {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Could not open phone dialer'),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.settings_outlined,
-                        title: 'Settings',
-                        subtitle: 'Manage app settings and preferences',
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/settings');
-                        },
-                      ),
-                      _ProfileTile(
-                        icon: Icons.logout,
-                        title: 'Logout',
-                        subtitle: 'Sign out of your account',
-                        onTap: _handleLogout,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
+
+          // Personal Information Section
+          _ProfileSection(
+            title: 'Personal Information',
+            children: [
+              _ProfileTile(
+                icon: Icons.person_outline,
+                title: 'Edit Profile',
+                subtitle: 'Update your personal information',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfilePage(),
+                    ),
+                  );
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.email_outlined,
+                title: 'Email',
+                subtitle: email.isNotEmpty ? email : 'Not set',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              _ProfileTile(
+                icon: Icons.phone_outlined,
+                title: 'Phone',
+                subtitle: phone.isNotEmpty ? phone : 'Not set',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Orders & Subscriptions
+          _ProfileSection(
+            title: 'Orders & Subscriptions',
+            children: [
+              _ProfileTile(
+                icon: Icons.shopping_bag_outlined,
+                title: 'My Orders',
+                subtitle: 'View your order history',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MobileOrdersTab(),
+                    ),
+                  );
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.card_membership,
+                title: 'Subscriptions',
+                subtitle: 'Manage your subscriptions',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MobileSubscriptionsTab(),
+                    ),
+                  );
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.calendar_today,
+                title: 'Meal Calendar',
+                subtitle: 'View your weekly meal plan',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pushNamed(context, '/meal-calendar');
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Social & Referrals
+          _ProfileSection(
+            title: 'Social & Referrals',
+            children: [
+              _ProfileTile(
+                icon: Icons.card_giftcard,
+                title: 'Invite Friends',
+                subtitle: 'Earn rewards by inviting friends',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Earn',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => InviteFriendDialog(
+                      userId: _userData!['_id']?.toString() ?? '',
+                    ),
+                  );
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.star_outline,
+                title: 'Rate Our Service',
+                subtitle: 'Share your feedback about YooKatale',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ServiceRatingsPage(),
+                    ),
+                  );
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.help_outline,
+                title: 'FAQs',
+                subtitle: 'Frequently asked questions',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pushNamed(context, '/faqs');
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Support & Settings
+          _ProfileSection(
+            title: 'Support & Settings',
+            children: [
+              _ProfileTile(
+                icon: Icons.phone_outlined,
+                title: 'Call Us',
+                subtitle: '+256786118137',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final phoneNumber = 'tel:+256786118137';
+                  final uri = Uri.parse(phoneNumber);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open phone dialer'),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                subtitle: 'Manage app settings and preferences',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pushNamed(context, '/settings');
+                },
+              ),
+              _ProfileTile(
+                icon: Icons.logout,
+                title: 'Logout',
+                subtitle: 'Sign out of your account',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _handleLogout,
+              ),
+            ],
           ),
         ],
       ),
@@ -898,7 +910,7 @@ class _AccountMenuItem extends StatelessWidget {
   }
 }
 
-// Profile Section Widget
+// Profile Section Widget - Matches Settings Page Style
 class _ProfileSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -914,67 +926,65 @@ class _ProfileSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          padding: const EdgeInsets.only(left: 16, bottom: 12),
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
         ),
-        Card(
-          child: Column(children: children),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: children,
+          ),
         ),
       ],
     );
   }
 }
 
-// Profile Tile Widget
+// Profile Tile Widget - Matches Settings Page Style
 class _ProfileTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget? trailing;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ProfileTile({
     required this.icon,
     required this.title,
     required this.subtitle,
     this.trailing,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: const Color.fromRGBO(24, 95, 45, 1),
-          size: 20,
-        ),
+      leading: Icon(
+        icon,
+        color: const Color.fromRGBO(24, 95, 45, 1),
       ),
       title: Text(
         title,
         style: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 13,
           color: Colors.grey[600],
         ),
       ),

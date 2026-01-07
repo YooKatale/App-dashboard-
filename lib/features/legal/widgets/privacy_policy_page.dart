@@ -85,68 +85,68 @@ class PrivacyPolicyPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  
+                  _buildSection(
+                    '1.0 Collection of Personal Information',
+                    'We collect your personal information in order to provide and continually improve our products and services.',
+                    [
+                      _buildSubsection(
+                        '1.1 The types of personal information collected includes but is not limited to;',
+                        [
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
+                              children: [
+                                TextSpan(
+                                  text: 'Information You Give Us: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                                ),
+                                TextSpan(
+                                  text: 'We receive and store any information you provide in relation to our Services. This includes email addresses, phone numbers and location details. The user reserves the right not to provide certain information.',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
+                              children: [
+                                TextSpan(
+                                  text: 'Automatic Information: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                                ),
+                                TextSpan(
+                                  text: 'We automatically collect and store certain types of information about your use of our Services, including information about your interaction with content and services available through our Services. We use "cookies" and other unique identifiers, and we obtain certain types of information when your web browser or device accesses our Services and other content served by or on behalf of the Company on other websites.',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
+                              children: [
+                                TextSpan(
+                                  text: 'Information from Other Sources: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                                ),
+                                TextSpan(
+                                  text: 'We might receive information about you from other sources, such as updated delivery and address information from our carriers, which we use to correct our records and deliver your next purchase more easily.',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
             
-            _buildSection(
-              '1.0 Collection of Personal Information',
-              'We collect your personal information in order to provide and continually improve our products and services.',
-              [
-                _buildSubsection(
-                  '1.1 The types of personal information collected includes but is not limited to;',
-                  [
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
-                        children: [
-                          TextSpan(
-                            text: 'Information You Give Us: ',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                          TextSpan(
-                            text: 'We receive and store any information you provide in relation to our Services. This includes email addresses, phone numbers and location details. The user reserves the right not to provide certain information.',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
-                        children: [
-                          TextSpan(
-                            text: 'Automatic Information: ',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                          TextSpan(
-                            text: 'We automatically collect and store certain types of information about your use of our Services, including information about your interaction with content and services available through our Services. We use "cookies" and other unique identifiers, and we obtain certain types of information when your web browser or device accesses our Services and other content served by or on behalf of the Company on other websites.',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
-                        children: [
-                          TextSpan(
-                            text: 'Information from Other Sources: ',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                          ),
-                          TextSpan(
-                            text: 'We might receive information about you from other sources, such as updated delivery and address information from our carriers, which we use to correct our records and deliver your next purchase more easily.',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            _buildSection(
-              '2.0 Use of Personal Information',
-              'We use your personal information to operate, provide, develop, and improve the products and services that we offer users. These purposes include:',
-              [
+                  _buildSection(
+                    '2.0 Use of Personal Information',
+                    'We use your personal information to operate, provide, develop, and improve the products and services that we offer users. These purposes include:',
+                    [
                 _buildListItem('Purchase and delivery of products and services: We use your personal information to take, handle and facilitate online transactions, process payments, and communicate with you about orders, products and services, and promotional offers.'),
                 _buildListItem('Provide, troubleshoot, and improve our Services: We use your personal information to provide functionality, analyze performance, fix errors, and improve the usability and effectiveness of the Services.'),
                 _buildListItem('Recommendations and personalization: We use your personal information to recommend features, products, and services that might be of interest to you, identify your preferences, and personalize your experience with our Services.'),
@@ -157,8 +157,8 @@ class PrivacyPolicyPage extends StatelessWidget {
               ],
             ),
             
-            _buildSection(
-              '3.0 Sharing Your Personal Information',
+                  _buildSection(
+                    '3.0 Sharing Your Personal Information',
               'The Company does not sell users\' personal information to third parties. Users\' personal information is shared only in the following circumstances;',
               [
                 _buildListItem('Information to sellers using the Services: We make available to you services and products provided by sellers for use on or through our Services. Users\' personal information related to those transactions is shared with the seller.'),
@@ -170,8 +170,8 @@ class PrivacyPolicyPage extends StatelessWidget {
               ],
             ),
             
-            _buildSection(
-              '4.0 Security of Your Personal Information',
+                  _buildSection(
+                    '4.0 Security of Your Personal Information',
               'The Site is designed in such a way as to protect your privacy and personal information. Personal Information is protected in the following ways;',
               [
                 _buildListItem('We work to protect the security of your personal information during transmission by using encryption protocols and software.'),
@@ -180,8 +180,8 @@ class PrivacyPolicyPage extends StatelessWidget {
               ],
             ),
             
-            _buildSection(
-              '5.0 Advertising',
+                  _buildSection(
+                    '5.0 Advertising',
               null,
               [
                 _buildListItem('Third-Party Advertisers and Links to Other Websites: Our Services may include third-party advertising and links to other websites and apps. Third-party advertising partners may collect information about you when you interact with their content, advertising, and services.'),
@@ -189,14 +189,14 @@ class PrivacyPolicyPage extends StatelessWidget {
               ],
             ),
             
-            _buildSection(
-              '6.0 Access to your information',
+                  _buildSection(
+                    '6.0 Access to your information',
               'You can access your information, including your name, address, payment options, profile information, and purchase history in the "Your Account" section of the site.',
               null,
             ),
             
-            _buildSection(
-              '7.0 Conditions of Use',
+                  _buildSection(
+                    '7.0 Conditions of Use',
               null,
               [
                 Text(
@@ -209,6 +209,9 @@ class PrivacyPolicyPage extends StatelessWidget {
                   style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.6),
                 ),
               ],
+            ),
+                ],
+              ),
             ),
             
             const SizedBox(height: 20),
@@ -302,24 +305,6 @@ class PrivacyPolicyPage extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBoldText(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
-    );
-  }
-
-  Widget _buildText(String text) {
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
     );
   }
 

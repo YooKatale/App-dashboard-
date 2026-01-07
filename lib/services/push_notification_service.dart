@@ -62,17 +62,28 @@ class PushNotificationService {
     }
   }
 
-  // Save FCM token to server
+  // Save FCM token to server - synchronized with webapp endpoint
   static Future<void> _saveTokenToServer(String token) async {
     try {
       final userData = await AuthService.getUserData();
       final authToken = await AuthService.getToken();
       
-      if (userData != null && authToken != null) {
-        await ApiService.updateFCMToken(token, authToken);
+      // Use same endpoint as webapp: /admin/web_push
+      // This ensures notifications are synchronized across web and mobile
+      if (userData != null) {
+        final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+        final email = userData['email']?.toString();
+        
+        // Save to webapp endpoint for synchronization
+        await ApiService.saveFCMTokenToWebapp(
+          token: token,
+          userId: userId,
+          email: email,
+        );
       }
     } catch (e) {
-      // Handle error silently
+      // Handle error silently - token will be retried on next app start
+      print('Error saving FCM token: $e');
     }
   }
 

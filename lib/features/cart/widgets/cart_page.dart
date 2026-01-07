@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/cart_model.dart';
 import '../services/cart_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/api_service.dart';
+import '../../../services/error_handler_service.dart';
 import '../../../features/common/widgets/custom_button.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../authentication/providers/auth_provider.dart';
@@ -39,6 +42,7 @@ class _CartPageState extends ConsumerState<CartPage> {
   }
 
   Future<void> _loadCart() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -92,10 +96,12 @@ class _CartPageState extends ConsumerState<CartPage> {
             token: authToken, // Token is optional
           );
 
-          setState(() {
-            _cartItems = cartItems;
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _cartItems = cartItems;
+              _isLoading = false;
+            });
+          }
           
           // Update cart count provider (EXACT WEBAPP LOGIC: sync cart count)
           ref.read(cartCountProvider.notifier).state = cartItems.length;
@@ -109,28 +115,34 @@ class _CartPageState extends ConsumerState<CartPage> {
                 token: null, // Try without token
               );
 
-              setState(() {
-                _cartItems = cartItems;
-                _isLoading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _cartItems = cartItems;
+                  _isLoading = false;
+                });
+              }
               
               ref.read(cartCountProvider.notifier).state = cartItems.length;
               return;
             } catch (e2) {
               // Both attempts failed - show empty cart
-              setState(() {
-                _cartItems = [];
-                _isLoading = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _cartItems = [];
+                  _isLoading = false;
+                });
+              }
               ref.read(cartCountProvider.notifier).state = 0;
               return;
             }
           } else {
             // No token and fetch failed - show empty cart
-            setState(() {
-              _cartItems = [];
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _cartItems = [];
+                _isLoading = false;
+              });
+            }
             ref.read(cartCountProvider.notifier).state = 0;
             return;
           }
@@ -139,9 +151,11 @@ class _CartPageState extends ConsumerState<CartPage> {
 
       // Not logged in (EXACT webapp: if (!userInfo || userInfo == {} || userInfo == ""))
       // Only redirect if truly not logged in
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       
       if (mounted) {
         // Remember where user was trying to go
@@ -149,10 +163,12 @@ class _CartPageState extends ConsumerState<CartPage> {
         Navigator.of(context).pushReplacementNamed('/signin');
       }
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load cart: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load cart: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -163,13 +179,11 @@ class _CartPageState extends ConsumerState<CartPage> {
       return;
     }
 
-    // Optimistically update UI
-    setState(() {
-      final index = _cartItems.indexWhere((i) => i.cartId == item.cartId);
-      if (index != -1) {
-        _cartItems[index] = item.copyWith(quantity: newQuantity);
-      }
-    });
+    // Store original quantity to revert if update fails
+    final originalQuantity = item.quantity;
+    
+    // Don't update optimistically - wait for API response to prevent flickering
+    // This matches webapp behavior more closely
 
     try {
       // Check if user is logged in using auth state (more reliable)
@@ -205,56 +219,87 @@ class _CartPageState extends ConsumerState<CartPage> {
       }
 
       // Match webapp logic - include userId in update request
-      final success = await CartService.updateCartItem(
-        cartId: item.cartId,
-        quantity: newQuantity,
-        userId: userId, // Include userId like webapp
-        token: authToken, // Token is optional for some endpoints
-      );
+      try {
+        // Show loading indicator
+        if (mounted) {
+          // Update UI optimistically for better UX
+          setState(() {
+            final index = _cartItems.indexWhere((i) => i.cartId == item.cartId);
+            if (index != -1) {
+              _cartItems[index] = item.copyWith(quantity: newQuantity);
+            }
+          });
+        }
+        
+        final success = await CartService.updateCartItem(
+          cartId: item.cartId,
+          quantity: newQuantity,
+          userId: userId, // Include userId like webapp
+          token: authToken, // Token is optional for some endpoints
+        );
 
-      if (success) {
-        // Optimistically update UI without full reload
-        setState(() {
-          final index = _cartItems.indexWhere((cartItem) => cartItem.cartId == item.cartId);
-          if (index != -1) {
-            _cartItems[index] = _cartItems[index].copyWith(quantity: newQuantity);
+        if (success) {
+          // Update was successful - keep the optimistic update
+          // Update cart count provider
+          ref.read(cartCountProvider.notifier).state = _cartItems.length;
+          
+          // Recalculate total after successful update
+          if (mounted) {
+            setState(() {
+              // Total will be recalculated in build method
+            });
           }
-        });
-        
-        // Update cart count provider
-        ref.read(cartCountProvider.notifier).state = _cartItems.length;
-        
+          
+          // Don't show success message to avoid clutter - the UI already shows the update
+        } else {
+          // Update failed - revert to original quantity
+          if (mounted) {
+            setState(() {
+              final index = _cartItems.indexWhere((i) => i.cartId == item.cartId);
+              if (index != -1) {
+                _cartItems[index] = item.copyWith(quantity: originalQuantity);
+              }
+            });
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to update quantity. Please try again.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (apiError) {
+        // Handle API errors specifically
+        // Revert optimistic update on error
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Quantity updated'),
-              duration: Duration(seconds: 1),
-              backgroundColor: Colors.green,
-            ),
+          setState(() {
+            final index = _cartItems.indexWhere((i) => i.cartId == item.cartId);
+            if (index != -1) {
+              _cartItems[index] = item.copyWith(quantity: originalQuantity);
+            }
+          });
+          
+          // Use ErrorHandlerService for user-friendly error messages
+          final errorMessage = ErrorHandlerService.getErrorMessage(apiError);
+          ErrorHandlerService.showErrorSnackBar(
+            context,
+            message: 'Failed to update quantity. $errorMessage',
           );
         }
-      } else {
-        // Revert optimistic update on failure - reload from backend
-        await _loadCart();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to update quantity. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        return; // Exit early to avoid double error handling
       }
     } catch (e) {
-      // Revert optimistic update on error - reload from backend
-      await _loadCart();
+      // Handle general errors
+      // No need to revert - we didn't update optimistically
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating quantity: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+        // Use ErrorHandlerService for user-friendly error messages
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: 'Failed to update quantity. $errorMessage',
         );
       }
     }
@@ -296,10 +341,11 @@ class _CartPageState extends ConsumerState<CartPage> {
   }
 
   String _formatCurrency(double amount) {
-    return 'UGX ${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        )}';
+    final formatted = amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return 'UGX $formatted';
   }
 
   @override
@@ -420,7 +466,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                                     'Cart Items:',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      color: Colors.black87,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -429,7 +475,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: Colors.black,
                                     ),
                                   ),
                                 ],
@@ -443,7 +489,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                                     'Cart SubTotal:',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      color: Colors.black87,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -462,7 +508,34 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 width: double.infinity,
                                 child: CustomButton(
                                   title: 'Checkout',
-                                  onPressed: () {
+                                  onPressed: () async {
+                                    // Navigate to checkout page first, then proceed to webapp payment
+                                    // Check if user is logged in
+                                    final authState = ref.read(authStateProvider);
+                                    final userData = await AuthService.getUserData();
+                                    
+                                    String? userId;
+                                    if (authState.isLoggedIn && authState.userId != null) {
+                                      userId = authState.userId;
+                                    } else if (userData != null && userData.isNotEmpty) {
+                                      userId = userData['_id']?.toString() ?? userData['id']?.toString();
+                                    }
+                                    
+                                    if (userId == null || userData == null) {
+                                      // User not logged in - redirect to sign in
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please login to checkout'),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                        Navigator.of(context).pushReplacementNamed('/signin');
+                                      }
+                                      return;
+                                    }
+                                    
+                                    // Navigate to checkout page
                                     Navigator.pushNamed(
                                       context,
                                       '/checkout',
@@ -493,6 +566,14 @@ class _CartItemCard extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onDelete,
   });
+
+  String _formatCurrency(double amount) {
+    final formatted = amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return 'UGX $formatted';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -553,7 +634,7 @@ class _CartItemCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Colors.black,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -563,7 +644,7 @@ class _CartItemCard extends StatelessWidget {
                     'UGX ${item.price}${item.unit != null ? ' / ${item.unit}' : ''}',
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: Colors.black,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -615,7 +696,7 @@ class _CartItemCard extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                                  color: Colors.black,
                                 ),
                               ),
                             ),
@@ -684,18 +765,47 @@ class _CartItemCard extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: const Row(
+                      backgroundColor: Colors.white,
+                      title: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Remove Item'),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.delete_outline, color: Colors.red, size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Remove Item',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
                         ],
                       ),
-                      content: Text('Remove ${item.name} from cart?'),
+                      content: Text(
+                        'Are you sure you want to remove "${item.name}" from your cart?',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                         ElevatedButton(
                           onPressed: () {
@@ -705,8 +815,18 @@ class _CartItemCard extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
-                          child: const Text('Remove'),
+                          child: const Text(
+                            'Remove',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -727,12 +847,5 @@ class _CartItemCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatCurrency(double amount) {
-    return 'UGX ${amount.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        )}';
   }
 }

@@ -72,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen> {
           
           const Spacer(flex: 2),
           
-          // Original Fruits Image - use same image from welcome screen
+          // Original Fruits Image - use original image path
           Expanded(
             flex: 3,
             child: Container(

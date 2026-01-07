@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../services/api_service.dart';
 import '../../products/widgets/mobile_products_page.dart';
+import '../../products/widgets/mobile_product_card.dart';
+import '../../common/models/products_model.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../common/widgets/custom_appbar.dart';
 
@@ -430,13 +432,13 @@ class _MobileCategoriesPageState extends ConsumerState<MobileCategoriesPage> {
                                     ),
                                   )
                                 : GridView.builder(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(12),
                                     gridDelegate:
                                         const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 2,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio: 0.75,
+                                      crossAxisSpacing: 16, // Increased spacing so cards don't touch
+                                      mainAxisSpacing: 16, // Increased spacing so cards don't touch
+                                      childAspectRatio: 0.60, // Adjusted for fixed-height content
                                     ),
                                     itemCount: _products.length,
                                     itemBuilder: (context, index) {
@@ -456,81 +458,24 @@ class _MobileCategoriesPageState extends ConsumerState<MobileCategoriesPage> {
                                               .startsWith('http://') ||
                                           image.toString().startsWith('https://');
 
-                                      return GestureDetector(
+                                      // Use MobileProductCard for consistency
+                                      final productModel = PopularDetails(
+                                        id: int.tryParse((product['_id'] ?? product['id'] ?? '0').toString()) ?? 0,
+                                        title: name,
+                                        price: (product['price'] ?? '0').toString(),
+                                        image: image.toString(),
+                                        per: product['per']?.toString(),
+                                      );
+                                      
+                                      return MobileProductCard(
+                                        product: productModel,
+                                        showAddButton: false, // Remove Add button on categories page
                                         onTap: () {
                                           Navigator.pushNamed(
                                             context,
                                             '/product-detail/${product['_id'] ?? product['id']}',
                                           );
                                         },
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: Colors.grey[200]!,
-                                            ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              Expanded(
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      const BorderRadius.vertical(
-                                                    top: Radius.circular(8),
-                                                  ),
-                                                  child: isNetworkImage
-                                                      ? CachedNetworkImage(
-                                                          imageUrl: image.toString(),
-                                                          fit: BoxFit.cover,
-                                                          placeholder:
-                                                              (context, url) =>
-                                                                  Container(
-                                                            color: Colors.grey[200],
-                                                            child: const Center(
-                                                              child:
-                                                                  CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          errorWidget: (context,
-                                                                  url, error) =>
-                                                              Container(
-                                                            color: Colors.grey[200],
-                                                            child: const Icon(
-                                                              Icons
-                                                                  .image_not_supported,
-                                                              size: 32,
-                                                            ),
-                                                          ),
-                                                        )
-                                                      : Container(
-                                                          color: Colors.grey[200],
-                                                          child: const Icon(
-                                                            Icons.image_not_supported,
-                                                            size: 32,
-                                                          ),
-                                                        ),
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.all(8),
-                                                child: Text(
-                                                  name,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
                                       );
                                     },
                                   ),

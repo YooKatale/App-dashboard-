@@ -48,6 +48,7 @@ class ProductService {
                 title: product['name']?.toString() ?? 'Product',
                 price: product['price']?.toString() ?? '0',
                 per: product['unit']?.toString() ?? '',
+                actualId: product['_id']?.toString() ?? product['id']?.toString(), // Store actual _id for API calls
               );
             })
             .toList();
@@ -116,6 +117,7 @@ class ProductService {
                 title: product['name']?.toString() ?? 'Product',
                 price: product['price']?.toString() ?? '0',
                 per: product['unit']?.toString() ?? '',
+                actualId: product['_id']?.toString() ?? product['id']?.toString(), // Store actual _id for API calls
               );
             })
             .toList();

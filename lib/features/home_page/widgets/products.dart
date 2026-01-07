@@ -99,11 +99,12 @@ class ProductsPage extends ConsumerWidget {
                   height: 320,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: value.popularProducts.length,
                     itemBuilder: (context, index) {
                       final product = value.popularProducts[index];
-                      return SizedBox(
+                      return Container(
+                        margin: const EdgeInsets.only(right: 12),
                         width: 180,
                         child: MobileProductCard(
                           product: product,
@@ -112,7 +113,7 @@ class ProductsPage extends ConsumerWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ProductDetailPage(
-                                  productId: product.id.toString(),
+                                  productId: product.actualId ?? product.id.toString(),
                                   product: product,
                                 ),
                               ),

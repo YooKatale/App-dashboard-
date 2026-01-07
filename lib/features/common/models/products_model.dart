@@ -32,6 +32,7 @@ class PopularDetails {
   String title;
   String price;
   String? per;
+  String? actualId; // Store actual _id from backend for API calls
 
   PopularDetails({
     required this.id,
@@ -39,6 +40,7 @@ class PopularDetails {
     required this.title,
     required this.price,
     this.per = '',
+    this.actualId,
   });
 
   factory PopularDetails.fromJson(Map<String, dynamic> json) => PopularDetails(
@@ -47,6 +49,7 @@ class PopularDetails {
         title: json["title"],
         price: json["price"],
         per: json["per"],
+        actualId: json["_id"]?.toString() ?? json["id"]?.toString(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -55,5 +58,6 @@ class PopularDetails {
         "title": title,
         "price": price,
         "per": per,
+        if (actualId != null) "_id": actualId,
       };
 }

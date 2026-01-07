@@ -3,17 +3,20 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../home_page/notifiers/product_notifier.dart';
 import '../../common/widgets/custom_appbar.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
+import '../../common/models/products_model.dart';
 import 'mobile_product_card.dart';
 import 'product_detail_page.dart';
 
 class MobileProductsPage extends ConsumerWidget {
   final String title;
   final String? category;
+  final String? searchQuery;
 
   const MobileProductsPage({
     super.key,
     required this.title,
     this.category,
+    this.searchQuery,
   });
 
   @override
@@ -39,24 +42,40 @@ class MobileProductsPage extends ConsumerWidget {
       bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
       body: productProvider.when(
         data: (products) {
-          if (products.popularProducts.isEmpty) {
+          // Filter products by search query if provided
+          List<PopularDetails> filteredProducts = products.popularProducts;
+          if (searchQuery != null && searchQuery!.trim().isNotEmpty) {
+            final query = searchQuery!.toLowerCase().trim();
+            filteredProducts = products.popularProducts.where((product) {
+              // Search by title and price
+              return product.title.toLowerCase().contains(query) ||
+                  product.price.toLowerCase().contains(query);
+            }).toList();
+          }
+
+          if (filteredProducts.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.inventory_2_outlined,
+                    searchQuery != null && searchQuery!.trim().isNotEmpty
+                        ? Icons.search_off
+                        : Icons.inventory_2_outlined,
                     size: 64,
                     color: Colors.grey[400],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No products available',
+                    searchQuery != null && searchQuery!.trim().isNotEmpty
+                        ? 'No products found for "$searchQuery"'
+                        : 'No products available',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
                       fontFamily: 'Raleway',
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -67,13 +86,13 @@ class MobileProductsPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.65,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              childAspectRatio: 0.60, // Adjusted for fixed-height content to prevent overflow
+              crossAxisSpacing: 16, // Increased spacing so cards don't touch
+              mainAxisSpacing: 16, // Increased spacing so cards don't touch
             ),
-            itemCount: products.popularProducts.length,
+            itemCount: filteredProducts.length,
             itemBuilder: (context, index) {
-              final product = products.popularProducts[index];
+              final product = filteredProducts[index];
               return MobileProductCard(
                 product: product,
                 onTap: () {
@@ -81,7 +100,7 @@ class MobileProductsPage extends ConsumerWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ProductDetailPage(
-                        productId: product.id.toString(),
+                        productId: product.actualId ?? product.id.toString(),
                         product: product,
                       ),
                     ),

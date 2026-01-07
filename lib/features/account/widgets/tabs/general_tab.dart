@@ -83,6 +83,38 @@ class GeneralTab extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          const Text(
+            'Legal',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('Terms and Conditions'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/terms');
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip),
+                  title: const Text('Privacy Policy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/privacy');
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

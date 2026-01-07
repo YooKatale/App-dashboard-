@@ -3,8 +3,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../common/models/products_model.dart';
 import '../services/product_service.dart';
 
-// Fetch products from API (syncs with backend)
+// Fetch products from API (syncs with backend) - Used for Latest Products
 final productsProvider = FutureProvider.autoDispose<Products>((ref) async {
+  return await ProductService.fetchProductsFromApi();
+});
+
+// Fetch popular products from API - Same as productsProvider but can be customized later
+final popularProductsProvider = FutureProvider.autoDispose<Products>((ref) async {
   return await ProductService.fetchProductsFromApi();
 });
 

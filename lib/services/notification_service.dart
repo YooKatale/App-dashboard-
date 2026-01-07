@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -13,6 +14,10 @@ class NotificationService {
   static const String _lastSyncKey = 'last_notification_sync';
   
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  
+  // Test notification timer
+  static Timer? _testNotificationTimer;
+  static int _testNotificationCount = 0;
 
   /// Initialize notification service
   static Future<void> initialize() async {
@@ -404,5 +409,68 @@ class NotificationService {
 
   static String _formatTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Start test notifications (sends every minute)
+  /// For testing purposes only
+  static void startTestNotifications() {
+    // Cancel any existing timer
+    stopTestNotifications();
+    
+    _testNotificationCount = 0;
+    
+    // Send first notification immediately
+    _sendTestNotification();
+    
+    // Then send every minute
+    _testNotificationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _sendTestNotification();
+    });
+    
+    if (kDebugMode) {
+      print('🧪 Test notifications started - sending every minute');
+    }
+  }
+
+  /// Stop test notifications
+  static void stopTestNotifications() {
+    _testNotificationTimer?.cancel();
+    _testNotificationTimer = null;
+    if (kDebugMode) {
+      print('🛑 Test notifications stopped');
+    }
+  }
+
+  /// Send a test notification
+  static Future<void> _sendTestNotification() async {
+    _testNotificationCount++;
+    final now = DateTime.now();
+    final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    
+    // Rotate through meal types for variety
+    final mealTypes = ['breakfast', 'lunch', 'supper'];
+    final mealType = mealTypes[_testNotificationCount % 3];
+    final mealEmojis = {'breakfast': '🍳', 'lunch': '🍽️', 'supper': '🌙'};
+    
+    await _createNotification(
+      title: '🧪 Test: ${mealEmojis[mealType]} ${mealType.toUpperCase()} Time!',
+      body: 'Test notification #$_testNotificationCount at $timeString. This is a $mealType reminder notification.',
+      type: 'meal_calendar',
+      data: {
+        'mealType': mealType,
+        'testMode': true,
+        'count': _testNotificationCount,
+        'timestamp': now.toIso8601String(),
+      },
+    );
+    
+    if (kDebugMode) {
+      print('🧪 Test notification #$_testNotificationCount sent at $timeString');
+    }
+  }
+
+  /// Check if test notifications are running
+  static bool isTestNotificationsRunning() {
+    return _testNotificationTimer != null && _testNotificationTimer!.isActive;
   }
 }

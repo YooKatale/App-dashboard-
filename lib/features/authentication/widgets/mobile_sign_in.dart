@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../backend/backend_auth_services.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/api_service.dart';
 import '../../../services/push_notification_service.dart';
+import '../../../services/error_handler_service.dart';
 import '../../../app.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
@@ -130,10 +130,14 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
             // Still navigate to home as fallback
-            Navigator.of(context).pushReplacementNamed('/home');
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed('/home');
+            }
           } else {
             // Fallback to subscription page
-            Navigator.of(context).pushReplacementNamed('/subscription');
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed('/subscription');
+            }
           }
         } else {
           // Get redirect route or default to home
@@ -153,11 +157,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+        // Use ErrorHandlerService to show user-friendly error message
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: errorMessage,
         );
       }
     } finally {
@@ -196,11 +200,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+        // Use ErrorHandlerService to show user-friendly error message
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: errorMessage,
         );
       }
     } finally {
@@ -220,6 +224,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       if (result['success'] == true) {
         // Get saved credentials and login
         final userData = await AuthService.getUserData();
+        if (!mounted) return;
         if (userData != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -277,11 +282,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Authentication error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        // Use ErrorHandlerService to show user-friendly error message
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: errorMessage,
         );
       }
     }
@@ -702,10 +707,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       ),
     );
   }
+}
 
-  // Handle Google Sign In - Integrated with Backend
-  // COMMENTED OUT FOR FUTURE USE
-  /*
+// Handle Google Sign In - Integrated with Backend
+// COMMENTED OUT FOR FUTURE USE
+/*
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
 
@@ -889,9 +895,11 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       painter: GoogleLogoPainter(),
     );
   }
-}
+  */
 
 // Google Logo Painter - Draws the original multicolored Google "G" logo
+// COMMENTED OUT FOR FUTURE USE
+/*
 class GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

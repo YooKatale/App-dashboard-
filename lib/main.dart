@@ -110,6 +110,15 @@ Future preInitialize() async {
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
       // Initialize notification service
       await NotificationService.initialize();
+      
+      // Start test notifications in debug mode (every minute)
+      if (kDebugMode) {
+        // Enable test notifications - sends every minute for testing
+        NotificationService.startTestNotifications();
+        if (kDebugMode) {
+          print('🧪 Test notifications enabled - sending every minute');
+        }
+      }
     }
   } catch (e) {
     if (kDebugMode) {

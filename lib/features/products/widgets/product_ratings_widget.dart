@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/error_handler_service.dart';
 
 class ProductRatingsWidget extends ConsumerStatefulWidget {
   final String productId;
@@ -134,11 +135,10 @@ class _ProductRatingsWidgetState extends ConsumerState<ProductRatingsWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: 'Failed to submit rating. $errorMessage',
         );
       }
     } finally {
@@ -348,8 +348,10 @@ class _ProductRatingsWidgetState extends ConsumerState<ProductRatingsWidget> {
               TextField(
                 controller: _commentController,
                 maxLines: 3,
+                style: const TextStyle(color: Colors.black87), // Black text for visibility
                 decoration: InputDecoration(
                   hintText: 'Write your review...',
+                  hintStyle: TextStyle(color: Colors.grey[500]), // Grey hint text
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

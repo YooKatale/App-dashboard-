@@ -129,7 +129,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               ),
             ),
             
-            // Original Fruits Image at Bottom - exactly as in screenshot
+            // Original Fruits Image at Bottom - use original image path
             Expanded(
               child: Container(
                 width: double.infinity,

@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/api_service.dart';
-import '../../../services/push_notification_service.dart';
 import '../../../app.dart';
-import '../../../backend/backend_auth_services.dart';
-import '../../authentication/providers/auth_provider.dart';
-import '../../authentication/providers/redirect_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'mobile_sign_in.dart';
 
@@ -27,41 +20,13 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _agreeTerms = false;
-  DateTime? _selectedDate;
-  final TextEditingController _dateController = TextEditingController();
 
   @override
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _dateController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
-      firstDate: DateTime(1930),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color.fromRGBO(24, 95, 45, 1),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
-      });
-    }
   }
 
   Future<void> _handleSignUp() async {
@@ -86,14 +51,12 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
           ? nameParts.sublist(1).join(' ') 
           : '';
 
-      final result = await AuthService.register(
+      await AuthService.register(
         firstname: firstname,
         lastname: lastname,
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        dob: _selectedDate != null 
-            ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
-            : null,
+        dob: null,
         notificationPreferences: {
           'email': true,
           'calls': false,
@@ -483,10 +446,11 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
       ),
     );
   }
+}
 
-  // Handle Google Sign Up - Integrated with Backend
-  // COMMENTED OUT FOR FUTURE USE
-  /*
+// Handle Google Sign Up - Integrated with Backend
+// COMMENTED OUT FOR FUTURE USE
+/*
   Future<void> _handleGoogleSignUp() async {
     setState(() => _isLoading = true);
 
@@ -670,9 +634,11 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
       painter: GoogleLogoPainter(),
     );
   }
-}
+  */
 
 // Google Logo Painter - Draws the original multicolored Google "G" logo
+// COMMENTED OUT FOR FUTURE USE
+/*
 class GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -739,3 +705,4 @@ class GoogleLogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+*/

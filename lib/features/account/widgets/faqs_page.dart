@@ -81,7 +81,7 @@ class FAQsPage extends StatelessWidget {
             ),
             _buildFAQItem(
               'How do I order with YooKatale?',
-              'Google search YooKatale.com, log in or register if you don\'t have an account, scroll through the items on the homepage and select whichever item of want and add to chart or search for any items you don\'t see or use the WhatsApp button to place an order',
+              'Visit yookatale.app, log in or register if you don\'t have an account, scroll through the items on the homepage and select whichever item you want and add to cart or search for any items you don\'t see or use the WhatsApp button to place an order',
             ),
             _buildFAQItem(
               'How much does YooCard cost?',
@@ -101,7 +101,7 @@ class FAQsPage extends StatelessWidget {
             ),
             _buildFAQItem(
               'How do I get YooCard? Or how do I subscribe to YooKatale?',
-              'A card can be requested info@yookatale.com or Get Card to order & it\'s delivered direct to your doorstep. You can pay online or pay on delivery.',
+              'A card can be requested via info@yookatale.app or Get Card to order & it\'s delivered direct to your doorstep. You can pay online or pay on delivery.',
             ),
             _buildFAQItem(
               'Can I use YooKatale without a card?',

@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.yookatale"
+    namespace = "com.yookatale.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,14 +30,24 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.yookatale"
+        // Unique Application ID for Play Store
+        applicationId = "com.yookatale.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Google Maps API Key - can be set via gradle.properties or environment variable
+        // Add to android/gradle.properties: MAPS_API_KEY=YOUR_ACTUAL_API_KEY
+        val mapsApiKey = project.findProperty("MAPS_API_KEY") as String? ?: ""
+        if (mapsApiKey.isNotEmpty()) {
+            manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        } else {
+            // Fallback to empty or placeholder - you should set this in gradle.properties
+            manifestPlaceholders["MAPS_API_KEY"] = ""
+        }
     }
 
     signingConfigs {
@@ -45,7 +55,13 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"]?.toString() ?: ""
                 keyPassword = keystoreProperties["keyPassword"]?.toString() ?: ""
-                storeFile = file(keystoreProperties["storeFile"]?.toString() ?: "")
+                // Keystore file is in android directory, not android/app directory
+                val keystoreFileName = keystoreProperties["storeFile"]?.toString() ?: ""
+                storeFile = if (keystoreFileName.isNotEmpty()) {
+                    rootProject.file(keystoreFileName)
+                } else {
+                    file("")
+                }
                 storePassword = keystoreProperties["storePassword"]?.toString() ?: ""
             }
         }

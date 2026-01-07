@@ -18,7 +18,7 @@ class InfoSection extends StatelessWidget {
             ),
             SizedBox(width: 4),
             Text(
-              '256754615840',
+              '+256786118137',
               style: TextStyle(color: Colors.white, fontFamily: 'Cabin'),
             )
           ],
@@ -32,7 +32,7 @@ class InfoSection extends StatelessWidget {
             ),
             SizedBox(width: 4),
             Text(
-              'info@yookatale.com',
+              'info@yookatale.app',
               style: TextStyle(
                 color: Colors.white,
                 // fontFamily: 'Cabin'

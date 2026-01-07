@@ -28,17 +28,22 @@ class ErrorHandlerService {
 
     final errorString = error.toString().toLowerCase();
 
-    // Network/Connection errors
+    // Network/Connection errors - handle various network error formats
     if (error is SocketException || 
         errorString.contains('socketexception') ||
+        errorString.contains('socketfailed') ||
         errorString.contains('failed host lookup') ||
-        errorString.contains('network is unreachable')) {
+        errorString.contains('no address associated with hostname') ||
+        errorString.contains('network is unreachable') ||
+        errorString.contains('errno = 7')) {
       return 'No internet connection. Please check your network and try again.';
     }
 
     if (error is http.ClientException ||
+        errorString.contains('clientexception') ||
         errorString.contains('connection refused') ||
-        errorString.contains('connection timed out')) {
+        errorString.contains('connection timed out') ||
+        errorString.contains('host lookup')) {
       return 'Unable to connect to server. Please check your internet connection.';
     }
 

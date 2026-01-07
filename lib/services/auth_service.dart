@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'error_handler_service.dart';
 
 class AuthService {
   static const String baseUrl = 'https://yookatale-server.onrender.com/api';
@@ -67,6 +68,12 @@ class AuthService {
     required String password,
   }) async {
     try {
+      // Check if online first
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {
@@ -77,7 +84,7 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -133,10 +140,13 @@ class AuthService {
         return data;
       } else {
         final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Login failed');
+        final errorMessage = errorBody['message'] ?? 'Login failed. Please try again.';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error logging in: $e');
+      // Use ErrorHandlerService to get user-friendly error message
+      final friendlyMessage = ErrorHandlerService.getErrorMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
   

@@ -84,6 +84,10 @@ class _ImprovedSearchBarState extends State<ImprovedSearchBar> {
                 onSubmitted: (value) {
                   widget.onSearch?.call(value);
                 },
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                ),
                 decoration: InputDecoration(
                   hintText: widget.hintText ?? 'Search products, categories...',
                   hintStyle: TextStyle(

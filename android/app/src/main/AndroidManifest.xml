@@ -1,13 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
-    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     
-    <!-- Location Permissions for Delivery Tracking -->
+    <!-- Biometric Authentication Permissions -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+    
+    <!-- Location Permissions for Delivery Tracking and Maps -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Background location requires foreground service and user consent -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     
     <!-- Push Notifications Permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -41,7 +47,10 @@
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
-        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyBAefhRlXEH3vCko-XXXXXXX"/>
+        <!-- Google Maps API Key - Replace with your actual API key -->
+        <meta-data 
+            android:name="com.google.android.geo.API_KEY" 
+            android:value="${MAPS_API_KEY}"/>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

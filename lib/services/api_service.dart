@@ -48,18 +48,28 @@ class ApiService {
   // Fetch single product by ID
   static Future<Map<String, dynamic>> fetchProductById(String productId) async {
     try {
+      // Check if online first
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
       final response = await http.get(
         Uri.parse('$baseUrl/product/$productId'),
         headers: getHeaders(),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Failed to load product: ${response.statusCode}');
+        final errorBody = json.decode(response.body);
+        final errorMessage = errorBody['message'] ?? 'Failed to load product: ${response.statusCode}';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error fetching product: $e');
+      // Use ErrorHandlerService to get user-friendly error message
+      final friendlyMessage = ErrorHandlerService.getErrorMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
 
@@ -208,6 +218,12 @@ class ApiService {
     required String password,
   }) async {
     try {
+      // Check if online first
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: getHeaders(),
@@ -215,16 +231,19 @@ class ApiService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
         final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Login failed: ${response.statusCode}');
+        final errorMessage = errorBody['message'] ?? 'Login failed. Please try again.';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error logging in: $e');
+      // Use ErrorHandlerService to get user-friendly error message
+      final friendlyMessage = ErrorHandlerService.getErrorMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
 
@@ -285,24 +304,42 @@ class ApiService {
     String? token,
   }) async {
     try {
+      // Check if online first
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
+      // EXACT WEBAPP LOGIC: Send { productId, userId, quantity }
       final response = await http.post(
         Uri.parse('$baseUrl/product/cart'),
         headers: getHeaders(token: token),
         body: json.encode({
+          'productId': productId, // Webapp sends productId first
           'userId': userId,
-          'productId': productId,
           'quantity': quantity,
         }),
-      );
+      ).timeout(const Duration(seconds: 30));
 
+      final responseBody = json.decode(response.body);
+      
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return json.decode(response.body);
+        // Check if response indicates an error even with 200 status
+        if (responseBody is Map && responseBody.containsKey('error')) {
+          final errorMessage = responseBody['error']?.toString() ?? 
+                              responseBody['message']?.toString() ?? 
+                              'Failed to add to cart. Please try again.';
+          throw Exception(errorMessage);
+        }
+        return responseBody;
       } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Failed to add to cart: ${response.statusCode}');
+        final errorMessage = responseBody['message'] ?? 'Failed to add to cart. Please try again.';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error adding to cart: $e');
+      // Use ErrorHandlerService to get user-friendly error message
+      final friendlyMessage = ErrorHandlerService.getErrorMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
 
@@ -313,6 +350,12 @@ class ApiService {
     String? token,
   }) async {
     try {
+      // Check if online first
+      final isOnline = await ErrorHandlerService.isOnline();
+      if (!isOnline) {
+        throw Exception('No internet connection');
+      }
+
       // Match webapp logic - include userId if available
       final body = <String, dynamic>{
         'quantity': quantity,
@@ -325,16 +368,27 @@ class ApiService {
         Uri.parse('$baseUrl/product/cart/$cartId'),
         headers: getHeaders(token: token),
         body: json.encode(body),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final responseBody = json.decode(response.body);
+        // Check if response indicates an error even with 200 status
+        if (responseBody is Map && responseBody.containsKey('error')) {
+          final errorMessage = responseBody['error']?.toString() ?? 
+                              responseBody['message']?.toString() ?? 
+                              'Failed to update cart. Please try again.';
+          throw Exception(errorMessage);
+        }
+        return responseBody;
       } else {
         final errorBody = json.decode(response.body);
-        throw Exception(errorBody['message'] ?? 'Failed to update cart: ${response.statusCode}');
+        final errorMessage = errorBody['message'] ?? 'Failed to update cart. Please try again.';
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      throw Exception('Error updating cart: $e');
+      // Use ErrorHandlerService to get user-friendly error message
+      final friendlyMessage = ErrorHandlerService.getErrorMessage(e);
+      throw Exception(friendlyMessage);
     }
   }
 
@@ -688,7 +742,44 @@ class ApiService {
     }
   }
 
-  // Update FCM token
+  // Save FCM token to webapp endpoint (synchronized with webapp)
+  static Future<void> saveFCMTokenToWebapp({
+    required String token,
+    String? userId,
+    String? email,
+  }) async {
+    try {
+      // Use same endpoint as webapp: /admin/web_push
+      // This ensures notifications are synchronized across web and mobile
+      final backendUrl = 'https://yookatale-server.onrender.com';
+      
+      final response = await http.post(
+        Uri.parse('$backendUrl/admin/web_push'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'token': token,
+          'userId': userId,
+          'email': email,
+          'type': 'fcm',
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Token saved successfully to webapp endpoint
+        print('✅ FCM token saved to webapp endpoint');
+      } else {
+        print('⚠️ Failed to save FCM token: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error saving FCM token to webapp: $e');
+      // Don't throw - allow app to continue
+    }
+  }
+
+  // Update FCM token (legacy method - kept for backward compatibility)
   static Future<void> updateFCMToken(String token, String authToken) async {
     try {
       final userData = await AuthService.getUserData();
@@ -696,6 +787,10 @@ class ApiService {
 
       final userId = userData['_id']?.toString() ?? userData['id']?.toString();
       if (userId == null) return;
+
+      // Also save to webapp endpoint for synchronization
+      final email = userData['email']?.toString();
+      await saveFCMTokenToWebapp(token: token, userId: userId, email: email);
 
       final response = await http.post(
         Uri.parse('$baseUrl/users/fcm-token'),

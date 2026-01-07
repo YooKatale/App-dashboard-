@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:573491167004:android:c2afba499437b599c6c4d9",
         "android_client_info": {
-          "package_name": "com.example.yookatale"
+          "package_name": "com.yookatale.app"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "573491167004-k56dlkm22m4nspc4o01bf0fbgqcimgs7.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.yookatale",
+            "package_name": "com.yookatale.app",
             "certificate_hash": "2dbcd88666e855fd466384444d1b7b7856c530bb"
           }
         },

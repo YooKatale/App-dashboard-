@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../controller/focus_controller.dart';
 import '../notifiers/menu_notifier.dart';
 import '../../../widgets/improved_search_bar.dart';
+import '../../products/widgets/mobile_products_page.dart';
 
 // ignore: non_constant_identifier_names
 PreferredSizeWidget? CustomAppBar(BuildContext context) {
@@ -32,8 +33,20 @@ class SearchBar extends ConsumerWidget {
       hintText: 'Search on YooKatale',
       showNotificationIcon: true,
       onSearch: (query) {
-        // Handle search
+        // Handle search - navigate to products page with search query
         if (isVisible) focusController.closeSliderMenu(ref);
+        if (query.trim().isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MobileProductsPage(
+                title: 'Search Results',
+                category: null,
+                searchQuery: query.trim(),
+              ),
+            ),
+          );
+        }
       },
     );
   }
