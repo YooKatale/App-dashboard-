@@ -3,6 +3,7 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
+import '../app.dart';
 
 class PushNotificationService {
   static FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -100,14 +101,27 @@ class PushNotificationService {
     );
   }
 
-  // Handle notification tap
+  // Handle notification tap - navigate to meal calendar for meal notifications
   static void _handleNotificationTap(RemoteMessage message) {
     // Navigate based on notification data
     final data = message.data;
-    if (data['type'] == 'order') {
+    final mealType = data['mealType']?.toString();
+    final url = data['url']?.toString();
+    final notificationType = data['type']?.toString();
+    
+    // Navigate based on notification type
+    if (mealType != null || url != null || notificationType == 'meal_calendar') {
+      // Navigate to meal calendar/schedule page
+      MyApp.navigatorKey.currentState?.pushNamed('/schedule');
+    } else if (notificationType == 'order') {
       // Navigate to orders page
-    } else if (data['type'] == 'subscription') {
+      MyApp.navigatorKey.currentState?.pushNamed('/orders');
+    } else if (notificationType == 'subscription') {
       // Navigate to subscription page
+      MyApp.navigatorKey.currentState?.pushNamed('/subscription');
+    } else {
+      // Default: navigate to home
+      MyApp.navigatorKey.currentState?.pushNamed('/home');
     }
   }
 

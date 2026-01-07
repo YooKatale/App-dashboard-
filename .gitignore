@@ -49,3 +49,9 @@ android/upload-keystore.jks
 android/*.keystore
 *.jks
 *.keystore
+
+# API Keys - NEVER commit these!
+android/gradle.properties.local
+*.local
+.env.local
+.env.production

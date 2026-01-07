@@ -40,9 +40,10 @@ android {
         versionName = flutter.versionName
         
         // Google Maps API Key - can be set via gradle.properties or environment variable
-        // Add to android/gradle.properties: MAPS_API_KEY=YOUR_ACTUAL_API_KEY
+        // Add to android/gradle.properties.local: MAPS_API_KEY=YOUR_ACTUAL_API_KEY
+        // NEVER commit your actual API key to git!
         val mapsApiKey = project.findProperty("MAPS_API_KEY") as String? ?: ""
-        if (mapsApiKey.isNotEmpty()) {
+        if (mapsApiKey.isNotEmpty() && mapsApiKey != "YOUR_GOOGLE_MAPS_API_KEY_HERE") {
             manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         } else {
             // Fallback to empty or placeholder - you should set this in gradle.properties

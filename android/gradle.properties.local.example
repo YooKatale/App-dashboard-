@@ -1,0 +1,7 @@
+# Copy this file to gradle.properties.local and add your actual API key
+# This file is gitignored for security
+
+# Google Maps API Key
+# Get your key from: https://console.cloud.google.com/apis/credentials
+# Make sure to restrict the key to only Android apps and Maps SDK
+MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
