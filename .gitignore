@@ -55,3 +55,7 @@ android/gradle.properties.local
 *.local
 .env.local
 .env.production
+
+# Manifest files - build artifacts
+*.mf
+**/*.mf

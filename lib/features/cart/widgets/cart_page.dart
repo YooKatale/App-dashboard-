@@ -33,12 +33,8 @@ class _CartPageState extends ConsumerState<CartPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload cart when page becomes visible (e.g., after adding items)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadCart();
-      }
-    });
+    // Don't auto-reload cart here - it causes quantity to reset after update
+    // Only reload when explicitly needed (e.g., after adding new items)
   }
 
   Future<void> _loadCart() async {
@@ -240,6 +236,9 @@ class _CartPageState extends ConsumerState<CartPage> {
 
         if (success) {
           // Update was successful - keep the optimistic update
+          // DO NOT reload cart here - it causes quantity to reset to old value
+          // The optimistic update already shows the correct quantity in UI
+          
           // Update cart count provider
           ref.read(cartCountProvider.notifier).state = _cartItems.length;
           
@@ -247,10 +246,12 @@ class _CartPageState extends ConsumerState<CartPage> {
           if (mounted) {
             setState(() {
               // Total will be recalculated in build method
+              // Quantity is already updated optimistically above - don't reload!
             });
           }
           
           // Don't show success message to avoid clutter - the UI already shows the update
+          // IMPORTANT: Don't call _loadCart() here - it will reset the quantity!
         } else {
           // Update failed - revert to original quantity
           if (mounted) {
@@ -509,7 +510,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 child: CustomButton(
                                   title: 'Checkout',
                                   onPressed: () async {
-                                    // Navigate to checkout page first, then proceed to webapp payment
+                                    // Redirect directly to webapp for checkout/payment
                                     // Check if user is logged in
                                     final authState = ref.read(authStateProvider);
                                     final userData = await AuthService.getUserData();
@@ -535,15 +536,119 @@ class _CartPageState extends ConsumerState<CartPage> {
                                       return;
                                     }
                                     
-                                    // Navigate to checkout page
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/checkout',
-                                      arguments: {
-                                        'total': _calculateTotal(),
-                                        'cartItems': _cartItems,
-                                      },
-                                    );
+                                    // Create order and redirect to webapp payment
+                                    try {
+                                      // Show loading
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Preparing checkout...'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                      
+                                      // Fetch cart items
+                                      final cartItems = await CartService.fetchCart(userId);
+                                      if (cartItems.isEmpty) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Your cart is empty')),
+                                          );
+                                        }
+                                        return;
+                                      }
+                                      
+                                      final total = CartService.calculateTotal(cartItems);
+                                      final deliveryFee = 1000.0;
+                                      final orderTotal = total + deliveryFee;
+                                      
+                                      // Generate receipt ID
+                                      final now = DateTime.now();
+                                      final receiptId = 'R${now.year}${now.month}${now.day}-${now.millisecondsSinceEpoch % 1000}';
+                                      final orderDate = '${now.toString().split(' ')[0]}, ${now.toString().split(' ')[1]}';
+                                      
+                                      // Prepare cart data
+                                      final cartsData = cartItems.map((item) => {
+                                        'productId': item.productId,
+                                        'quantity': item.quantity,
+                                        'price': item.price,
+                                        'name': item.name,
+                                      }).toList();
+                                      
+                                      // Create order via API
+                                      final token = await AuthService.getToken();
+                                      final response = await ApiService.createCartCheckout(
+                                        user: userData,
+                                        customerName: '${userData['firstname'] ?? ''} ${userData['lastname'] ?? ''}'.trim(),
+                                        carts: cartsData,
+                                        order: {
+                                          'orderTotal': orderTotal,
+                                          'deliveryAddress': userData['address']?.toString() ?? userData['deliveryAddress']?.toString() ?? '',
+                                          'specialRequests': '',
+                                          'payment': {'paymentMethod': '', 'transactionId': ''},
+                                          'orderDate': orderDate,
+                                          'receiptId': receiptId,
+                                        },
+                                        token: token,
+                                      );
+                                      
+                                      // Extract order ID
+                                      String? orderId;
+                                      if (response['data'] != null && response['data'] is Map) {
+                                        final data = response['data'] as Map<String, dynamic>;
+                                        orderId = data['Order']?.toString() ?? data['orderId']?.toString();
+                                      }
+                                      
+                                      if (orderId == null) {
+                                        throw Exception('Failed to create order');
+                                      }
+                                      
+                                      // Redirect to webapp payment page
+                                      final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
+                                      final uri = Uri.parse(paymentUrl);
+                                      
+                                      // Launch webapp payment page
+                                      final launched = await launchUrl(
+                                        uri,
+                                        mode: LaunchMode.externalApplication,
+                                      );
+                                      
+                                      if (mounted) {
+                                        if (launched) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Redirecting to payment...'),
+                                              backgroundColor: Colors.green,
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                          // Navigate back to home after redirect
+                                          Future.delayed(const Duration(seconds: 1), () {
+                                            if (mounted) {
+                                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                                '/home',
+                                                (route) => false,
+                                              );
+                                            }
+                                          });
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Please open: $paymentUrl'),
+                                              duration: const Duration(seconds: 5),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ErrorHandlerService.showErrorSnackBar(
+                                          context,
+                                          message: 'Failed to checkout: ${ErrorHandlerService.getErrorMessage(e)}',
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                               ),
