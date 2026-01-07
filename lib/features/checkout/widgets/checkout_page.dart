@@ -212,6 +212,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
 
       // Always try to launch URL - don't check canLaunchUrl first as it may fail incorrectly
       try {
+        // Try to launch URL
         final launched = await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
@@ -227,21 +228,46 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                 duration: Duration(seconds: 2),
               ),
             );
-            // Go back to cart after a short delay
-            Future.delayed(const Duration(seconds: 1), () {
+            // Navigate back to home after redirect
+            Future.delayed(const Duration(seconds: 2), () {
               if (mounted) {
-                Navigator.of(context).pop(); // Go back to cart
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/home',
+                  (route) => false,
+                );
               }
             });
           } else {
-            // If launch failed, show error but don't throw
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Please open this link in your browser: $paymentUrl'),
-                backgroundColor: Colors.orange,
-                duration: const Duration(seconds: 5),
-              ),
-            );
+            // If launch failed, try alternative method
+            try {
+              await launchUrl(uri, mode: LaunchMode.platformDefault);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Opening payment page...'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e2) {
+              // If all methods fail, show the URL to user
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please open this link to complete payment: $paymentUrl'),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 10),
+                    action: SnackBarAction(
+                      label: 'Copy',
+                      onPressed: () {
+                        // Copy to clipboard would require clipboard package
+                      },
+                    ),
+                  ),
+                );
+              }
+            }
           }
         }
       } catch (e) {

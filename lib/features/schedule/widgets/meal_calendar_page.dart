@@ -330,7 +330,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
             
             // Delivery Information
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -359,14 +359,15 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Flexible(
                         child: Text(
                           'Free Delivery',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: 16,
                             color: Colors.black87,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
