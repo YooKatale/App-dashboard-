@@ -731,7 +731,13 @@ class _CartItemCardState extends State<_CartItemCard> {
                                   bottomLeft: Radius.circular(8),
                                 ),
                                 onTap: item.quantity > 1
-                                    ? () => onQuantityChanged(item.quantity - 1)
+                                    ? () {
+                                        // FIX: Ensure quantity never goes below 1
+                                        final newQty = item.quantity - 1;
+                                        if (newQty >= 1) {
+                                          onQuantityChanged(newQty);
+                                        }
+                                      }
                                     : null,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -770,11 +776,17 @@ class _CartItemCardState extends State<_CartItemCard> {
                                 ),
                                 onSubmitted: (value) {
                                   final newQuantity = int.tryParse(value);
-                                  if (newQuantity != null && newQuantity > 0 && newQuantity != item.quantity) {
+                                  // FIX: Ensure quantity is at least 1, never 0
+                                  if (newQuantity != null && newQuantity >= 1 && newQuantity != item.quantity) {
                                     onQuantityChanged(newQuantity);
                                   } else {
-                                    // Reset to original if invalid
-                                    _quantityController.text = '${item.quantity}';
+                                    // Reset to original if invalid - ensure it's at least 1
+                                    final safeQuantity = item.quantity < 1 ? 1 : item.quantity;
+                                    _quantityController.text = '$safeQuantity';
+                                    if (item.quantity < 1) {
+                                      // If quantity is 0, update it to 1
+                                      onQuantityChanged(1);
+                                    }
                                   }
                                 },
                                 onChanged: (value) {

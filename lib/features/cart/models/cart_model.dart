@@ -18,13 +18,22 @@ class CartItem {
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
+    // FIX: Ensure cartId is always set - try multiple fields
+    final cartId = json['cartId']?.toString() ?? 
+                   json['_id']?.toString() ?? 
+                   json['id']?.toString() ?? 
+                   '';
+    
+    // FIX: Ensure quantity is always at least 1
+    final quantity = _parseQuantity(json['quantity']);
+    
     return CartItem(
-      cartId: json['cartId']?.toString() ?? json['_id']?.toString() ?? '',
+      cartId: cartId,
       productId: json['productId']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Product',
       image: _getImageUrl(json),
       price: json['price']?.toString() ?? '0',
-      quantity: _parseQuantity(json['quantity']),
+      quantity: quantity,
       unit: json['unit']?.toString(),
     );
   }

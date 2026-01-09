@@ -26,9 +26,23 @@ class CartService {
           );
           
           if (product.isNotEmpty) {
+            // FIX: Ensure cartId is always set and quantity is valid
+            final cartId = cartItem['_id']?.toString() ?? 
+                          cartItem['cartId']?.toString() ?? 
+                          cartItem['id']?.toString() ?? 
+                          '';
+            
+            // FIX: Ensure quantity is at least 1
+            final quantity = cartItem['quantity'];
+            final validQuantity = (quantity is int && quantity > 0) || 
+                                 (quantity is String && int.tryParse(quantity) != null && int.parse(quantity) > 0)
+                                 ? (quantity is int ? quantity : int.parse(quantity))
+                                 : 1;
+            
             cartItems.add(CartItem.fromJson({
               ...cartItem,
-              'cartId': cartItem['_id'],
+              'cartId': cartId,
+              'quantity': validQuantity,
               ...product,
             }));
           }
