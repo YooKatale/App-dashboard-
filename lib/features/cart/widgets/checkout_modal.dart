@@ -164,112 +164,60 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
 
       if (!mounted) return;
 
-      // Redirect to webapp payment page - EXACT WEBAPP URL
+      // Redirect to webapp payment page - EXACT WEBAPP URL (like subscription page)
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
 
       if (!mounted) return;
 
-      // Show redirect message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.payment, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Redirecting to payment page...',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Color.fromRGBO(24, 95, 45, 1),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // Close modal first
+      Navigator.of(context).pop();
 
-      // Try to launch URL immediately - don't wait
-      bool launched = false;
-      
-      // First try: External browser (preferred for payment)
+      // Launch URL directly (like subscription test plans do)
       try {
-        launched = await launchUrl(
+        final launched = await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
         );
-      } catch (e) {
-        if (kDebugMode) {
-          print('External launch failed: $e');
-        }
-      }
-
-      // Second try: Platform default
-      if (!launched) {
-        try {
-          launched = await launchUrl(
-            uri,
-            mode: LaunchMode.platformDefault,
-          );
-        } catch (e) {
-          if (kDebugMode) {
-            print('Platform default launch failed: $e');
-          }
-        }
-      }
-
-      // Third try: In-app browser
-      if (!launched) {
-        try {
-          launched = await launchUrl(
-            uri,
-            mode: LaunchMode.inAppWebView,
-          );
-        } catch (e) {
-          if (kDebugMode) {
-            print('In-app browser launch failed: $e');
-          }
-        }
-      }
-
-      // Close modal after attempting to launch
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
-      if (mounted) {
-        if (launched) {
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Payment page opened. Complete your payment to finish checkout.',
-                      style: TextStyle(fontSize: 14),
+        
+        if (mounted) {
+          if (launched) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Redirecting to payment page...',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
               ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 5),
-            ),
-          );
-          
-          // Navigate back to home after a delay
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/home',
-                (route) => false,
-              );
-            }
-          });
-        } else {
+            );
+            
+            // Navigate back to home
+            Future.delayed(const Duration(seconds: 1), () {
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/home',
+                  (route) => false,
+                );
+              }
+            });
+          } else {
+            // Fallback: Try platform default
+            await launchUrl(uri, mode: LaunchMode.platformDefault);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
           // Show error with copy option
           ErrorHandlerService.showErrorDialog(
             context,
