@@ -62,7 +62,8 @@ class NotificationService {
         await syncNotificationsFromServer();
 
         // Start test notification scheduler (for emulator testing - every minute)
-        _startTestNotificationScheduler();
+        // This sends notifications every minute that appear in the notification tab
+        startTestNotifications();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -71,35 +72,6 @@ class NotificationService {
     }
   }
 
-  /// Start test notification scheduler - sends notification every minute for testing
-  static void _startTestNotificationScheduler() {
-    // Stop existing timer if any
-    _testNotificationTimer?.cancel();
-    _testNotificationCount = 0;
-
-    // Start timer - sends notification every minute (60 seconds)
-    _testNotificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _sendTestNotification();
-    });
-
-    // Send first notification after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      _sendTestNotification();
-    });
-
-    if (kDebugMode) {
-      print('✅ Test notification scheduler started - notifications every minute');
-    }
-  }
-
-  /// Stop test notification scheduler
-  static void stopTestNotificationScheduler() {
-    _testNotificationTimer?.cancel();
-    _testNotificationTimer = null;
-    if (kDebugMode) {
-      print('Test notification scheduler stopped');
-    }
-  }
 
   /// Save FCM token to server for cross-device sync
   static Future<void> _saveTokenToServer(String token) async {

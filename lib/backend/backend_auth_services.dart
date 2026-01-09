@@ -331,12 +331,11 @@ class AuthBackend {
 
       // Perform authentication with better error handling for mobile devices
       // Support both fingerprint and face ID for better device compatibility
-      // For local_auth v3.0.0, use named parameters directly (no AuthenticationOptions class)
+      // For local_auth v3.0.0, use named parameters directly
       final bool isAuthenticated = await _localAuth.authenticate(
         localizedReason: 'Please authenticate with your fingerprint or face ID to sign in to Yookatale',
         biometricOnly: true, // Require biometric authentication (fingerprint/face ID/facial recognition)
         sensitiveTransaction: true, // Require device unlock for sensitive transaction
-        useErrorDialogs: true, // Show system error dialogs for better UX
       );
 
       if (isAuthenticated) {
