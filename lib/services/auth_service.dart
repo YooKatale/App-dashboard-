@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'error_handler_service.dart';
+import 'notification_service.dart';
 
 class AuthService {
   static const String baseUrl = 'https://yookatale-server.onrender.com/api';
@@ -132,6 +134,47 @@ class AuthService {
         } else if (data.isNotEmpty) {
           // Save entire response if no user data found (like webapp saves { ...res })
           await saveUserData(data);
+        }
+        
+        // Add login notification to history
+        try {
+          final now = DateTime.now();
+          final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+          final prefs = await SharedPreferences.getInstance();
+          final notificationsJson = prefs.getString('user_notifications');
+          final notifications = notificationsJson != null 
+              ? (json.decode(notificationsJson) as List).cast<Map<String, dynamic>>()
+              : <Map<String, dynamic>>[];
+          
+          notifications.insert(0, {
+            'id': 'login_${now.millisecondsSinceEpoch}',
+            'title': '✅ Welcome Back!',
+            'body': 'You have successfully logged in at $timeString on ${now.toString().split(' ')[0]}',
+            'type': 'login',
+            'data': {
+              'email': email,
+              'timestamp': now.toIso8601String(),
+              'time': timeString,
+            },
+            'timestamp': now.toIso8601String(),
+            'read': false,
+          });
+          
+          // Keep only last 100 notifications
+          if (notifications.length > 100) {
+            notifications.removeRange(100, notifications.length);
+          }
+          
+          await prefs.setString('user_notifications', json.encode(notifications));
+          
+          // Update unread count
+          final unreadCount = notifications.where((n) => n['read'] != true).length;
+          await prefs.setInt('unread_notifications_count', unreadCount);
+        } catch (e) {
+          // Non-critical - notification save failed
+          if (kDebugMode) {
+            print('Error saving login notification: $e');
+          }
         }
         
         // Ensure data is persisted

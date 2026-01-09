@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/cart_model.dart';
@@ -250,8 +251,19 @@ class _CartPageState extends ConsumerState<CartPage> {
             });
           }
           
-          // Don't show success message to avoid clutter - the UI already shows the update
+          // Show brief success feedback
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Quantity updated to $newQuantity'),
+                duration: const Duration(seconds: 1),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          
           // IMPORTANT: Don't call _loadCart() here - it will reset the quantity!
+          // The server has the updated quantity, and our local state matches it
         } else {
           // Update failed - revert to original quantity
           if (mounted) {
@@ -568,13 +580,16 @@ class _CartPageState extends ConsumerState<CartPage> {
                                       final receiptId = 'R${now.year}${now.month}${now.day}-${now.millisecondsSinceEpoch % 1000}';
                                       final orderDate = '${now.toString().split(' ')[0]}, ${now.toString().split(' ')[1]}';
                                       
-                                      // Prepare cart data
+                                      // Prepare cart data - match webapp format
                                       final cartsData = cartItems.map((item) => {
+                                        '_id': item.productId,
+                                        'cartId': item.cartId,
                                         'productId': item.productId,
                                         'quantity': item.quantity,
                                         'price': item.price,
                                         'name': item.name,
-                                      }).toList();
+                                        'images': item.image.isNotEmpty ? [item.image] : [],
+                                      } as Map<String, dynamic>).toList();
                                       
                                       // Create order via API
                                       final token = await AuthService.getToken();
@@ -604,26 +619,67 @@ class _CartPageState extends ConsumerState<CartPage> {
                                         throw Exception('Failed to create order');
                                       }
                                       
-                                      // Redirect to webapp payment page
+                                      // Redirect to webapp payment page - EXACT webapp URL
                                       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
                                       final uri = Uri.parse(paymentUrl);
                                       
-                                      // Launch webapp payment page
-                                      final launched = await launchUrl(
-                                        uri,
-                                        mode: LaunchMode.externalApplication,
-                                      );
+                                      if (mounted) {
+                                        // Show redirect message
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Redirecting to payment page...'),
+                                            backgroundColor: Colors.green,
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                      
+                                      // Try multiple launch modes for better compatibility
+                                      bool launched = false;
+                                      
+                                      // Try external application first (opens in browser)
+                                      try {
+                                        launched = await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      } catch (e) {
+                                        if (kDebugMode) {
+                                          print('External launch failed: $e');
+                                        }
+                                      }
+                                      
+                                      // If external failed, try platform default
+                                      if (!launched) {
+                                        try {
+                                          launched = await launchUrl(
+                                            uri,
+                                            mode: LaunchMode.platformDefault,
+                                          );
+                                        } catch (e) {
+                                          if (kDebugMode) {
+                                            print('Platform default launch failed: $e');
+                                          }
+                                        }
+                                      }
+                                      
+                                      // If still failed, try in-app browser
+                                      if (!launched) {
+                                        try {
+                                          launched = await launchUrl(
+                                            uri,
+                                            mode: LaunchMode.inAppWebView,
+                                          );
+                                        } catch (e) {
+                                          if (kDebugMode) {
+                                            print('In-app browser launch failed: $e');
+                                          }
+                                        }
+                                      }
                                       
                                       if (mounted) {
                                         if (launched) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Redirecting to payment...'),
-                                              backgroundColor: Colors.green,
-                                              duration: Duration(seconds: 2),
-                                            ),
-                                          );
-                                          // Navigate back to home after redirect
+                                          // Success - navigate back to home
                                           Future.delayed(const Duration(seconds: 1), () {
                                             if (mounted) {
                                               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -633,10 +689,25 @@ class _CartPageState extends ConsumerState<CartPage> {
                                             }
                                           });
                                         } else {
+                                          // Show URL for manual copy
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text('Please open: $paymentUrl'),
-                                              duration: const Duration(seconds: 5),
+                                              content: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text('Could not open browser automatically.'),
+                                                  const SizedBox(height: 4),
+                                                  SelectableText(
+                                                    paymentUrl,
+                                                    style: const TextStyle(
+                                                      color: Colors.blue,
+                                                      decoration: TextDecoration.underline,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              duration: const Duration(seconds: 10),
                                             ),
                                           );
                                         }
@@ -661,7 +732,7 @@ class _CartPageState extends ConsumerState<CartPage> {
   }
 }
 
-class _CartItemCard extends StatelessWidget {
+class _CartItemCard extends StatefulWidget {
   final CartItem item;
   final Function(int) onQuantityChanged;
   final VoidCallback onDelete;
@@ -671,6 +742,34 @@ class _CartItemCard extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onDelete,
   });
+
+  @override
+  State<_CartItemCard> createState() => _CartItemCardState();
+}
+
+class _CartItemCardState extends State<_CartItemCard> {
+  late TextEditingController _quantityController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _quantityController = TextEditingController(text: '${widget.item.quantity}');
+  }
+  
+  @override
+  void didUpdateWidget(_CartItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update controller when item changes (but only if different)
+    if (oldWidget.item.quantity != widget.item.quantity) {
+      _quantityController.text = '${widget.item.quantity}';
+    }
+  }
+  
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   String _formatCurrency(double amount) {
     final formatted = amount.toStringAsFixed(0).replaceAllMapped(
@@ -682,6 +781,10 @@ class _CartItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    final onQuantityChanged = widget.onQuantityChanged;
+    final onDelete = widget.onDelete;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -789,20 +892,41 @@ class _CartItemCard extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            // Editable quantity text field - allows typing numbers
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              width: 60,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 border: Border.symmetric(
                                   vertical: BorderSide(color: Colors.grey[300]!),
                                 ),
                               ),
-                              child: Text(
-                                '${item.quantity}',
+                              child: TextField(
+                                controller: _quantityController,
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
                                 ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
+                                  isDense: true,
+                                ),
+                                onSubmitted: (value) {
+                                  final newQuantity = int.tryParse(value);
+                                  if (newQuantity != null && newQuantity > 0 && newQuantity != item.quantity) {
+                                    onQuantityChanged(newQuantity);
+                                  } else {
+                                    // Reset to original if invalid
+                                    _quantityController.text = '${item.quantity}';
+                                  }
+                                },
+                                onChanged: (value) {
+                                  // Allow typing, validate on submit
+                                },
                               ),
                             ),
                             Material(

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import '../app.dart';
@@ -40,8 +42,22 @@ class PushNotificationService {
       provisional: false,
     );
 
-    if (kDebugMode) {
-      print('FCM permission status: ${settings.authorizationStatus}');
+    print('🔔 FCM Permission Request Result:');
+    print('   Authorization Status: ${settings.authorizationStatus}');
+    print('   Alert: ${settings.alert}');
+    print('   Badge: ${settings.badge}');
+    print('   Sound: ${settings.sound}');
+    // Note: provisional property may not be available in all Firebase versions
+    
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('✅ FCM permissions GRANTED');
+    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('⚠️ FCM permissions PROVISIONAL (limited)');
+    } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      print('❌ FCM permissions DENIED - notifications will NOT work!');
+      print('❌ USER MUST GRANT PERMISSIONS IN SETTINGS!');
+    } else {
+      print('⚠️ FCM permissions UNKNOWN: ${settings.authorizationStatus}');
     }
 
     // Try to get FCM token even if permission is not yet fully authorized
@@ -49,16 +65,22 @@ class PushNotificationService {
     try {
       String? token = await messaging.getToken();
       if (token != null) {
+        print('📱 FCM Token obtained: ${token.substring(0, 30)}...');
+        print('📱 Full token length: ${token.length}');
         await _saveTokenToServer(token);
         if (kDebugMode) {
           print('✅ FCM token obtained and saved: ${token.substring(0, 20)}...');
         }
       } else {
+        print('❌ FCM token is NULL - this is the problem!');
+        print('❌ Permission status: ${settings.authorizationStatus}');
         if (kDebugMode) {
           print('⚠️ FCM token is null - permission may be denied');
         }
       }
     } catch (e) {
+      print('❌ CRITICAL ERROR getting FCM token: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
       if (kDebugMode) {
         print('Error getting FCM token: $e');
       }
@@ -120,7 +142,7 @@ class PushNotificationService {
   }
 
   // Handle foreground messages - synchronized with webapp
-  static void _handleForegroundMessage(RemoteMessage message) {
+  static Future<void> _handleForegroundMessage(RemoteMessage message) async {
     // Extract notification data (synchronized with webapp format)
     final notification = message.notification;
     final data = message.data;
@@ -138,27 +160,68 @@ class PushNotificationService {
     final url = data['url']?.toString();
     
     // Create local notification (synchronized with webapp)
-    AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        channelKey: 'yookatale_channel',
-        title: title,
-        body: body,
-        notificationLayout: NotificationLayout.Default,
-        payload: {
-          'mealType': mealType ?? '',
-          'url': url ?? 'https://www.yookatale.app/schedule',
-          'type': data['type']?.toString() ?? 'meal_calendar',
-        },
-        category: NotificationCategory.Message,
-      ),
-      actionButtons: [
-        NotificationActionButton(
-          key: 'VIEW',
-          label: 'View Schedule',
+    final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    try {
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: notificationId,
+          channelKey: 'yookatale_channel',
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+          payload: {
+            'mealType': mealType ?? '',
+            'url': url ?? 'https://www.yookatale.app/schedule',
+            'type': data['type']?.toString() ?? 'meal_calendar',
+          },
+          category: NotificationCategory.Message,
         ),
-      ],
-    );
+        actionButtons: [
+          NotificationActionButton(
+            key: 'VIEW',
+            label: 'View Schedule',
+          ),
+        ],
+      );
+      print('✅ Local notification created successfully');
+    } catch (e) {
+      print('❌ Error creating local notification: $e');
+    }
+    
+    // IMPORTANT: Save notification to history (so it appears in notification tab)
+    try {
+      // Use public method to save notification
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = prefs.getString('user_notifications');
+      final notifications = notificationsJson != null 
+          ? (json.decode(notificationsJson) as List).cast<Map<String, dynamic>>()
+          : <Map<String, dynamic>>[];
+      
+      notifications.insert(0, {
+        'id': message.messageId ?? notificationId.toString(),
+        'title': title,
+        'body': body,
+        'type': data['type']?.toString() ?? 'meal_calendar',
+        'data': data,
+        'timestamp': DateTime.now().toIso8601String(),
+        'read': false,
+      });
+      
+      // Keep only last 100 notifications
+      if (notifications.length > 100) {
+        notifications.removeRange(100, notifications.length);
+      }
+      
+      await prefs.setString('user_notifications', json.encode(notifications));
+      
+      // Update unread count
+      final unreadCount = notifications.where((n) => n['read'] != true).length;
+      await prefs.setInt('unread_notifications_count', unreadCount);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving foreground notification to history: $e');
+      }
+    }
   }
 
   // Handle notification tap - navigate to meal calendar for meal notifications

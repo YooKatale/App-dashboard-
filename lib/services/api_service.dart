@@ -769,12 +769,20 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Token saved successfully to webapp endpoint
+        final responseBody = json.decode(response.body);
         print('✅ FCM token saved to webapp endpoint');
+        print('📱 Response: $responseBody');
+        print('📱 Token prefix: ${token.substring(0, 20)}...');
+        print('📱 UserId: $userId');
+        print('📱 Email: $email');
       } else {
+        final errorBody = response.body;
         print('⚠️ Failed to save FCM token: ${response.statusCode}');
+        print('⚠️ Error response: $errorBody');
       }
     } catch (e) {
-      print('Error saving FCM token to webapp: $e');
+      print('❌ Error saving FCM token to webapp: $e');
+      print('❌ Token: ${token.substring(0, 20)}...');
       // Don't throw - allow app to continue
     }
   }

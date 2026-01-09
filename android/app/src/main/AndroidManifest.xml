@@ -65,9 +65,10 @@
         </service>
         
         <!-- Default notification channel for Android 8.0+ -->
+        <!-- MUST match the channelKey in AwesomeNotifications initialization -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="yookatale_notifications" />
+            android:value="yookatale_channel" />
             
         <!-- Notification icon -->
         <meta-data

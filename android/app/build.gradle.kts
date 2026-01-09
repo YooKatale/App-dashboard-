@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Google Services plugin for Firebase (REQUIRED for FCM)
+    id("com.google.gms.google-services")
 }
 
 // Load keystore properties if file exists
