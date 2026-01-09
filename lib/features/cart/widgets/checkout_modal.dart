@@ -168,6 +168,8 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
 
+      if (!mounted) return;
+
       // Show redirect message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -184,33 +186,11 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             ],
           ),
           backgroundColor: Color.fromRGBO(24, 95, 45, 1),
-          duration: Duration(seconds: 3),
+          duration: Duration(seconds: 2),
         ),
       );
 
-      // Show redirect message first
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.payment, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Redirecting to payment page...',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Color.fromRGBO(24, 95, 45, 1),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-
-      // Try multiple launch modes to ensure it works
+      // Try to launch URL immediately - don't wait
       bool launched = false;
       
       // First try: External browser (preferred for payment)
@@ -253,10 +233,12 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         }
       }
 
+      // Close modal after attempting to launch
       if (mounted) {
-        // Close modal after attempting to launch
         Navigator.of(context).pop();
-        
+      }
+
+      if (mounted) {
         if (launched) {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
