@@ -334,7 +334,6 @@ class AuthBackend {
         localizedReason: 'Please authenticate with your fingerprint or face ID to sign in to Yookatale',
         biometricOnly: true,
         sensitiveTransaction: true,
-        stickyAuth: true,
       );
 
       if (isAuthenticated) {
