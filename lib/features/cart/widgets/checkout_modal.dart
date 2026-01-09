@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/error_handler_service.dart';
@@ -46,8 +47,9 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
 
   void _generateReceiptData() {
     final now = DateTime.now();
-    final date = now.toDateString();
-    final time = now.toLocaleTimeString();
+    // Use intl DateFormat for proper date/time formatting
+    final date = DateFormat('EEE, MMM dd, yyyy').format(now);
+    final time = DateFormat('hh:mm:ss a').format(now);
     setState(() {
       _currentDateTime = '$date, $time';
       final randomNum = DateTime.now().millisecondsSinceEpoch % 1000;
