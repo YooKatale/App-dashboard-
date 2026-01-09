@@ -297,6 +297,22 @@ class AuthBackend {
     }
   }
 
+  /// Check if device supports biometric authentication (for UI display)
+  Future<bool> isBiometricSupported() async {
+    try {
+      final bool isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (!isDeviceSupported) return false;
+      
+      final List<BiometricType> availableBiometrics = await _localAuth.getAvailableBiometrics();
+      if (availableBiometrics.isEmpty) return false;
+      
+      final bool canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      return canCheckBiometrics;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> authenticateWithFingerprint() async {
     try {
       // Check if device supports biometric authentication

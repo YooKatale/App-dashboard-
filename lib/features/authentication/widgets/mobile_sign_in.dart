@@ -26,6 +26,31 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isPhoneLogin = false;
+  bool _biometricAvailable = false; // Check if device supports biometrics
+  
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+  
+  Future<void> _checkBiometricAvailability() async {
+    try {
+      final authBackend = AuthBackend();
+      final isSupported = await authBackend.isBiometricSupported();
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = isSupported;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -751,30 +776,35 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                 const SizedBox(height: 24),
                 */
                 
-                // Fingerprint Authentication
-                if (!_isPhoneLogin)
+                // Fingerprint Authentication - Show if device supports biometrics and not phone login
+                if (!_isPhoneLogin && _biometricAvailable)
                   SizedBox(
                     height: 56,
                     child: OutlinedButton.icon(
-                      onPressed: _handleFingerprintAuth,
+                      onPressed: _isLoading ? null : _handleFingerprintAuth,
                       icon: const Icon(
                         Icons.fingerprint,
                         color: Color.fromRGBO(24, 95, 45, 1),
+                        size: 24,
                       ),
                       label: const Text(
-                        'Authenticate with Fingerprint',
+                        'Sign in with Fingerprint',
                         style: TextStyle(
                           color: Color.fromRGBO(24, 95, 45, 1),
                           fontFamily: 'Raleway',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
                           color: Color.fromRGBO(24, 95, 45, 1),
+                          width: 2,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
                     ),
                   ),
