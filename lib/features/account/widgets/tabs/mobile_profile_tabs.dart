@@ -97,7 +97,7 @@ class _MobileOrdersTabState extends ConsumerState<MobileOrdersTab> {
                   ),
                 )
               : DefaultTabController(
-                  length: 3,
+                  length: 2,
                   child: Column(
                     children: [
                       Container(
@@ -107,7 +107,6 @@ class _MobileOrdersTabState extends ConsumerState<MobileOrdersTab> {
                           unselectedLabelColor: Colors.grey,
                           indicatorColor: Color.fromRGBO(24, 95, 45, 1),
                           tabs: [
-                            Tab(text: 'Pending'),
                             Tab(text: 'Active'),
                             Tab(text: 'Completed'),
                           ],
@@ -116,30 +115,27 @@ class _MobileOrdersTabState extends ConsumerState<MobileOrdersTab> {
                       Expanded(
                         child: TabBarView(
                           children: [
+                            // Active orders: payment completed but order not yet delivered/completed
                             _buildOrdersList(_orders.where((o) {
-                              final status = o['order']?['status']?.toString().toLowerCase() ?? 
-                                           o['status']?.toString().toLowerCase() ?? '';
-                              final paymentStatus = o['order']?['payment']?['status']?.toString().toLowerCase() ?? 
+                              final orderData = o['order'] ?? o;
+                              final status = orderData['status']?.toString().toLowerCase() ?? '';
+                              final paymentStatus = orderData['payment']?['status']?.toString().toLowerCase() ?? 
                                                   o['paymentStatus']?.toString().toLowerCase() ?? '';
-                              return (status == 'pending' || paymentStatus == 'pending') && 
-                                     paymentStatus != 'completed' && 
-                                     status != 'completed';
-                            }).toList(), showCompleteButton: true),
+                              // Active = payment completed but order not yet completed/delivered
+                              return (paymentStatus == 'completed' || paymentStatus == 'paid') &&
+                                     status != 'completed' && 
+                                     status != 'delivered' &&
+                                     status != 'cancelled';
+                            }).toList(), showCompleteButton: false),
+                            // Completed orders: both payment completed AND order completed/delivered
                             _buildOrdersList(_orders.where((o) {
-                              final status = o['order']?['status']?.toString().toLowerCase() ?? 
-                                           o['status']?.toString().toLowerCase() ?? '';
-                              return status != 'completed' && 
-                                     status != 'delivered' && 
-                                     status != 'pending' &&
-                                     o['order']?['payment']?['status']?.toString().toLowerCase() == 'completed';
-                            }).toList()),
-                            _buildOrdersList(_orders.where((o) {
-                              final status = o['order']?['status']?.toString().toLowerCase() ?? 
-                                           o['status']?.toString().toLowerCase() ?? '';
-                              final paymentStatus = o['order']?['payment']?['status']?.toString().toLowerCase() ?? 
+                              final orderData = o['order'] ?? o;
+                              final status = orderData['status']?.toString().toLowerCase() ?? '';
+                              final paymentStatus = orderData['payment']?['status']?.toString().toLowerCase() ?? 
                                                   o['paymentStatus']?.toString().toLowerCase() ?? '';
-                              return (status == 'completed' || status == 'delivered') && 
-                                     (paymentStatus == 'completed' || paymentStatus == 'paid');
+                              // Completed = payment successful AND order completed/delivered
+                              return (paymentStatus == 'completed' || paymentStatus == 'paid') &&
+                                     (status == 'completed' || status == 'delivered');
                             }).toList()),
                           ],
                         ),

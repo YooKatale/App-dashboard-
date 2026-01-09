@@ -24,6 +24,7 @@ import 'features/payment/widgets/payment_page.dart';
 import 'features/onboarding/widgets/welcome_screen.dart';
 import 'features/account/widgets/mobile_account_page.dart';
 import 'features/account/widgets/service_ratings_page.dart';
+import 'features/account/widgets/edit_profile_page.dart';
 import 'features/authentication/widgets/mobile_sign_in.dart';
 import 'features/legal/widgets/privacy_policy_page.dart';
 import 'features/legal/widgets/terms_page.dart';
@@ -201,6 +202,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/privacy': (context) => const PrivacyPolicyPage(),
         '/terms': (context) => const TermsPage(),
         '/notifications': (context) => const NotificationsPage(),
+        '/edit-profile': (context) => const EditProfilePage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/payment/') == true) {

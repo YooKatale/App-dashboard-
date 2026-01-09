@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/error_handler_service.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -101,11 +102,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: errorMessage,
         );
       }
     } finally {
@@ -167,11 +167,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
+        final errorMessage = ErrorHandlerService.getErrorMessage(e);
+        ErrorHandlerService.showErrorSnackBar(
+          context,
+          message: errorMessage,
         );
       }
     } finally {

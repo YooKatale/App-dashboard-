@@ -62,10 +62,7 @@ class GeneralTab extends StatelessWidget {
                   title: const Text('Edit Profile'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: Implement edit profile
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit profile coming soon')),
-                    );
+                    Navigator.of(context).pushNamed('/edit-profile');
                   },
                 ),
                 const Divider(height: 1),
@@ -74,10 +71,7 @@ class GeneralTab extends StatelessWidget {
                   title: const Text('Change Password'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // TODO: Implement change password
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Change password coming soon')),
-                    );
+                    Navigator.of(context).pushNamed('/edit-profile');
                   },
                 ),
               ],
