@@ -164,14 +164,9 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
 
       if (!mounted) return;
 
-      // Close modal first
-      Navigator.of(context).pop();
-
       // Redirect to webapp payment page - EXACT WEBAPP URL
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
-
-      if (!mounted) return;
 
       // Show redirect message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -193,17 +188,37 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         ),
       );
 
+      // Show redirect message first
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.payment, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Redirecting to payment page...',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Color.fromRGBO(24, 95, 45, 1),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
       // Try multiple launch modes to ensure it works
       bool launched = false;
       
       // First try: External browser (preferred for payment)
       try {
-        if (await canLaunchUrl(uri)) {
-          launched = await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-        }
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
       } catch (e) {
         if (kDebugMode) {
           print('External launch failed: $e');
@@ -213,12 +228,10 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       // Second try: Platform default
       if (!launched) {
         try {
-          if (await canLaunchUrl(uri)) {
-            launched = await launchUrl(
-              uri,
-              mode: LaunchMode.platformDefault,
-            );
-          }
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.platformDefault,
+          );
         } catch (e) {
           if (kDebugMode) {
             print('Platform default launch failed: $e');
@@ -229,12 +242,10 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       // Third try: In-app browser
       if (!launched) {
         try {
-          if (await canLaunchUrl(uri)) {
-            launched = await launchUrl(
-              uri,
-              mode: LaunchMode.inAppWebView,
-            );
-          }
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppWebView,
+          );
         } catch (e) {
           if (kDebugMode) {
             print('In-app browser launch failed: $e');
@@ -243,6 +254,9 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       }
 
       if (mounted) {
+        // Close modal after attempting to launch
+        Navigator.of(context).pop();
+        
         if (launched) {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
@@ -265,7 +279,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
           );
           
           // Navigate back to home after a delay
-          Future.delayed(const Duration(seconds: 2), () {
+          Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
               Navigator.of(context).pushNamedAndRemoveUntil(
                 '/home',
@@ -366,6 +380,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                 children: [
                   if (_currentTab == 1)
                     Expanded(
+                      flex: 1,
                       child: CustomButton(
                         title: 'Back',
                         onPressed: _isLoading
@@ -379,6 +394,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                     ),
                   if (_currentTab == 1) const SizedBox(width: 12),
                   Expanded(
+                    flex: _currentTab == 1 ? 2 : 1,
                     child: CustomButton(
                       title: _currentTab == 0
                           ? 'Continue to Checkout'
