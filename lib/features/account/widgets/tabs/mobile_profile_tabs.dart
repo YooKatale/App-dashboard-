@@ -224,7 +224,7 @@ class _MobileOrdersTabState extends ConsumerState<MobileOrdersTab> {
     );
   }
 
-  // Order Card - matches webapp OrderCard component
+  // Order Card - Professional UI with black text on white background
   Widget _buildOrderCard(dynamic order) {
     final orderData = order['order'] ?? order;
     final orderId = order['_id']?.toString() ?? orderData['_id']?.toString() ?? 'N/A';
@@ -240,98 +240,142 @@ class _MobileOrdersTabState extends ConsumerState<MobileOrdersTab> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Colors.grey[200]!),
       ),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order ID
-            Text(
-              'Order ID: $orderId',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            // Products
-            Text(
-              'Products: $productItems',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            // Payment Method
-            Text(
-              'Payment Method: $paymentMethod',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            // Order Total
-            Text(
-              'Order Total: UGX ${_formatCurrency(total)}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            // Delivery Address
-            if (deliveryAddress != null) ...[
-              const SizedBox(height: 8),
-              if (deliveryAddress is Map && deliveryAddress['address1'] != null && deliveryAddress['address1'] != '')
-                Text(
-                  'Delivery Address 1: ${deliveryAddress['address1']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              if (deliveryAddress is Map && deliveryAddress['address2'] != null && deliveryAddress['address2'] != '')
-                Text(
-                  'Delivery Address 2: ${deliveryAddress['address2']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-            ],
-            // Special Requests
-            if (specialRequest != null) ...[
-              const SizedBox(height: 8),
-              if (specialRequest is Map && specialRequest['peeledFood'] != null)
-                Text(
-                  'Peel Food: ${specialRequest['peeledFood']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              if (specialRequest is Map && specialRequest['moreInfo'] != null)
-                Text(
-                  'Other Requests: ${specialRequest['moreInfo']}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-            ],
-            const SizedBox(height: 8),
-            // Status
+            // Header with Order ID and Status
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Status: ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order ID',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        orderId.length > 20 ? '${orderId.substring(0, 20)}...' : orderId,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color.fromRGBO(24, 95, 45, 1),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getStatusColor(status).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _getStatusColor(status),
+                    ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            // Order Details
+            _buildOrderDetailRow('Products', productItems),
+            _buildOrderDetailRow('Payment Method', paymentMethod),
+            _buildOrderDetailRow('Order Total', 'UGX ${_formatCurrency(total)}'),
+            // Delivery Address
+            if (deliveryAddress != null) ...[
+              if (deliveryAddress is Map && deliveryAddress['address1'] != null && deliveryAddress['address1'] != '')
+                _buildOrderDetailRow('Delivery Address 1', deliveryAddress['address1']),
+              if (deliveryAddress is Map && deliveryAddress['address2'] != null && deliveryAddress['address2'] != '')
+                _buildOrderDetailRow('Delivery Address 2', deliveryAddress['address2']),
+            ],
+            // Special Requests
+            if (specialRequest != null) ...[
+              if (specialRequest is Map && specialRequest['peeledFood'] != null)
+                _buildOrderDetailRow('Peel Food', specialRequest['peeledFood'].toString()),
+              if (specialRequest is Map && specialRequest['moreInfo'] != null)
+                _buildOrderDetailRow('Other Requests', specialRequest['moreInfo']),
+            ],
             // Date
             if (createdAt != null) ...[
               const SizedBox(height: 8),
-              Text(
-                'Date: ${_formatDate(createdAt)}',
-                style: const TextStyle(fontSize: 16),
-              ),
+              _buildOrderDetailRow('Date', _formatDate(createdAt)),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildOrderDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'delivered':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 
   String _formatCurrency(dynamic amount) {

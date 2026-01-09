@@ -649,41 +649,26 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                     }).toList(),
                   ),
                 ],
-                // Breakfast Selection Feature - Quick Pay
-                if (mealType == 'Breakfast') ...[
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _handleQuickBreakfastPayment(meal, mealId, 'ready-to-eat'),
-                          icon: const Icon(Icons.restaurant, size: 18),
-                          label: const Text('Pay Ready-to-Eat'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.green[700],
-                            side: BorderSide(color: Colors.green[300]!),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                        ),
+                // Single Payment Button per Meal Type per Day
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleMealPayment(meal, mealId, meal['type'] ?? 'ready-to-eat', mealType, dayKey),
+                    icon: const Icon(Icons.payment, size: 18),
+                    label: Text('Pay for ${meal['meal']}'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _handleQuickBreakfastPayment(meal, mealId, 'ready-to-cook'),
-                          icon: const Icon(Icons.restaurant_menu, size: 18),
-                          label: const Text('Pay Ready-to-Cook'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.blue[700],
-                            side: BorderSide(color: Colors.blue[300]!),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
+                ),
               ],
             ),
           );
@@ -736,7 +721,121 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
     });
   }
 
-  // Handle quick breakfast payment
+  // Handle meal payment - unified for all meal types (breakfast, lunch, supper)
+  Future<void> _handleMealPayment(
+    Map<String, dynamic> meal,
+    String mealId,
+    String prepType,
+    String mealType,
+    String dayKey,
+  ) async {
+    final userData = await AuthService.getUserData();
+    final token = await AuthService.getToken();
+    final authState = ref.read(authStateProvider);
+    
+    String? userId;
+    if (authState.isLoggedIn && authState.userId != null) {
+      userId = authState.userId;
+    } else if (userData != null && userData.isNotEmpty) {
+      userId = userData['_id']?.toString() ?? userData['id']?.toString();
+    }
+
+    if (userId == null) {
+      if (mounted) {
+        ref.read(redirectRouteProvider.notifier).state = '/schedule';
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to purchase meal'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.pushNamed(context, '/signin');
+      }
+      return;
+    }
+
+    // Calculate price (example: 5000 UGX per meal)
+    const basePrice = 5000.0;
+    final orderTotal = basePrice;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final scheduleData = {
+        'user': userData,
+        'products': {
+          mealType.toLowerCase(): {
+            'meal': meal['meal'],
+            'type': prepType,
+            'quantity': meal['quantity'],
+            'allergies': _mealAllergies[mealId]?.toList() ?? [],
+          },
+        },
+        'scheduleDays': [dayKey],
+        'scheduleTime': mealType == 'Breakfast' ? '8:00 AM' : mealType == 'Lunch' ? '1:00 PM' : '7:00 PM',
+        'repeatSchedule': false,
+        'order': {
+          'payment': {'paymentMethod': '', 'transactionId': ''},
+          'deliveryAddress': userData?['address']?.toString() ?? 'NAN',
+          'specialRequests': 'Single ${mealType.toLowerCase()} order - ${meal['meal']}',
+          'orderTotal': orderTotal,
+        },
+      };
+
+      final response = await ApiService.createSchedule(
+        scheduleData: scheduleData,
+        token: token,
+      );
+
+      if (mounted) {
+        // Extract order ID - same as subscription: res.data.Order
+        String? orderId;
+        if (response['data'] != null && response['data'] is Map) {
+          final data = response['data'] as Map<String, dynamic>;
+          orderId = data['Order']?.toString() ?? data['order']?.toString();
+        }
+        
+        if (orderId != null && orderId.isNotEmpty) {
+          final webappUrl = 'https://www.yookatale.app/payment/$orderId';
+          final uri = Uri.parse(webappUrl);
+          
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Redirecting to payment page...'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            Navigator.pushNamed(context, '/payment/$orderId');
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message']?.toString() ?? 'Failed to create order'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Handle quick breakfast payment (deprecated - use _handleMealPayment instead)
   Future<void> _handleQuickBreakfastPayment(
     Map<String, dynamic> meal,
     String mealId,

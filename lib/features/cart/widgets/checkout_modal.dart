@@ -151,19 +151,32 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         token: token,
       );
 
-      // Extract order ID - EXACT WEBAPP LOGIC (same as subscription page)
+      // Extract order ID - EXACT WEBAPP LOGIC (same as subscription page: res.data.Order)
       String? orderId;
-      if (response['data'] != null && response['data'] is Map) {
-        final data = response['data'] as Map<String, dynamic>;
-        // Try multiple possible response formats (same as subscription)
-        orderId = data['Order']?.toString() ?? 
-                  data['orderId']?.toString() ?? 
-                  data['order']?.toString() ??
-                  data['_id']?.toString();
+      if (response['data'] != null) {
+        if (response['data'] is Map) {
+          final data = response['data'] as Map<String, dynamic>;
+          // Subscription uses: res.data.Order - try that first
+          orderId = data['Order']?.toString() ?? 
+                    data['orderId']?.toString() ?? 
+                    data['order']?.toString() ??
+                    data['_id']?.toString();
+        } else if (response['data'] is String) {
+          // Sometimes data is directly the order ID
+          orderId = response['data'].toString();
+        }
+      }
+      
+      // Also check top level (fallback)
+      if ((orderId == null || orderId.isEmpty) && response['Order'] != null) {
+        orderId = response['Order'].toString();
       }
 
       if (orderId == null || orderId.isEmpty) {
-        throw Exception('Failed to create order: No order ID received');
+        if (kDebugMode) {
+          print('Checkout response: $response');
+        }
+        throw Exception('Failed to create order: No order ID received. Please try again.');
       }
 
       if (!mounted) return;
