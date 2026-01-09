@@ -216,6 +216,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
 
   Future<void> _handleFingerprintAuth() async {
     try {
+      setState(() => _isLoading = true);
+      
       final authBackend = AuthBackend();
       final result = await authBackend.authenticateWithFingerprint();
 
@@ -224,25 +226,74 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       if (result['success'] == true) {
         // Get saved credentials and login
         final userData = await AuthService.getUserData();
+        final token = await AuthService.getToken();
+        
         if (!mounted) return;
-        if (userData != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication successful'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => App()),
-          );
+        
+        if (userData != null && userData.isNotEmpty && token != null) {
+          // Update auth state provider (same as email login)
+          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
+          
+          if (userId != null) {
+            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+              userId: userId,
+              email: userData['email']?.toString(),
+              firstName: userData['firstname']?.toString(),
+              lastName: userData['lastname']?.toString(),
+            );
+            
+            // Initialize push notifications after login
+            try {
+              await PushNotificationService.initialize();
+            } catch (e) {
+              // Non-blocking - notifications will work even if init fails
+            }
+            
+            // Get user name for welcome message
+            final userName = userData['lastname']?.toString() ?? 
+                           userData['firstname']?.toString() ?? 
+                           userData['email']?.toString() ?? 
+                           'User';
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Welcome back, $userName!'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+              
+              // Get redirect route or default to home
+              final redirectRoute = ref.read(redirectRouteProvider);
+              final targetRoute = redirectRoute ?? '/home';
+              
+              // Clear redirect route
+              ref.read(redirectRouteProvider.notifier).state = null;
+              
+              // Navigate to app
+              Navigator.of(context).pushReplacementNamed(targetRoute);
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Invalid saved credentials. Please sign in manually.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No saved credentials found. Please sign in manually.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No saved credentials found. Please sign in manually first.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         }
       } else {
         // Show user-friendly error message

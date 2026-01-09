@@ -79,62 +79,16 @@ class NotificationService {
 
     // Start timer - sends notification every minute (60 seconds)
     _testNotificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _testNotificationCount++;
       _sendTestNotification();
     });
 
-    // Send first notification immediately
-    _sendTestNotification();
+    // Send first notification after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      _sendTestNotification();
+    });
 
     if (kDebugMode) {
       print('✅ Test notification scheduler started - notifications every minute');
-    }
-  }
-
-  /// Send test notification for emulator testing
-  static Future<void> _sendTestNotification() async {
-    try {
-      _testNotificationCount++;
-      final timestamp = DateTime.now();
-      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-
-      // Create local notification using Awesome Notifications (works on emulator)
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: notificationId,
-          channelKey: 'yookatale_channel',
-          title: 'YooKatale Test Notification #$_testNotificationCount',
-          body: 'This is a test notification sent every minute. Time: ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-          notificationLayout: NotificationLayout.Default,
-          category: NotificationCategory.Message,
-          wakeUpScreen: true,
-          criticalAlert: false,
-        ),
-      );
-
-      // Save notification locally (appears in notification tab)
-      final notification = {
-        'id': notificationId.toString(),
-        'title': 'YooKatale Test Notification #$_testNotificationCount',
-        'body': 'This is a test notification sent every minute. Time: ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-        'type': 'test',
-        'data': {
-          'count': _testNotificationCount,
-          'timestamp': timestamp.toIso8601String(),
-        },
-        'timestamp': timestamp.toIso8601String(),
-        'read': false,
-      };
-
-      await _saveNotificationLocally(notification);
-
-      if (kDebugMode) {
-        print('✅ Test notification sent #$_testNotificationCount at ${timestamp.hour}:${timestamp.minute}');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error sending test notification: $e');
-      }
     }
   }
 
