@@ -171,34 +171,54 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
 
+      if (!mounted) return;
+
       // Show redirect message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Redirecting to payment page...'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          content: Row(
+            children: [
+              Icon(Icons.payment, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Redirecting to payment page...',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color.fromRGBO(24, 95, 45, 1),
+          duration: Duration(seconds: 3),
         ),
       );
 
-      // Try to launch URL
+      // Try multiple launch modes to ensure it works
       bool launched = false;
+      
+      // First try: External browser (preferred for payment)
       try {
-        launched = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        if (await canLaunchUrl(uri)) {
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+        }
       } catch (e) {
         if (kDebugMode) {
           print('External launch failed: $e');
         }
       }
 
+      // Second try: Platform default
       if (!launched) {
         try {
-          launched = await launchUrl(
-            uri,
-            mode: LaunchMode.platformDefault,
-          );
+          if (await canLaunchUrl(uri)) {
+            launched = await launchUrl(
+              uri,
+              mode: LaunchMode.platformDefault,
+            );
+          }
         } catch (e) {
           if (kDebugMode) {
             print('Platform default launch failed: $e');
@@ -206,12 +226,15 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         }
       }
 
+      // Third try: In-app browser
       if (!launched) {
         try {
-          launched = await launchUrl(
-            uri,
-            mode: LaunchMode.inAppWebView,
-          );
+          if (await canLaunchUrl(uri)) {
+            launched = await launchUrl(
+              uri,
+              mode: LaunchMode.inAppWebView,
+            );
+          }
         } catch (e) {
           if (kDebugMode) {
             print('In-app browser launch failed: $e');
@@ -221,8 +244,28 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
 
       if (mounted) {
         if (launched) {
-          // Navigate back to home after redirect
-          Future.delayed(const Duration(seconds: 1), () {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Payment page opened. Complete your payment to finish checkout.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          
+          // Navigate back to home after a delay
+          Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
               Navigator.of(context).pushNamedAndRemoveUntil(
                 '/home',
@@ -231,25 +274,12 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             }
           });
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Could not open browser automatically.'),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    paymentUrl,
-                    style: const TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ],
-              ),
-              duration: const Duration(seconds: 10),
-            ),
+          // Show error with copy option
+          ErrorHandlerService.showErrorDialog(
+            context,
+            title: 'Unable to Open Payment Page',
+            message: 'We couldn\'t open the payment page automatically. Please copy the link below and open it in your browser:\n\n$paymentUrl',
+            showSupportOptions: true,
           );
         }
       }
@@ -376,27 +406,60 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         const Text(
           'Delivery Details',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _address1Controller,
-          decoration: const InputDecoration(
+          style: const TextStyle(color: Colors.black87, fontSize: 16),
+          decoration: InputDecoration(
             labelText: 'Address 1',
-            hintText: 'Delivery address',
-            border: OutlineInputBorder(),
+            labelStyle: const TextStyle(color: Colors.black54),
+            hintText: 'Enter your delivery address',
+            hintStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           maxLines: 3,
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _address2Controller,
-          decoration: const InputDecoration(
+          style: const TextStyle(color: Colors.black87, fontSize: 16),
+          decoration: InputDecoration(
             labelText: 'Address 2',
-            hintText: 'Delivery address',
-            border: OutlineInputBorder(),
+            labelStyle: const TextStyle(color: Colors.black54),
+            hintText: 'Enter additional address details (optional)',
+            hintStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           maxLines: 3,
         ),
@@ -406,12 +469,17 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 16),
         CheckboxListTile(
-          title: const Text('Peel Food'),
+          title: const Text(
+            'Peel Food',
+            style: TextStyle(color: Colors.black87, fontSize: 16),
+          ),
           value: _peeledFood,
+          activeColor: const Color.fromRGBO(24, 95, 45, 1),
           onChanged: (value) {
             setState(() {
               _peeledFood = value ?? false;
@@ -421,9 +489,26 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         const SizedBox(height: 16),
         TextField(
           controller: _specialRequestsController,
-          decoration: const InputDecoration(
+          style: const TextStyle(color: Colors.black87, fontSize: 16),
+          decoration: InputDecoration(
             labelText: 'Any other information',
-            border: OutlineInputBorder(),
+            labelStyle: const TextStyle(color: Colors.black54),
+            hintText: 'Special instructions or requests (optional)',
+            hintStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
           maxLines: 3,
         ),
@@ -464,15 +549,16 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         const SizedBox(height: 8),
         const Text(
           'Authorized By: Seconds Tech Limited\nP.O. Box 74940, Clock Tower, Kampala, Naguru (U)',
-          style: TextStyle(fontSize: 12),
+          style: TextStyle(fontSize: 12, color: Colors.black87),
         ),
         const SizedBox(height: 16),
         const Center(
           child: Text(
-            'Checkout summary',
+            'Checkout Summary',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
         ),
@@ -483,14 +569,14 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             final userData = snapshot.data;
             return Text(
               'Customer Name: ${userData?['firstname'] ?? ''} ${userData?['lastname'] ?? ''}',
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
             );
           },
         ),
         const SizedBox(height: 8),
         Text(
           'Date and Time: $_currentDateTime',
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 16),
         const Divider(),
@@ -499,8 +585,9 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         const Text(
           'Products',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
@@ -513,14 +600,28 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
               children: [
                 Text(
                   'Product: ${item.name}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Quantity: ${item.quantity}'),
-                    Text('Total: ${_formatCurrency(itemTotal)}'),
+                    Text(
+                      'Quantity: ${item.quantity}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    Text(
+                      'Total: ${_formatCurrency(itemTotal)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                      ),
+                    ),
                   ],
                 ),
                 const Divider(),
@@ -531,76 +632,225 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         const SizedBox(height: 16),
         // Delivery Address
         const Text(
-          'Delivery Addresses',
+          'Delivery Address',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
-        Text('Address 1: ${_address1Controller.text.trim().isEmpty ? "__" : _address1Controller.text.trim()}'),
-        const SizedBox(height: 4),
-        Text('Address 2: ${_address2Controller.text.trim().isEmpty ? "__" : _address2Controller.text.trim()}'),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Address 1:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _address1Controller.text.trim().isEmpty ? "Not provided" : _address1Controller.text.trim(),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Address 2:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _address2Controller.text.trim().isEmpty ? "Not provided" : _address2Controller.text.trim(),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         // Special Requests
+        const SizedBox(height: 16),
         const Text(
           'Special Requests',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
-        Text('Peel Food: ${_peeledFood ? "Yes" : "No"}'),
-        if (_specialRequestsController.text.trim().isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text('More Information: ${_specialRequestsController.text.trim()}'),
-        ],
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Peel Food: ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    _peeledFood ? "Yes" : "No",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _peeledFood ? Colors.green[700] : Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (_specialRequestsController.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Additional Information:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _specialRequestsController.text.trim(),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+              ],
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         const Divider(),
         const SizedBox(height: 16),
         // Totals
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Delivery Cost:'),
-            Text(_formatCurrency(deliveryFeeForDisplay)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Cart SubTotal:'),
-            Text(_formatCurrency(widget.cartTotal)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Cart Total:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(24, 95, 45, 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color.fromRGBO(24, 95, 45, 0.3)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Delivery Cost:',
+                    style: TextStyle(fontSize: 15, color: Colors.black87),
+                  ),
+                  Text(
+                    _formatCurrency(deliveryFeeForDisplay),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              _formatCurrency(orderTotal),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Cart SubTotal:',
+                    style: TextStyle(fontSize: 15, color: Colors.black87),
+                  ),
+                  Text(
+                    _formatCurrency(widget.cartTotal),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total Amount:',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    _formatCurrency(orderTotal),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Receipt Number: $_receiptId',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.receipt, color: Colors.blue, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Receipt Number',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      _receiptId,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],

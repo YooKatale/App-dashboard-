@@ -329,11 +329,12 @@ class AuthBackend {
         };
       }
 
-      // Perform authentication
+      // Perform authentication with better error handling for mobile devices
       final bool isAuthenticated = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to continue',
+        localizedReason: 'Please authenticate with your fingerprint or face ID to sign in to Yookatale',
         biometricOnly: true,
         sensitiveTransaction: true,
+        stickyAuth: true,
       );
 
       if (isAuthenticated) {

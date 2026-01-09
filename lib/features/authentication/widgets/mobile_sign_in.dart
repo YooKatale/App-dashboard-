@@ -246,22 +246,63 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         }
       } else {
         // Show user-friendly error message
-        final errorMessage = result['error'] ?? 'Authentication failed';
+        final errorMessage = result['error'] ?? 'Authentication failed. Please try again.';
         final errorType = result['errorType'] ?? 'unknown';
 
         // Show appropriate dialog for different error types
-        if (errorType == 'not_enrolled' || errorType == 'not_available') {
+        if (errorType == 'not_enrolled' || errorType == 'not_available' || errorType == 'not_supported') {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Row(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text('Biometric Setup Required'),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.info_outline, color: Colors.orange, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Biometric Setup Required',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              content: Text(errorMessage),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    errorMessage,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'To use biometric authentication:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '1. Go to your device Settings\n2. Set up Fingerprint or Face ID\n3. Return to the app and try again',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -271,13 +312,28 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: errorType == 'cancelled' ? Colors.grey : Colors.red,
-              duration: const Duration(seconds: 4),
-            ),
-          );
+          // Show professional error message
+          if (errorType == 'cancelled') {
+            // User cancelled - don't show error, just return
+            return;
+          } else if (errorType == 'locked_out' || errorType == 'permanently_locked_out') {
+            // Show dialog for locked out errors
+            if (!mounted) return;
+            ErrorHandlerService.showErrorDialog(
+              context,
+              title: 'Biometric Authentication Locked',
+              message: errorMessage,
+              showSupportOptions: false,
+            );
+          } else {
+            // Show snackbar for other errors
+            if (!mounted) return;
+            ErrorHandlerService.showErrorSnackBar(
+              context,
+              message: errorMessage,
+              duration: const Duration(seconds: 5),
+            );
+          }
         }
       }
     } catch (e) {
