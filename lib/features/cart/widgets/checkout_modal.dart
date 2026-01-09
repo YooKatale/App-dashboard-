@@ -185,55 +185,98 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
 
-      // Close modal first
-      Navigator.of(context).pop();
+      // Show redirect message FIRST
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.payment, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Redirecting to payment page...',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
 
-      // Launch URL directly (exactly like subscription test plans do)
+      // Launch URL IMMEDIATELY (before closing modal) - CRITICAL FIX
+      bool launched = false;
       try {
-        final launched = await launchUrl(
+        // Try external application first (best for payment)
+        launched = await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
         );
-        
-        if (mounted) {
-          if (launched) {
-            // Show success message
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Redirecting to payment page...',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-            
-            // Navigate back to home
-            Future.delayed(const Duration(seconds: 1), () {
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/home',
-                  (route) => false,
-                );
-              }
-            });
-          } else {
-            // Fallback: Try platform default
-            await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (kDebugMode) {
+          print('External launch failed: $e');
+        }
+      }
+
+      // Fallback to platform default if external failed
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.platformDefault,
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            print('Platform default launch failed: $e');
           }
         }
-      } catch (e) {
-        if (mounted) {
-          // Show error with copy option
+      }
+
+      // Close modal AFTER launching URL (not before!)
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (mounted) {
+        if (launched) {
+          // Success - URL was launched
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Payment page opened. Complete your payment to finish checkout.',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            }
+          });
+
+          // Navigate back to home
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/home',
+                (route) => false,
+              );
+            }
+          });
+        } else {
+          // Failed to launch - show error dialog
           ErrorHandlerService.showErrorDialog(
             context,
             title: 'Unable to Open Payment Page',
@@ -321,38 +364,50 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                   top: BorderSide(color: Colors.grey[300]!),
                 ),
               ),
-              child: Row(
-                children: [
-                  if (_currentTab == 1)
-                    Expanded(
-                      flex: 1,
-                      child: CustomButton(
-                        title: 'Back',
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                setState(() {
-                                  _currentTab = 0;
-                                });
-                              },
-                      ),
+              child: _currentTab == 1
+                  ? Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: OutlinedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _currentTab = 0;
+                                    });
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                              side: const BorderSide(color: Color.fromRGBO(24, 95, 45, 1)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Back',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: CustomButton(
+                            title: _isLoading ? 'Processing...' : 'Proceed to Payment',
+                            onPressed: _isLoading ? null : _handleProceedToPayment,
+                          ),
+                        ),
+                      ],
+                    )
+                  : CustomButton(
+                      title: 'Continue to Checkout',
+                      onPressed: _isLoading ? null : _handleTabOneContinue,
                     ),
-                  if (_currentTab == 1) const SizedBox(width: 12),
-                  Expanded(
-                    flex: _currentTab == 1 ? 2 : 1,
-                    child: CustomButton(
-                      title: _currentTab == 0
-                          ? 'Continue to Checkout'
-                          : (_isLoading ? 'Processing...' : 'Proceed to Payment'),
-                      onPressed: _isLoading
-                          ? null
-                          : (_currentTab == 0
-                              ? _handleTabOneContinue
-                              : _handleProceedToPayment),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
