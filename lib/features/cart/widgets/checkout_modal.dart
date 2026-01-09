@@ -151,29 +151,31 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         token: token,
       );
 
-      // Extract order ID - EXACT WEBAPP LOGIC
+      // Extract order ID - EXACT WEBAPP LOGIC (same as subscription page)
       String? orderId;
       if (response['data'] != null && response['data'] is Map) {
         final data = response['data'] as Map<String, dynamic>;
-        orderId = data['Order']?.toString() ?? data['orderId']?.toString();
+        // Try multiple possible response formats (same as subscription)
+        orderId = data['Order']?.toString() ?? 
+                  data['orderId']?.toString() ?? 
+                  data['order']?.toString() ??
+                  data['_id']?.toString();
       }
 
-      if (orderId == null) {
-        throw Exception('Failed to create order');
+      if (orderId == null || orderId.isEmpty) {
+        throw Exception('Failed to create order: No order ID received');
       }
 
       if (!mounted) return;
 
-      // Redirect to webapp payment page - EXACT WEBAPP URL (like subscription page)
+      // Redirect to webapp payment page - EXACT WEBAPP URL (same as subscription page)
       final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
       final uri = Uri.parse(paymentUrl);
-
-      if (!mounted) return;
 
       // Close modal first
       Navigator.of(context).pop();
 
-      // Launch URL directly (like subscription test plans do)
+      // Launch URL directly (exactly like subscription test plans do)
       try {
         final launched = await launchUrl(
           uri,
