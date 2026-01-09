@@ -24,9 +24,29 @@ class CartItem {
       name: json['name']?.toString() ?? 'Product',
       image: _getImageUrl(json),
       price: json['price']?.toString() ?? '0',
-      quantity: json['quantity'] is int ? json['quantity'] : int.tryParse(json['quantity']?.toString() ?? '1') ?? 1,
+      quantity: _parseQuantity(json['quantity']),
       unit: json['unit']?.toString(),
     );
+  }
+
+  static int _parseQuantity(dynamic quantity) {
+    // EXACT WEBAPP LOGIC: Always ensure quantity is at least 1
+    // Webapp adds items with quantity: 1 by default
+    if (quantity == null) return 1;
+    
+    if (quantity is int) {
+      return quantity > 0 ? quantity : 1;
+    }
+    
+    if (quantity is String) {
+      final parsed = int.tryParse(quantity);
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+    
+    // Default to 1 if parsing fails or value is invalid
+    return 1;
   }
 
   static String _getImageUrl(Map<String, dynamic> json) {

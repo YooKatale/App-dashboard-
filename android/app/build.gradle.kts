@@ -31,6 +31,18 @@ android {
         jvmTarget = "17"
     }
 
+    // Fix for fluttertoast compatibility
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // Ensure R class generation
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/kotlin")
+        }
+    }
+
     defaultConfig {
         // Unique Application ID for Play Store
         applicationId = "com.yookatale.app"

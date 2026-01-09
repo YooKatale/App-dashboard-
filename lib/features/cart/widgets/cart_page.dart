@@ -12,6 +12,7 @@ import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
 import '../providers/cart_provider.dart';
+import 'checkout_modal.dart';
 
 class CartPage extends ConsumerStatefulWidget {
   const CartPage({super.key});
@@ -176,11 +177,24 @@ class _CartPageState extends ConsumerState<CartPage> {
       return;
     }
 
+    // Ensure cartId is valid - FIX: Always validate cartId
+    if (item.cartId.isEmpty || item.cartId == '') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cart ID is required. Please refresh your cart.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      // Reload cart to get proper IDs
+      _loadCart();
+      return;
+    }
+
     // Store original quantity to revert if update fails
     final originalQuantity = item.quantity;
-    
-    // Don't update optimistically - wait for API response to prevent flickering
-    // This matches webapp behavior more closely
 
     try {
       // Check if user is logged in using auth state (more reliable)
@@ -228,8 +242,9 @@ class _CartPageState extends ConsumerState<CartPage> {
           });
         }
         
+        // FIX: Ensure cartId is always passed correctly
         final success = await CartService.updateCartItem(
-          cartId: item.cartId,
+          cartId: item.cartId, // This should always be valid now
           quantity: newQuantity,
           userId: userId, // Include userId like webapp
           token: authToken, // Token is optional for some endpoints
@@ -522,7 +537,6 @@ class _CartPageState extends ConsumerState<CartPage> {
                                 child: CustomButton(
                                   title: 'Checkout',
                                   onPressed: () async {
-                                    // Redirect directly to webapp for checkout/payment
                                     // Check if user is logged in
                                     final authState = ref.read(authStateProvider);
                                     final userData = await AuthService.getUserData();
@@ -548,177 +562,16 @@ class _CartPageState extends ConsumerState<CartPage> {
                                       return;
                                     }
                                     
-                                    // Create order and redirect to webapp payment
-                                    try {
-                                      // Show loading
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Preparing checkout...'),
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                      
-                                      // Fetch cart items
-                                      final cartItems = await CartService.fetchCart(userId);
-                                      if (cartItems.isEmpty) {
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Your cart is empty')),
-                                          );
-                                        }
-                                        return;
-                                      }
-                                      
-                                      final total = CartService.calculateTotal(cartItems);
-                                      final deliveryFee = 1000.0;
-                                      final orderTotal = total + deliveryFee;
-                                      
-                                      // Generate receipt ID
-                                      final now = DateTime.now();
-                                      final receiptId = 'R${now.year}${now.month}${now.day}-${now.millisecondsSinceEpoch % 1000}';
-                                      final orderDate = '${now.toString().split(' ')[0]}, ${now.toString().split(' ')[1]}';
-                                      
-                                      // Prepare cart data - match webapp format
-                                      final cartsData = cartItems.map((item) => {
-                                        '_id': item.productId,
-                                        'cartId': item.cartId,
-                                        'productId': item.productId,
-                                        'quantity': item.quantity,
-                                        'price': item.price,
-                                        'name': item.name,
-                                        'images': item.image.isNotEmpty ? [item.image] : [],
-                                      } as Map<String, dynamic>).toList();
-                                      
-                                      // Create order via API
-                                      final token = await AuthService.getToken();
-                                      final response = await ApiService.createCartCheckout(
-                                        user: userData,
-                                        customerName: '${userData['firstname'] ?? ''} ${userData['lastname'] ?? ''}'.trim(),
-                                        carts: cartsData,
-                                        order: {
-                                          'orderTotal': orderTotal,
-                                          'deliveryAddress': userData['address']?.toString() ?? userData['deliveryAddress']?.toString() ?? '',
-                                          'specialRequests': '',
-                                          'payment': {'paymentMethod': '', 'transactionId': ''},
-                                          'orderDate': orderDate,
-                                          'receiptId': receiptId,
-                                        },
-                                        token: token,
+                                    // Show checkout modal - EXACT WEBAPP FLOW
+                                    if (mounted) {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => CheckoutModal(
+                                          cartItems: _cartItems,
+                                          cartTotal: _calculateTotal(),
+                                        ),
                                       );
-                                      
-                                      // Extract order ID
-                                      String? orderId;
-                                      if (response['data'] != null && response['data'] is Map) {
-                                        final data = response['data'] as Map<String, dynamic>;
-                                        orderId = data['Order']?.toString() ?? data['orderId']?.toString();
-                                      }
-                                      
-                                      if (orderId == null) {
-                                        throw Exception('Failed to create order');
-                                      }
-                                      
-                                      // Redirect to webapp payment page - EXACT webapp URL
-                                      final paymentUrl = 'https://www.yookatale.app/payment/$orderId';
-                                      final uri = Uri.parse(paymentUrl);
-                                      
-                                      if (mounted) {
-                                        // Show redirect message
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Redirecting to payment page...'),
-                                            backgroundColor: Colors.green,
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                      }
-                                      
-                                      // Try multiple launch modes for better compatibility
-                                      bool launched = false;
-                                      
-                                      // Try external application first (opens in browser)
-                                      try {
-                                        launched = await launchUrl(
-                                          uri,
-                                          mode: LaunchMode.externalApplication,
-                                        );
-                                      } catch (e) {
-                                        if (kDebugMode) {
-                                          print('External launch failed: $e');
-                                        }
-                                      }
-                                      
-                                      // If external failed, try platform default
-                                      if (!launched) {
-                                        try {
-                                          launched = await launchUrl(
-                                            uri,
-                                            mode: LaunchMode.platformDefault,
-                                          );
-                                        } catch (e) {
-                                          if (kDebugMode) {
-                                            print('Platform default launch failed: $e');
-                                          }
-                                        }
-                                      }
-                                      
-                                      // If still failed, try in-app browser
-                                      if (!launched) {
-                                        try {
-                                          launched = await launchUrl(
-                                            uri,
-                                            mode: LaunchMode.inAppWebView,
-                                          );
-                                        } catch (e) {
-                                          if (kDebugMode) {
-                                            print('In-app browser launch failed: $e');
-                                          }
-                                        }
-                                      }
-                                      
-                                      if (mounted) {
-                                        if (launched) {
-                                          // Success - navigate back to home
-                                          Future.delayed(const Duration(seconds: 1), () {
-                                            if (mounted) {
-                                              Navigator.of(context).pushNamedAndRemoveUntil(
-                                                '/home',
-                                                (route) => false,
-                                              );
-                                            }
-                                          });
-                                        } else {
-                                          // Show URL for manual copy
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text('Could not open browser automatically.'),
-                                                  const SizedBox(height: 4),
-                                                  SelectableText(
-                                                    paymentUrl,
-                                                    style: const TextStyle(
-                                                      color: Colors.blue,
-                                                      decoration: TextDecoration.underline,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              duration: const Duration(seconds: 10),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    } catch (e) {
-                                      if (mounted) {
-                                        ErrorHandlerService.showErrorSnackBar(
-                                          context,
-                                          message: 'Failed to checkout: ${ErrorHandlerService.getErrorMessage(e)}',
-                                        );
-                                      }
                                     }
                                   },
                                 ),

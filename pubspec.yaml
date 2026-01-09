@@ -78,6 +78,9 @@ dependencies:
   geolocator: ^13.0.1
   geocoding: ^3.0.0
 
+dependency_overrides:
+  fluttertoast: ^9.0.0
+
 
 dev_dependencies:
   flutter_test:

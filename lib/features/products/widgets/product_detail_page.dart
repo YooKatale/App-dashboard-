@@ -133,10 +133,13 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         return;
       }
 
+      // EXACT WEBAPP LOGIC: Ensure quantity is at least 1
+      final quantityToAdd = _quantity > 0 ? _quantity : 1;
+      
       final response = await ApiService.addToCart(
         userId: userId,
         productId: actualProductId,
-        quantity: _quantity,
+        quantity: quantityToAdd,
         token: token,
       );
 

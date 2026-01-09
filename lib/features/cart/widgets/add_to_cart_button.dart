@@ -62,10 +62,13 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
     });
 
     try {
+      // EXACT WEBAPP LOGIC: Always ensure quantity is at least 1
+      final quantityToAdd = widget.quantity > 0 ? widget.quantity : 1;
+      
       final result = await CartService.addToCart(
         userId: userId,
         productId: widget.productId,
-        quantity: widget.quantity,
+        quantity: quantityToAdd,
         token: token,
       );
       

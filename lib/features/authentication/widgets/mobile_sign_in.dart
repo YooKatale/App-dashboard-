@@ -460,12 +460,34 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                   ),
                   const SizedBox(height: 12),
                   
-                  // Forgot Password
+                  // Forgot Password - Redirect to webapp
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Navigate to forgot password screen
+                      onPressed: () async {
+                        // Redirect to webapp forgot password page
+                        try {
+                          const forgotPasswordUrl = 'https://www.yookatale.app/signin?forgot=true';
+                          final uri = Uri.parse(forgotPasswordUrl);
+                          
+                          final launched = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          
+                          if (!launched) {
+                            await launchUrl(uri, mode: LaunchMode.platformDefault);
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Could not open forgot password page. Please visit: https://www.yookatale.app/signin'),
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                          }
+                        }
                       },
                       child: const Text(
                         'Forgot password?',
