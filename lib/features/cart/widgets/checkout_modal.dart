@@ -151,32 +151,44 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         token: token,
       );
 
-      // Extract order ID - EXACT WEBAPP LOGIC (same as subscription page: res.data.Order)
+      // Extract order ID - EXACT WEBAPP LOGIC for cart checkout: res.data.data.Order
+      // Webapp TabTwo.jsx uses: router.push(`/payment/${res.data.data.Order}`)
       String? orderId;
-      if (response['data'] != null) {
-        if (response['data'] is Map) {
-          final data = response['data'] as Map<String, dynamic>;
-          // Subscription uses: res.data.Order - try that first
+      
+      // Try webapp cart checkout format first: res.data.data.Order
+      if (response['data'] != null && response['data'] is Map) {
+        final data = response['data'] as Map<String, dynamic>;
+        if (data['data'] != null && data['data'] is Map) {
+          final nestedData = data['data'] as Map<String, dynamic>;
+          orderId = nestedData['Order']?.toString() ?? 
+                   nestedData['orderId']?.toString() ??
+                   nestedData['_id']?.toString();
+        }
+        // Fallback: res.data.Order (for schedule/subscription)
+        if (orderId == null || orderId.isEmpty) {
           orderId = data['Order']?.toString() ?? 
-                    data['orderId']?.toString() ?? 
-                    data['order']?.toString() ??
-                    data['_id']?.toString();
-        } else if (response['data'] is String) {
-          // Sometimes data is directly the order ID
-          orderId = response['data'].toString();
+                   data['orderId']?.toString() ?? 
+                   data['order']?.toString() ??
+                   data['_id']?.toString();
         }
       }
       
-      // Also check top level (fallback)
+      // Final fallback: top level Order
       if ((orderId == null || orderId.isEmpty) && response['Order'] != null) {
         orderId = response['Order'].toString();
       }
 
       if (orderId == null || orderId.isEmpty) {
         if (kDebugMode) {
-          print('Checkout response: $response');
+          print('Checkout response structure: $response');
+          print('Expected format: response.data.data.Order (for cart checkout)');
         }
         throw Exception('Failed to create order: No order ID received. Please try again.');
+      }
+      
+      if (kDebugMode) {
+        print('✅ Order created successfully. Order ID: $orderId');
+        print('Redirecting to: https://www.yookatale.app/payment/$orderId');
       }
 
       if (!mounted) return;
@@ -235,37 +247,49 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         }
       }
 
-      // Close modal AFTER launching URL (not before!)
-      if (mounted) {
-        Navigator.of(context).pop();
+      // Close modal ONLY after successful launch or error
+      if (!mounted) return;
+      
+      if (!launched) {
+        // All launch attempts failed - show error with copyable URL
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ErrorHandlerService.showErrorDialog(
+          context,
+          title: 'Unable to Open Payment Page',
+          message: 'We couldn\'t open the payment page automatically. Please copy the link below and open it in your browser:\n\n$paymentUrl',
+          showSupportOptions: true,
+        );
+        return;
       }
 
-      if (mounted) {
-        if (launched) {
-          // Success - URL was launched
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Payment page opened. Complete your payment to finish checkout.',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ],
+      // Success - URL was launched, close modal
+      Navigator.of(context).pop();
+      
+      // Show success message after modal closes
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Payment page opened. Complete your payment to finish checkout.',
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 4),
-                ),
-              );
-            }
-          });
-
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          
           // Navigate back to home
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
@@ -398,7 +422,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                         Expanded(
                           flex: 2,
                           child: CustomButton(
-                            title: _isLoading ? 'Processing...' : 'Proceed to Payment',
+                            title: _isLoading ? 'Processing...' : 'Proceed to Pay',
                             onPressed: _isLoading ? null : _handleProceedToPayment,
                           ),
                         ),
