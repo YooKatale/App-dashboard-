@@ -411,6 +411,7 @@ class ApiService {
   }
 
   // Create cart checkout order - matches webapp createCartCheckout
+  // Webapp endpoint: /products/cart/checkout (plural 'products')
   static Future<Map<String, dynamic>> createCartCheckout({
     required Map<String, dynamic> user,
     required String customerName,
@@ -420,12 +421,12 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/product/cart/checkout'),
+        Uri.parse('$baseUrl/products/cart/checkout'), // EXACT WEBAPP ENDPOINT (plural 'products')
         headers: getHeaders(token: token),
         body: json.encode({
           'user': user,
           'customerName': customerName,
-          'Carts': carts,
+          'Carts': carts, // EXACT WEBAPP FORMAT (capital 'Carts')
           'order': order,
         }),
       );

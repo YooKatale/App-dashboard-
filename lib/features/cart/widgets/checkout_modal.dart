@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/error_handler_service.dart';
-import '../services/cart_service.dart';
 import '../models/cart_model.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
@@ -265,11 +264,12 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         return;
       }
 
-      // Success - URL was launched, close modal
+      // Success - URL was launched successfully
+      // Close modal FIRST, then show success message after modal closes
       Navigator.of(context).pop();
       
-      // Show success message after modal closes
-      Future.delayed(const Duration(milliseconds: 300), () {
+      // Show success message after modal closes (give it a moment)
+      Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -290,7 +290,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             ),
           );
           
-          // Navigate back to home
+          // Navigate back to home after brief delay
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -299,16 +299,8 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
               );
             }
           });
-        } else {
-          // Failed to launch - show error dialog
-          ErrorHandlerService.showErrorDialog(
-            context,
-            title: 'Unable to Open Payment Page',
-            message: 'We couldn\'t open the payment page automatically. Please copy the link below and open it in your browser:\n\n$paymentUrl',
-            showSupportOptions: true,
-          );
         }
-      }
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
