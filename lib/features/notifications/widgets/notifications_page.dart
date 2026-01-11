@@ -93,27 +93,81 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        elevation: 8,
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('Clear All Notifications'),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Clear All Notifications',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
           ],
         ),
-        content: const Text('Are you sure you want to clear all notifications? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to clear all notifications? This action cannot be undone.',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.black87,
+            height: 1.5,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(color: Colors.grey[300]!),
+              ),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
           ),
+          const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 2,
             ),
-            child: const Text('Clear All'),
+            child: const Text(
+              'Clear All',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -264,7 +318,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color.fromRGBO(24, 95, 45, 1)),
+              ),
+            )
           : _notifications.isEmpty
               ? _buildEmptyState()
               : Column(
@@ -272,7 +330,17 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                     // Filter Tabs
                     Container(
                       color: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                       child: Row(
                         children: [
                           _buildFilterTab('all', 'All', _notifications.length),
@@ -285,6 +353,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: _loadNotifications,
+                        color: const Color.fromRGBO(24, 95, 45, 1),
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _filteredNotifications.length,
@@ -309,12 +378,12 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1)
+                ? const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
                   ? const Color.fromRGBO(24, 95, 45, 1)
@@ -323,25 +392,34 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 label,
                 style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14,
                   color: isSelected
                       ? const Color.fromRGBO(24, 95, 45, 1)
-                      : Colors.grey[600],
+                      : Colors.black87,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
                   color: isSelected
                       ? const Color.fromRGBO(24, 95, 45, 1)
-                      : Colors.grey[600],
-                  fontWeight: FontWeight.bold,
+                      : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -376,16 +454,19 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isRead ? Colors.grey[200]! : color.withValues(alpha: 0.3),
-            width: isRead ? 1 : 2,
+            color: isRead ? Colors.grey[200]! : color.withValues(alpha: 0.4),
+            width: isRead ? 1 : 2.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 4,
+              color: isRead
+                  ? Colors.grey.withValues(alpha: 0.08)
+                  : color.withValues(alpha: 0.15),
+              blurRadius: 8,
               offset: const Offset(0, 2),
+              spreadRadius: 0,
             ),
           ],
         ),
@@ -396,20 +477,20 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             }
             // Handle navigation based on type
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Icon
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Icon(icon, color: color, size: 26),
                 ),
                 const SizedBox(width: 16),
                 // Content
@@ -423,38 +504,57 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                             child: Text(
                               notification['title'] ?? 'Notification',
                               style: TextStyle(
-                                fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                                fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
                                 fontSize: 16,
                                 color: Colors.black87,
+                                height: 1.3,
                               ),
                             ),
                           ),
                           if (!isRead)
                             Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
+                              width: 10,
+                              height: 10,
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
                                 color: Colors.blue,
                                 shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withValues(alpha: 0.4),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         notification['body'] ?? '',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[700],
+                          color: Colors.black87,
+                          height: 1.4,
                         ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formatTimestamp(notification['timestamp'] ?? ''),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time, size: 14, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTimestamp(notification['timestamp'] ?? ''),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -462,8 +562,9 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                 // Delete button
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
-                  color: Colors.grey[400],
+                  color: Colors.grey[500],
                   onPressed: () => _deleteNotification(notification['id'] ?? ''),
+                  tooltip: 'Delete',
                 ),
               ],
             ),
@@ -475,39 +576,55 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.grey[200]!,
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.notifications_none,
+                size: 72,
+                color: Colors.grey[400],
+              ),
             ),
-            child: const Icon(
-              Icons.notifications_none,
-              size: 64,
-              color: Colors.grey,
+            const SizedBox(height: 32),
+            const Text(
+              'No Notifications',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'No Notifications',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+            const SizedBox(height: 12),
+            Text(
+              'You\'re all caught up!',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You\'re all caught up!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
+            const SizedBox(height: 8),
+            Text(
+              'Check back later for updates',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
