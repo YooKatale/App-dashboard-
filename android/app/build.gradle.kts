@@ -18,13 +18,15 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.yookatale.app"
+    namespace = "com.yookatale.mobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Enable core library desugaring required by newer notification plugins
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -45,7 +47,7 @@ android {
 
     defaultConfig {
         // Unique Application ID for Play Store
-        applicationId = "com.yookatale.app"
+        applicationId = "com.yookatale.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -93,6 +95,11 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    // Required for core library desugaring (Java 8+ APIs on older devices)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

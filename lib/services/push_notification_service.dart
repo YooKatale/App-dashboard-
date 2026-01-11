@@ -1,40 +1,51 @@
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 import '../app.dart';
 
 class PushNotificationService {
   static FirebaseMessaging messaging = FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static const String _channelId = 'yookatale_channel';
+  static const String _channelName = 'YooKatale Notifications';
+  static const String _channelDescription = 'Notifications for orders, offers, and updates';
 
   // Initialize push notifications - request permissions on first install
   static Future<void> initialize() async {
-    // Initialize Awesome Notifications FIRST (required for local notifications)
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'yookatale_channel',
-          channelName: 'YooKatale Notifications',
-          channelDescription: 'Notifications for orders, offers, and updates',
-          defaultColor: const Color(0xFF185F2D),
-          ledColor: Colors.white,
-          importance: NotificationImportance.High,
-        ),
-      ],
-    );
+    // Initialize local notifications plugin
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initSettings = InitializationSettings(android: androidInit);
+    await _localNotificationsPlugin.initialize(initSettings,
+        onDidReceiveNotificationResponse: (response) {
+      // Handle notification tap from system tray
+      try {
+        final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) {
+          final data = json.decode(payload) as Map<String, dynamic>;
+          // Navigate based on data if needed
+          MyApp.navigatorKey.currentState?.pushNamed('/schedule');
+        }
+      } catch (_) {}
+    });
 
-    // Request Awesome Notifications permissions (ALWAYS request on first install)
-    bool isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
-    if (kDebugMode) {
-      print('Awesome Notifications permission: $isAllowed');
+    // Create Android notification channel
+    final androidPlugin = _localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.max,
+      );
+      await androidPlugin.createNotificationChannel(channel);
     }
 
-    // Request FCM permissions (ALWAYS request on first install)
+    // Request FCM permissions
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       badge: true,
@@ -42,69 +53,33 @@ class PushNotificationService {
       provisional: false,
     );
 
-    print('🔔 FCM Permission Request Result:');
-    print('   Authorization Status: ${settings.authorizationStatus}');
-    print('   Alert: ${settings.alert}');
-    print('   Badge: ${settings.badge}');
-    print('   Sound: ${settings.sound}');
-    // Note: provisional property may not be available in all Firebase versions
-    
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('✅ FCM permissions GRANTED');
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-      print('⚠️ FCM permissions PROVISIONAL (limited)');
-    } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      print('❌ FCM permissions DENIED - notifications will NOT work!');
-      print('❌ USER MUST GRANT PERMISSIONS IN SETTINGS!');
-    } else {
-      print('⚠️ FCM permissions UNKNOWN: ${settings.authorizationStatus}');
+    if (kDebugMode) {
+      print('🔔 FCM Permission: ${settings.authorizationStatus}');
     }
 
-    // Try to get FCM token even if permission is not yet fully authorized
-    // (provisional or denied might still allow token generation)
+    // Try to obtain token
     try {
-      String? token = await messaging.getToken();
-      if (token != null) {
-        print('📱 FCM Token obtained: ${token.substring(0, 30)}...');
-        print('📱 Full token length: ${token.length}');
+      String? token = await messaging.getToken().timeout(const Duration(seconds: 10), onTimeout: () => null);
+      if (token != null && token.isNotEmpty) {
         await _saveTokenToServer(token);
-        if (kDebugMode) {
-          print('✅ FCM token obtained and saved: ${token.substring(0, 20)}...');
-        }
-      } else {
-        print('❌ FCM token is NULL - this is the problem!');
-        print('❌ Permission status: ${settings.authorizationStatus}');
-        if (kDebugMode) {
-          print('⚠️ FCM token is null - permission may be denied');
-        }
       }
     } catch (e) {
-      print('❌ CRITICAL ERROR getting FCM token: $e');
-      print('❌ Stack trace: ${StackTrace.current}');
-      if (kDebugMode) {
-        print('Error getting FCM token: $e');
-      }
+      if (kDebugMode) print('FCM token error: $e');
     }
 
-    // Listen for token refresh (works even if permission is later granted)
-    messaging.onTokenRefresh.listen((newToken) {
-      _saveTokenToServer(newToken);
-      if (kDebugMode) {
-        print('🔄 FCM token refreshed and saved');
-      }
-    });
+    messaging.onTokenRefresh.listen((newToken) => _saveTokenToServer(newToken));
 
-    // Handle foreground messages (works when app is open)
+    // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleForegroundMessage(message);
     });
 
-    // Handle background messages (works when app is in background)
+    // Handle notification taps
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleNotificationTap(message);
     });
 
-    // Check if app was opened from notification
+    // Check initial message
     RemoteMessage? initialMessage = await messaging.getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationTap(initialMessage);
@@ -143,60 +118,43 @@ class PushNotificationService {
 
   // Handle foreground messages - synchronized with webapp
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    // Extract notification data (synchronized with webapp format)
     final notification = message.notification;
     final data = message.data;
-    
-    // Get title and body from notification or data (webapp sends both)
-    final title = notification?.title ?? 
-                  data['title']?.toString() ?? 
-                  'YooKatale';
-    final body = notification?.body ?? 
-                 data['body']?.toString() ?? 
-                 'You have a new notification';
-    
-    // Extract meal type and URL for navigation
-    final mealType = data['mealType']?.toString();
-    final url = data['url']?.toString();
-    
-    // Create local notification (synchronized with webapp)
+
+    final title = notification?.title ?? data['title']?.toString() ?? 'YooKatale';
+    final body = notification?.body ?? data['body']?.toString() ?? 'You have a new notification';
+
     final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
     try {
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: notificationId,
-          channelKey: 'yookatale_channel',
-          title: title,
-          body: body,
-          notificationLayout: NotificationLayout.Default,
-          payload: {
-            'mealType': mealType ?? '',
-            'url': url ?? 'https://www.yookatale.app/schedule',
-            'type': data['type']?.toString() ?? 'meal_calendar',
-          },
-          category: NotificationCategory.Message,
-        ),
-        actionButtons: [
-          NotificationActionButton(
-            key: 'VIEW',
-            label: 'View Schedule',
-          ),
-        ],
+      final androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
       );
-      print('✅ Local notification created successfully');
+      final platformDetails = NotificationDetails(android: androidDetails);
+      await _localNotificationsPlugin.show(
+        notificationId,
+        title,
+        body,
+        platformDetails,
+        payload: json.encode(data.isNotEmpty ? data : {'title': title, 'body': body}),
+      );
     } catch (e) {
-      print('❌ Error creating local notification: $e');
+      if (kDebugMode) print('Error showing local notification: $e');
     }
-    
-    // IMPORTANT: Save notification to history (so it appears in notification tab)
+
+    // Save notification to history
     try {
-      // Use public method to save notification
       final prefs = await SharedPreferences.getInstance();
       final notificationsJson = prefs.getString('user_notifications');
-      final notifications = notificationsJson != null 
+      final notifications = notificationsJson != null
           ? (json.decode(notificationsJson) as List).cast<Map<String, dynamic>>()
           : <Map<String, dynamic>>[];
-      
+
       notifications.insert(0, {
         'id': message.messageId ?? notificationId.toString(),
         'title': title,
@@ -206,21 +164,16 @@ class PushNotificationService {
         'timestamp': DateTime.now().toIso8601String(),
         'read': false,
       });
-      
-      // Keep only last 100 notifications
+
       if (notifications.length > 100) {
         notifications.removeRange(100, notifications.length);
       }
-      
+
       await prefs.setString('user_notifications', json.encode(notifications));
-      
-      // Update unread count
       final unreadCount = notifications.where((n) => n['read'] != true).length;
       await prefs.setInt('unread_notifications_count', unreadCount);
     } catch (e) {
-      if (kDebugMode) {
-        print('Error saving foreground notification to history: $e');
-      }
+      if (kDebugMode) print('Error saving foreground notification to history: $e');
     }
   }
 
@@ -248,9 +201,6 @@ class PushNotificationService {
     }
   }
 
-  // Background message handler (must be top-level function)
-  @pragma('vm:entry-point')
-  static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-    // Handle background message
-  }
+  // Background message handler - This is registered in main.dart as top-level function
+  // This static method is kept for reference but the actual handler is in main.dart
 }

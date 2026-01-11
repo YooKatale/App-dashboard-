@@ -40,7 +40,7 @@ Write-Host ""
 
 # Check if app is installed
 Write-Host "Checking if YooKatale app is installed..." -ForegroundColor Cyan
-$packageName = "com.yookatale.app"
+$packageName = "com.yookataleapp.app"
 $appInstalled = & $adbPath shell pm list packages | Select-String -Pattern $packageName
 
 if ($appInstalled) {

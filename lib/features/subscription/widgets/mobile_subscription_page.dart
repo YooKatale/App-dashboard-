@@ -38,15 +38,21 @@ class _MobileSubscriptionPageState
       
       if (response['status'] == 'Success' && response['data'] != null) {
         final data = response['data'];
-        setState(() {
-          _packages = data is List ? data : [data];
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _packages = data is List ? data : [data];
+            _isLoading = false;
+          });
+        }
       } else {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

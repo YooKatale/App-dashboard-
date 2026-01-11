@@ -22,34 +22,53 @@ class CustomButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        fixedSize: Size(width, 40),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-      onPressed: onPressed != null
-          ? () {
-              final res = onPressed!();
-              if (res is Future) {
-                // ignore: unawaited_futures
-                res;
-              }
-            }
-          : null,
-      child: Row(
-        mainAxisAlignment: icon != null
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.center,
-        children: [
-          icon ?? const SizedBox.shrink(),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+    return SizedBox(
+      width: width == 160 ? double.infinity : width, // Use full width if default, otherwise use specified
+      height: height,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          minimumSize: Size(width == 160 ? 0 : width, height), // Don't enforce minimum if default width
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
+        ),
+        onPressed: onPressed != null
+            ? () {
+                final res = onPressed!();
+                if (res is Future) {
+                  // ignore: unawaited_futures
+                  res;
+                }
+              }
+            : null,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              icon!,
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 
@@ -14,6 +14,10 @@ class NotificationService {
   static const String _lastSyncKey = 'last_notification_sync';
   
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static const String _channelId = 'yookatale_channel';
+  static const String _channelName = 'YooKatale Notifications';
+  static const String _channelDescription = 'Notifications for orders, offers, and updates';
   
   // Test notification timer
   static Timer? _testNotificationTimer;
@@ -37,10 +41,26 @@ class NotificationService {
           await _saveTokenToServer(token);
         }
 
+
         // Listen for token refresh
         _messaging.onTokenRefresh.listen((newToken) {
           _saveTokenToServer(newToken);
         });
+
+        // Initialize local notifications plugin and channel
+        const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+        final InitializationSettings initSettings = InitializationSettings(android: androidInit);
+        await _localNotificationsPlugin.initialize(initSettings);
+        final androidPlugin = _localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        if (androidPlugin != null) {
+          const AndroidNotificationChannel channel = AndroidNotificationChannel(
+            _channelId,
+            _channelName,
+            description: _channelDescription,
+            importance: Importance.max,
+          );
+          await androidPlugin.createNotificationChannel(channel);
+        }
 
         // Handle foreground messages
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -94,24 +114,35 @@ class NotificationService {
     final notification = message.notification;
     final data = message.data;
 
-    // Create local notification
-    AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-          channelKey: 'yookatale_channel',
-          title: notification?.title ?? 'YooKatale',
-          body: notification?.body ?? '',
-          notificationLayout: NotificationLayout.Default,
-          payload: data.isNotEmpty ? <String, String?>{'data': json.encode(data)} : null,
-          category: NotificationCategory.Message,
-        ),
-    );
+    final title = notification?.title ?? 'YooKatale';
+    final body = notification?.body ?? '';
+
+    final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+      final platformDetails = NotificationDetails(android: androidDetails);
+      _localNotificationsPlugin.show(
+        notificationId,
+        title,
+        body,
+        platformDetails,
+        payload: data.isNotEmpty ? json.encode(data) : null,
+      );
+    } catch (e) {
+      if (kDebugMode) print('Error showing local notification: $e');
+    }
 
     // Save notification locally
     _saveNotificationLocally({
       'id': message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      'title': notification?.title ?? 'YooKatale',
-      'body': notification?.body ?? '',
+      'title': title,
+      'body': body,
       'type': data['type'] ?? 'general',
       'data': data,
       'timestamp': DateTime.now().toIso8601String(),
@@ -367,6 +398,21 @@ class NotificationService {
     );
   }
 
+  /// Create notification (public method for creating notifications programmatically)
+  static Future<void> createNotification({
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    await _createNotification(
+      title: title,
+      body: body,
+      type: type,
+      data: data,
+    );
+  }
+
   /// Create notification (internal method)
   static Future<void> _createNotification({
     required String title,
@@ -375,17 +421,22 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      // Create local notification
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-          channelKey: 'yookatale_channel',
-          title: title,
-          body: body,
-          notificationLayout: NotificationLayout.Default,
-          payload: data != null ? <String, String?>{'data': json.encode(data)} : null,
-          category: NotificationCategory.Message,
-        ),
+      // Create local notification using flutter_local_notifications
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      final androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+      final platformDetails = NotificationDetails(android: androidDetails);
+      await _localNotificationsPlugin.show(
+        notificationId,
+        title,
+        body,
+        platformDetails,
+        payload: data != null ? json.encode(data) : null,
       );
 
       // Save notification locally

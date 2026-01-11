@@ -3,12 +3,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/error_handler_service.dart';
 import '../models/cart_model.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
+import '../../common/widgets/location_picker.dart';
 
 class CheckoutModal extends ConsumerStatefulWidget {
   final List<CartItem> cartItems;
@@ -32,6 +34,11 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
   final TextEditingController _address2Controller = TextEditingController();
   final TextEditingController _specialRequestsController = TextEditingController();
   bool _peeledFood = false;
+  
+  // Location data (GPS coordinates)
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+  LatLng? _selectedLocation;
   
   // Tab Two Data (Receipt)
   String _currentDateTime = '';
@@ -107,10 +114,15 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         throw Exception('Please login to checkout');
       }
 
-      // Prepare delivery address - EXACT WEBAPP FORMAT
+      // Prepare delivery address - EXACT WEBAPP FORMAT + GPS coordinates
       final deliveryAddress = {
         'address1': _address1Controller.text.trim(),
         'address2': _address2Controller.text.trim(),
+        // Add GPS coordinates if location was selected
+        if (_selectedLatitude != null && _selectedLongitude != null) ...{
+          'latitude': _selectedLatitude,
+          'longitude': _selectedLongitude,
+        },
       };
 
       // Prepare special requests - EXACT WEBAPP FORMAT
@@ -413,15 +425,19 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                         const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
-                          child: CustomButton(
-                            title: _isLoading ? 'Processing...' : 'Proceed to Pay',
-                            onPressed: _isLoading ? null : _handleProceedToPayment,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: CustomButton(
+                              title: _isLoading ? 'Processing...' : 'Proceed to Pay',
+                              onPressed: _isLoading ? null : _handleProceedToPayment,
+                              width: double.infinity, // Use full width to avoid overflow
+                            ),
                           ),
                         ),
                       ],
                     )
                   : CustomButton(
-                      title: 'Continue to Checkout',
+                      title: 'Continue',
                       onPressed: _isLoading ? null : _handleTabOneContinue,
                     ),
             ),
@@ -444,13 +460,79 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
           ),
         ),
         const SizedBox(height: 16),
+        // Location picker button
+        ElevatedButton.icon(
+          onPressed: () async {
+            final result = await Navigator.of(context).push<Map<String, dynamic>>(
+              MaterialPageRoute(
+                builder: (context) => LocationPicker(
+                  onLocationSelected: (locationData) {
+                    Navigator.of(context).pop(locationData);
+                  },
+                  initialLocation: _selectedLocation,
+                  initialAddress: _address1Controller.text,
+                ),
+              ),
+            );
+
+            if (result != null && mounted) {
+              setState(() {
+                _address1Controller.text = result['address'] ?? result['address1'] ?? '';
+                _selectedLatitude = result['latitude'] as double?;
+                _selectedLongitude = result['longitude'] as double?;
+                if (_selectedLatitude != null && _selectedLongitude != null) {
+                  _selectedLocation = LatLng(_selectedLatitude!, _selectedLongitude!);
+                }
+              });
+            }
+          },
+          icon: const Icon(Icons.location_on, color: Colors.white),
+          label: const Text(
+            'Select Location on Map',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_selectedLatitude != null && _selectedLongitude != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green[300]!),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Location selected: ${_selectedLatitude!.toStringAsFixed(6)}, ${_selectedLongitude!.toStringAsFixed(6)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         TextField(
           controller: _address1Controller,
           style: const TextStyle(color: Colors.black87, fontSize: 16),
           decoration: InputDecoration(
             labelText: 'Address 1',
             labelStyle: const TextStyle(color: Colors.black54),
-            hintText: 'Enter your delivery address',
+            hintText: 'Enter your delivery address or select on map',
             hintStyle: const TextStyle(color: Colors.grey),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -466,6 +548,9 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             ),
             filled: true,
             fillColor: Colors.grey[50],
+            suffixIcon: _selectedLatitude != null && _selectedLongitude != null
+                ? const Icon(Icons.check_circle, color: Colors.green)
+                : null,
           ),
           maxLines: 3,
         ),

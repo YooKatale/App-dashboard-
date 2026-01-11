@@ -8,11 +8,11 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
 
 import '/app.dart';
 import 'services/push_notification_service.dart';
 import 'services/notification_service.dart';
+import 'services/notification_polling_service.dart';
 import 'backend/notifications.dart';
 import 'firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -95,15 +95,7 @@ Future preInitialize() async {
     }
   }
 
-  try {
-    // Initialize local notifications (Awesome Notifications)
-    await NotificationServices.initializeLocalNotifications();
-    await NotificationServices.startListeningNotificationEvents();
-  } catch (e) {
-    if (kDebugMode) {
-      print('Notification services initialization error (non-blocking): $e');
-    }
-  }
+  // Local notification initialization handled in services using flutter_local_notifications
 
   try {
     // Initialize push notifications (Firebase Cloud Messaging)
@@ -118,14 +110,20 @@ Future preInitialize() async {
       // Initialize local notification service
       await NotificationService.initialize();
       
-      // Note: Test notifications are handled by server scheduler
-      // The server sends FCM push notifications every minute to all users
-      // Mobile app will receive them via FirebaseMessaging.onMessage (foreground)
-      // and _firebaseMessagingBackgroundHandler (background/closed)
+      // CRITICAL: Start notification polling service (like webapp does)
+      // This ensures notifications work even if FCM token fails
+      // Polls backend every minute to receive notifications from server
+      NotificationPollingService.startPolling();
+      
+      // Note: Notifications are handled by both:
+      // 1. FCM push notifications (if FCM token works) - sent by backend scheduler
+      // 2. Polling service (fallback) - polls backend every minute like webapp
+      // Both methods ensure notifications work even if one fails
       if (kDebugMode) {
         print('✅ Push notifications initialized - will receive from server every minute');
-        print('✅ FCM token synchronized with webapp endpoint');
+        print('✅ FCM token synchronized with webapp endpoint (if token obtained)');
         print('✅ Background handler registered - notifications work when app is closed');
+        print('✅ Notification polling started - will poll backend every minute (like webapp)');
       }
     }
   } catch (e) {
@@ -136,79 +134,32 @@ Future preInitialize() async {
 }
 
 // Background message handler (must be top-level function)
-// This handles notifications when app is closed or in background (like WhatsApp)
-// CRITICAL: This function MUST be top-level (not a class method) for Flutter to call it
+// When app is terminated, system notifications will be shown if backend sends
+// a notification payload. Here we persist message history for sync.
+// CRITICAL: This handler runs when app is closed (like WhatsApp notifications)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Initialize Firebase (required for background handler)
   await Firebase.initializeApp();
-  
-  // Initialize Awesome Notifications for background messages
-  // This allows notifications to show even when app is completely closed
-  await AwesomeNotifications().initialize(
-    null,
-    [
-      NotificationChannel(
-        channelKey: 'yookatale_channel',
-        channelName: 'YooKatale Notifications',
-        channelDescription: 'Notifications for orders, offers, and updates',
-        defaultColor: const Color(0xFF185F2D),
-        ledColor: Colors.white,
-        importance: NotificationImportance.High,
-        playSound: true,
-        enableVibration: true,
-      ),
-    ],
-  );
-  
-  // Extract notification data (synchronized with webapp format)
+
   final notification = message.notification;
   final data = message.data;
+
+  final title = notification?.title ?? data['title']?.toString() ?? 'YooKatale';
+  final body = notification?.body ?? data['body']?.toString() ?? 'You have a new notification';
+
+  // IMPORTANT: If backend sends notification payload, Android automatically shows system notification
+  // If backend sends only data payload, we need to show local notification
+  // For now, backend should send proper notification payload for system notifications to appear
   
-  // Get title and body from notification or data (webapp sends both)
-  final title = notification?.title ?? 
-                data['title']?.toString() ?? 
-                'YooKatale';
-  final body = notification?.body ?? 
-               data['body']?.toString() ?? 
-               'You have a new notification';
-  
-  // Create and show notification (works even when app is closed)
-  final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-  await AwesomeNotifications().createNotification(
-    content: NotificationContent(
-      id: notificationId,
-      channelKey: 'yookatale_channel',
-      title: title,
-      body: body,
-      notificationLayout: NotificationLayout.Default,
-      payload: {
-        'mealType': data['mealType']?.toString() ?? '',
-        'url': data['url']?.toString() ?? 'https://www.yookatale.app/schedule',
-        'type': data['type']?.toString() ?? 'meal_calendar',
-      },
-      category: NotificationCategory.Message,
-      wakeUpScreen: true, // Wake screen when notification arrives
-      criticalAlert: false,
-    ),
-    actionButtons: [
-      NotificationActionButton(
-        key: 'VIEW',
-        label: 'View Schedule',
-      ),
-    ],
-  );
-  
-  // IMPORTANT: Save notification to history (so it appears in notification tab)
   try {
     final prefs = await SharedPreferences.getInstance();
     final notificationsJson = prefs.getString('user_notifications');
-    final notifications = notificationsJson != null 
+    final notifications = notificationsJson != null
         ? (json.decode(notificationsJson) as List).cast<Map<String, dynamic>>()
         : <Map<String, dynamic>>[];
-    
+
     notifications.insert(0, {
-      'id': message.messageId ?? notificationId.toString(),
+      'id': message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       'title': title,
       'body': body,
       'type': data['type']?.toString() ?? 'meal_calendar',
@@ -216,31 +167,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       'timestamp': DateTime.now().toIso8601String(),
       'read': false,
     });
-    
-    // Keep only last 100 notifications
+
     if (notifications.length > 100) {
       notifications.removeRange(100, notifications.length);
     }
-    
+
     await prefs.setString('user_notifications', json.encode(notifications));
-    
-    // Update unread count
     final unreadCount = notifications.where((n) => n['read'] != true).length;
     await prefs.setInt('unread_notifications_count', unreadCount);
-  } catch (saveError) {
-    if (kDebugMode) {
-      print('Error saving background notification to history: $saveError');
-    }
+  } catch (e) {
+    if (kDebugMode) print('Error saving background notification: $e');
   }
-  
-  // Log for debugging (ALWAYS log in background handler for troubleshooting)
-  print('📱 ========================================');
-  print('📱 BACKGROUND NOTIFICATION RECEIVED');
-  print('📱 App was CLOSED when notification arrived');
-  print('📱 Title: $title');
-  print('📱 Body: $body');
-  print('📱 Message ID: ${message.messageId}');
-  print('📱 Data: $data');
-  print('📱 Saved to notification history: YES');
-  print('📱 ========================================');
+
+  if (kDebugMode) {
+    print('📱 BACKGROUND NOTIFICATION (app closed) - saved to history: $title | $body');
+    print('📱 System notification will show automatically if backend sends notification payload');
+  }
 }

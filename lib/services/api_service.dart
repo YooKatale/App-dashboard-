@@ -924,5 +924,60 @@ class ApiService {
       throw Exception('Error with Google authentication: $e');
     }
   }
+
+  // Update delivery partner location
+  static Future<Map<String, dynamic>> updateDeliveryLocation({
+    required String partnerId,
+    required double lat,
+    required double lng,
+    String? address,
+    String? orderId,
+    String? token,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/delivery/location'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'partnerId': partnerId,
+          'lat': lat,
+          'lng': lng,
+          if (address != null) 'address': address,
+          if (orderId != null) 'orderId': orderId,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to update location: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error updating delivery location: $e');
+    }
+  }
+
+  // Get order delivery location
+  static Future<Map<String, dynamic>> getOrderDeliveryLocation({
+    required String orderId,
+    String? token,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/delivery/order/$orderId'),
+        headers: getHeaders(token: token),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to get delivery location: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error getting delivery location: $e');
+    }
+  }
 }
 

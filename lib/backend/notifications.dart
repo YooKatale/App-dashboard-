@@ -1,60 +1,64 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../app.dart';
 import '../widgets/notification_widget.dart';
 
 class NotificationServices {
-  static ReceivedAction? initialAction;
+  static NotificationResponse? initialAction;
+  static final FlutterLocalNotificationsPlugin _localNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static const String _channelId = 'alerts';
+  static const String _channelName = 'YooKatale Notifications';
+  static const String _channelDescription = 'YooKatale meal reminders and updates';
 
   static Future<void> initializeLocalNotifications() async {
-    await AwesomeNotifications().initialize(
-      null, //'resource://drawable/res_app_icon',//
-      [
-        NotificationChannel(
-          channelKey: 'alerts',
-          channelName: 'YooKatale Notifications',
-          channelDescription: 'YooKatale meal reminders and updates',
-          playSound: true,
-          onlyAlertOnce: true,
-          groupAlertBehavior: GroupAlertBehavior.Children,
-          importance: NotificationImportance.High,
-          defaultPrivacy: NotificationPrivacy.Private,
-          defaultColor: const Color.fromRGBO(24, 95, 45, 1), // YooKatale green
-          ledColor: Colors.green,
-        )
-      ],
-      debug: true,
-    );
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initSettings = InitializationSettings(android: androidInit);
 
-    initialAction = await AwesomeNotifications()
-        .getInitialNotificationAction(removeFromActionEvents: false);
+    await _localNotificationsPlugin.initialize(initSettings,
+        onDidReceiveNotificationResponse: (response) {
+      // Handle taps from system tray
+      onActionReceivedMethod(response);
+    });
+
+    // Create channel on Android
+    final androidPlugin = _localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.max,
+      );
+      await androidPlugin.createNotificationChannel(channel);
+    }
+
+    // Initial notification response (if app opened from a notification)
+    // Note: flutter_local_notifications provides getNotificationAppLaunchDetails for initial payload
+    try {
+      final details = await _localNotificationsPlugin.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp ?? false) {
+        // Use the notificationResponse provided by the plugin if available
+        initialAction = details?.notificationResponse;
+      }
+    } catch (_) {}
   }
 
   static Future<void> startListeningNotificationEvents() async {
-    AwesomeNotifications()
-        .setListeners(onActionReceivedMethod: onActionReceivedMethod);
+    // Listener set during initialization via onDidReceiveNotificationResponse
   }
 
-  static Future<void> onActionReceivedMethod(
-      ReceivedAction receivedAction) async {
-    if (receivedAction.actionType == ActionType.SilentAction ||
-        receivedAction.actionType == ActionType.SilentBackgroundAction) {
-      if (kDebugMode) {
-        print(
-            'Message sent via notification input: "${receivedAction.buttonKeyInput}"');
-      }
-      await executeLongTaskInBackground();
-    } else {
-      MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/notification-page',
-        (route) =>
-            (route.settings.name != '/notification-page') || route.isFirst,
-        arguments: receivedAction,
-      );
-    }
+  static Future<void> onActionReceivedMethod(NotificationResponse? response) async {
+    if (response == null) return;
+    // Navigate to notifications page
+    MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/notification-page',
+      (route) => (route.settings.name != '/notification-page') || route.isFirst,
+      arguments: response,
+    );
   }
 
   static Future<bool> displayNotificationRationale() async {
@@ -74,8 +78,7 @@ class NotificationServices {
         );
       },
     );
-    return userAuthorized &&
-        await AwesomeNotifications().requestPermissionToSendNotifications();
+    return userAuthorized;
   }
 
   static Future<void> executeLongTaskInBackground() async {
@@ -94,81 +97,53 @@ class NotificationServices {
   }
 
   static Future<void> createNewNotification() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    if (!isAllowed) isAllowed = await displayNotificationRationale();
-    if (!isAllowed) return;
-
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: -1, // -1 is replaced by a random number
-        channelKey: 'alerts',
-        title: 'Huston! The eagle has landed!',
-        body:
-            "A small step for a man, but a giant leap to Flutter's community!",
-        bigPicture:
-            'https://storage.googleapis.com/cms-storage-bucket/d406c736e7c4c57f5f61.png',
-        largeIcon:
-            'https://storage.googleapis.com/cms-storage-bucket/0dbfcc7a59cd1cf16282.png',
-        notificationLayout: NotificationLayout.BigPicture,
-        payload: {'notificationId': '1234567890'},
-      ),
-      actionButtons: [
-        NotificationActionButton(key: 'REDIRECT', label: 'Redirect'),
-        NotificationActionButton(
-          key: 'REPLY',
-          label: 'Reply Message',
-          requireInputText: true,
-          actionType: ActionType.SilentAction,
-        ),
-        NotificationActionButton(
-          key: 'DISMISS',
-          label: 'Dismiss',
-          actionType: ActionType.DismissAction,
-          isDangerousOption: true,
-        )
-      ],
+    final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    final androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    final platformDetails = NotificationDetails(android: androidDetails);
+    await _localNotificationsPlugin.show(
+      notificationId,
+      'Huston! The eagle has landed!',
+      "A small step for a man, but a giant leap to Flutter's community!",
+      platformDetails,
+      payload: json.encode({'notificationId': '1234567890'}),
     );
   }
 
   static Future<void> scheduleNewNotification() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    if (!isAllowed) isAllowed = await displayNotificationRationale();
-    if (!isAllowed) return;
-
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: -1, // -1 is replaced by a random number
-        channelKey: 'alerts',
-        title: "Huston! The eagle has landed!",
-        body:
-            "A small step for a man, but a giant leap to Flutter's community!",
-        bigPicture:
-            'https://storage.googleapis.com/cms-storage-bucket/d406c736e7c4c57f5f61.png',
-        largeIcon:
-            'https://storage.googleapis.com/cms-storage-bucket/0dbfcc7a59cd1cf16282.png',
-        notificationLayout: NotificationLayout.BigPicture,
-        payload: {'notificationId': '1234567890'},
-      ),
-      actionButtons: [
-        NotificationActionButton(key: 'REDIRECT', label: 'Redirect'),
-        NotificationActionButton(
-          key: 'DISMISS',
-          label: 'Dismiss',
-          actionType: ActionType.DismissAction,
-          isDangerousOption: true,
-        )
-      ],
-      schedule: NotificationCalendar.fromDate(
-        date: DateTime.now().add(const Duration(seconds: 10)),
-      ),
+    final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    final androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.max,
+      priority: Priority.high,
     );
+    final platformDetails = NotificationDetails(android: androidDetails);
+
+    // Fallback schedule implementation: trigger after 10s using a delayed Future
+    Future.delayed(const Duration(seconds: 10), () async {
+      await _localNotificationsPlugin.show(
+        notificationId,
+        "Huston! The eagle has landed!",
+        "A small step for a man, but a giant leap to Flutter's community!",
+        platformDetails,
+        payload: json.encode({'notificationId': '1234567890'}),
+      );
+    });
   }
 
   static Future<void> resetBadgeCounter() async {
-    await AwesomeNotifications().resetGlobalBadge();
+    // flutter_local_notifications does not directly manage badges across OEMs; cancel all as fallback
+    await _localNotificationsPlugin.cancelAll();
   }
 
   static Future<void> cancelNotifications() async {
-    await AwesomeNotifications().cancelAll();
+    await _localNotificationsPlugin.cancelAll();
   }
 }

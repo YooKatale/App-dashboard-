@@ -1,48 +1,85 @@
 {
   "project_info": {
-    "project_number": "573491167004",
-    "project_id": "yookatale-b6513",
-    "storage_bucket": "yookatale-b6513.appspot.com"
+    "project_number": "1091927934214",
+    "firebase_url": "https://yookatale-aa476-default-rtdb.firebaseio.com",
+    "project_id": "yookatale-aa476",
+    "storage_bucket": "yookatale-aa476.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:573491167004:android:c2afba499437b599c6c4d9",
+        "mobilesdk_app_id": "1:1091927934214:android:beafcbd70126ae26f0ca87",
         "android_client_info": {
-          "package_name": "com.yookatale.app"
+          "package_name": "com.yookatale.mobile"
         }
       },
       "oauth_client": [
         {
-          "client_id": "573491167004-k56dlkm22m4nspc4o01bf0fbgqcimgs7.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.yookatale.app",
-            "certificate_hash": "2dbcd88666e855fd466384444d1b7b7856c530bb"
-          }
-        },
-        {
-          "client_id": "573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com",
+          "client_id": "1091927934214-r9dadofr1tv84lhgfkijkeqr8ds4nqmb.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDjeOV7PSnt7YSKX1sjr8qXOPRe36s7fOc"
+          "current_key": "AIzaSyDGWEgCpdgM2qeHkmPmKN9ikWHWexb_UpY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "573491167004-h75897imc0s8g93amcbb37cfqktt1r8f.apps.googleusercontent.com",
+              "client_id": "1091927934214-0nevi9p6nc9k80hm3d13oagli4gjll2n.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "573491167004-7gkhpdpte511fp328pf9tkg37ovko49j.apps.googleusercontent.com",
+              "client_id": "1091927934214-d25rn2aa9ntoar55cuvnmgnkeu79kr9h.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.yookatale"
+                "bundle_id": "com.example.yookatale.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1091927934214:android:42b1064ad533158bf0ca87",
+        "android_client_info": {
+          "package_name": "com.yookatale.yookatale"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1091927934214-e0l4fkgj40pgor82n39sbavct3ba35r1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yookatale.yookatale",
+            "certificate_hash": "c4d368a3c58a1c9f205cad46427426e644d6412e"
+          }
+        },
+        {
+          "client_id": "1091927934214-r9dadofr1tv84lhgfkijkeqr8ds4nqmb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGWEgCpdgM2qeHkmPmKN9ikWHWexb_UpY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1091927934214-0nevi9p6nc9k80hm3d13oagli4gjll2n.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1091927934214-d25rn2aa9ntoar55cuvnmgnkeu79kr9h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.yookatale.RunnerTests"
               }
             }
           ]

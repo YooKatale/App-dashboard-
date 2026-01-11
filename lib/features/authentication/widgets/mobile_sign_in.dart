@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../backend/backend_auth_services.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/push_notification_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../services/notification_polling_service.dart';
 import '../../../services/error_handler_service.dart';
 import '../../../app.dart';
 import '../../authentication/providers/auth_provider.dart';
@@ -124,10 +127,30 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
           );
           
           // Initialize push notifications after login (like webapp)
+          // CRITICAL: Initialize all notification services to ensure notifications work immediately
           try {
+            // Initialize push notification service (FCM)
             await PushNotificationService.initialize();
+            
+            // Initialize local notification service (for in-app notifications)
+            await NotificationService.initialize();
+            
+            // Start notification polling service (ensures notifications work even if FCM fails)
+            // This polls backend every minute like the webapp does
+            NotificationPollingService.startPolling();
+            
+            // Send a welcome notification immediately after login
+            await Future.delayed(const Duration(seconds: 1));
+            await NotificationService.createNotification(
+              title: 'Welcome to YooKatale! 🎉',
+              body: 'You\'re all set! Notifications are now active.',
+              type: 'welcome',
+            );
           } catch (e) {
             // Non-blocking - notifications will work even if init fails
+            if (kDebugMode) {
+              print('Notification initialization error (non-blocking): $e');
+            }
           }
         }
       }
@@ -267,11 +290,31 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
               lastName: userData['lastname']?.toString(),
             );
             
-            // Initialize push notifications after login
+            // Initialize push notifications after login (like webapp)
+            // CRITICAL: Initialize all notification services to ensure notifications work immediately
             try {
+              // Initialize push notification service (FCM)
               await PushNotificationService.initialize();
+              
+              // Initialize local notification service (for in-app notifications)
+              await NotificationService.initialize();
+              
+              // Start notification polling service (ensures notifications work even if FCM fails)
+              // This polls backend every minute like the webapp does
+              NotificationPollingService.startPolling();
+              
+              // Send a welcome notification immediately after login
+              await Future.delayed(const Duration(seconds: 1));
+              await NotificationService.createNotification(
+                title: 'Welcome to YooKatale! 🎉',
+                body: 'You\'re all set! Notifications are now active.',
+                type: 'welcome',
+              );
             } catch (e) {
               // Non-blocking - notifications will work even if init fails
+              if (kDebugMode) {
+                print('Notification initialization error (non-blocking): $e');
+              }
             }
             
             // Get user name for welcome message
