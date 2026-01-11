@@ -181,30 +181,56 @@ class _CategoriesSectionState extends ConsumerState<CategoriesSection> {
                           width: 70,
                           height: 70,
                           decoration: BoxDecoration(
-                            color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.2),
-                              width: 1,
+                              width: 2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: categoryImage.isNotEmpty
                               ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(14),
                                   child: Image.network(
                                     categoryImage,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Icon(
-                                      Icons.category,
-                                      color: const Color.fromRGBO(24, 95, 45, 1),
-                                      size: 30,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Icon(
+                                        Icons.category,
+                                        color: const Color.fromRGBO(24, 95, 45, 1),
+                                        size: 32,
+                                      ),
                                     ),
                                   ),
                                 )
-                              : Icon(
-                                  Icons.category,
-                                  color: const Color.fromRGBO(24, 95, 45, 1),
-                                  size: 30,
+                              : Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Icon(
+                                    Icons.category,
+                                    color: const Color.fromRGBO(24, 95, 45, 1),
+                                    size: 32,
+                                  ),
                                 ),
                         ),
                         const SizedBox(height: 6),

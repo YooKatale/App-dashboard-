@@ -47,8 +47,8 @@ class NotificationService {
           _saveTokenToServer(newToken);
         });
 
-        // Initialize local notifications plugin and channel - Use YooKatale logo
-        const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@drawable/logo1');
+        // Initialize local notifications plugin and channel - Use YooKatale logo (ic_launcher is already logo1)
+        const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
         final InitializationSettings initSettings = InitializationSettings(android: androidInit);
         await _localNotificationsPlugin.initialize(initSettings);
         final androidPlugin = _localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
