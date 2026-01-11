@@ -47,8 +47,8 @@ class NotificationService {
           _saveTokenToServer(newToken);
         });
 
-        // Initialize local notifications plugin and channel
-        const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+        // Initialize local notifications plugin and channel - Use YooKatale logo
+        const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@drawable/logo1');
         final InitializationSettings initSettings = InitializationSettings(android: androidInit);
         await _localNotificationsPlugin.initialize(initSettings);
         final androidPlugin = _localNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -125,6 +125,8 @@ class NotificationService {
         channelDescription: _channelDescription,
         importance: Importance.max,
         priority: Priority.high,
+        icon: '@mipmap/ic_launcher', // Use YooKatale logo (set as launcher icon - logo1)
+        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'), // Large icon for rich notifications
       );
       final platformDetails = NotificationDetails(android: androidDetails);
       _localNotificationsPlugin.show(
@@ -429,6 +431,8 @@ class NotificationService {
         channelDescription: _channelDescription,
         importance: Importance.max,
         priority: Priority.high,
+        icon: '@mipmap/ic_launcher', // Use YooKatale logo (set as launcher icon - logo1)
+        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'), // Large icon
       );
       final platformDetails = NotificationDetails(android: androidDetails);
       await _localNotificationsPlugin.show(

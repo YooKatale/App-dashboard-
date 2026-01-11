@@ -64,6 +64,13 @@ class _HomePageState extends ConsumerState<HomePage> {
     var latestProducts = ref.watch(productsProvider);
     var popularProducts = ref.watch(popularProductsProvider);
     var fruitProducts = ref.watch(fruitProvider);
+    var vegetablesProducts = ref.watch(vegetablesProvider);
+    var grainsProducts = ref.watch(grainsProvider);
+    var meatProducts = ref.watch(meatProvider);
+    var dairyProducts = ref.watch(dairyProvider);
+    var rootProducts = ref.watch(rootProvider);
+    var juiceProducts = ref.watch(juiceProvider);
+    
     return SizedBox(
       child: SingleChildScrollView(
         controller: scrollController,
@@ -93,15 +100,51 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: 'Most Popular',
             ),
             
+            // Fruits Products Section
+            ProductsPage(
+              productProvider: fruitProducts,
+              title: 'Fruits',
+            ),
+            
+            // Vegetables Products Section
+            ProductsPage(
+              productProvider: vegetablesProducts,
+              title: 'Vegetables',
+            ),
+            
+            // Grains Products Section
+            ProductsPage(
+              productProvider: grainsProducts,
+              title: 'Grains & Flour',
+            ),
+            
             // Banner 2
             const BannerImage(
               imageUrl: 'https://yookatale.app/assets/images/b2.jpeg',
             ),
             
-            // Fruits Products Section
+            // Meat Products Section
             ProductsPage(
-              productProvider: fruitProducts,
-              title: 'Fruits Products',
+              productProvider: meatProducts,
+              title: 'Meat',
+            ),
+            
+            // Dairy Products Section
+            ProductsPage(
+              productProvider: dairyProducts,
+              title: 'Dairy',
+            ),
+            
+            // Root Products Section
+            ProductsPage(
+              productProvider: rootProducts,
+              title: 'Root Vegetables',
+            ),
+            
+            // Juice Products Section
+            ProductsPage(
+              productProvider: juiceProducts,
+              title: 'Juices',
             ),
             
             // Banner 3

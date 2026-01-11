@@ -103,6 +103,16 @@ class ProductsPage extends ConsumerWidget {
                     itemCount: value.popularProducts.length,
                     itemBuilder: (context, index) {
                       final product = value.popularProducts[index];
+                      // Ensure we have a valid product ID before rendering
+                      final productId = product.actualId ?? 
+                                      product.id?.toString() ?? 
+                                      '';
+                      
+                      // Skip products without valid ID
+                      if (productId.isEmpty || productId == 'null' || productId == '0') {
+                        return const SizedBox.shrink();
+                      }
+                      
                       return Container(
                         margin: const EdgeInsets.only(right: 12),
                         width: 180,
@@ -113,7 +123,7 @@ class ProductsPage extends ConsumerWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ProductDetailPage(
-                                  productId: product.actualId ?? product.id.toString(),
+                                  productId: productId,
                                   product: product,
                                 ),
                               ),

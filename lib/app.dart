@@ -34,6 +34,7 @@ import 'features/products/widgets/product_detail_page.dart';
 import 'features/common/models/products_model.dart';
 import 'features/common/widgets/bottom_navigation_bar.dart';
 import 'features/common/widgets/splash_screen.dart';
+import 'features/common/widgets/location_gate.dart';
 import 'features/settings/widgets/settings_page.dart';
 import 'features/wishlist/widgets/wishlist_page.dart';
 import 'features/help/widgets/help_support_page.dart';
@@ -192,7 +193,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           // PERSISTENT SIGN-IN: If already logged in, redirect to home
           final authState = ref.read(authStateProvider);
           if (authState.isLoggedIn) {
-            return App();
+            return const LocationGate(child: App());
           }
           return MobileSignInPage();
         },
@@ -290,21 +291,23 @@ class _AppState extends ConsumerState<App> {
       onTapDown: (details) {
         tapPosition = details.globalPosition;
       },
-      child: Scaffold(
-        body: Responsive(
-          mobile:
-              // DesktopView(),
-              BaseWidget(
-            child: HomePage(),
-            // child: SignUpPage(),
+      child: LocationGate(
+        child: Scaffold(
+          body: Responsive(
+            mobile:
+                // DesktopView(),
+                BaseWidget(
+              child: HomePage(),
+              // child: SignUpPage(),
+            ),
+            tablet: const DesktopView(),
+            desktop: const DesktopView(),
           ),
-          tablet: const DesktopView(),
-          desktop: const DesktopView(),
-        ),
-        bottomNavigationBar: Responsive(
-          mobile: const MobileBottomNavigationBar(currentIndex: 0),
-          tablet: const SizedBox.shrink(),
-          desktop: const SizedBox.shrink(),
+          bottomNavigationBar: Responsive(
+            mobile: const MobileBottomNavigationBar(currentIndex: 0),
+            tablet: const SizedBox.shrink(),
+            desktop: const SizedBox.shrink(),
+          ),
         ),
       ),
     );

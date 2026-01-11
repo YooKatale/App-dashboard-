@@ -18,6 +18,31 @@ final fruitProvider = FutureProvider.autoDispose<Products>(
   (ref) async => await ProductService.fetchProductsByCategory('fruits'),
 );
 
+// Fetch all categories for mobile app (like webapp)
+final vegetablesProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('vegetables'),
+);
+
+final grainsProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('grains and flour'),
+);
+
+final meatProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('meat'),
+);
+
+final dairyProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('dairy'),
+);
+
+final rootProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('root'),
+);
+
+final juiceProvider = FutureProvider.autoDispose<Products>(
+  (ref) async => await ProductService.fetchProductsByCategory('juice'),
+);
+
 // Fetch categories - keep using local JSON for category list
 final categoriesProvider = FutureProvider.autoDispose<Products>(
   (ref) async =>

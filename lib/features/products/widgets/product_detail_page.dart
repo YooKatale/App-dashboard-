@@ -106,22 +106,21 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
       }
       
       // Try to get from widget.product.actualId (for homepage products)
-      if ((actualProductId == null || actualProductId.isEmpty) && widget.product.actualId != null) {
+      if ((actualProductId == null || actualProductId.isEmpty) && 
+          widget.product.actualId != null && 
+          widget.product.actualId!.isNotEmpty &&
+          widget.product.actualId != 'null') {
         actualProductId = widget.product.actualId;
       }
       
       // Fallback to widget.productId if product details not loaded yet
-      if (actualProductId == null || actualProductId.isEmpty) {
+      if ((actualProductId == null || actualProductId.isEmpty || actualProductId == 'null') && 
+          widget.productId.isNotEmpty && 
+          widget.productId != 'null') {
         actualProductId = widget.productId;
       }
-      
-      // Last resort: try to get from widget.product.id (hash code - not ideal but better than nothing)
-      if ((actualProductId == null || actualProductId.isEmpty) && widget.product.id != null) {
-        // Don't use hash code - it won't work with backend
-        // Instead, try to fetch product by name or wait for product details to load
-      }
 
-      if (actualProductId == null || actualProductId.isEmpty) {
+      if (actualProductId == null || actualProductId.isEmpty || actualProductId == 'null') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
