@@ -104,7 +104,8 @@ class _MultiPageSignUpPageState extends State<MultiPageSignUpPage> {
             _emailController.text.trim().isNotEmpty &&
             _passwordController.text.length >= 6;
       case 1:
-        return _selectedDate != null && _phoneController.text.trim().isNotEmpty;
+        // Phone number is optional (match webapp behavior)
+        return _selectedDate != null;
       case 2:
         return _addressController.text.trim().isNotEmpty &&
             _cityController.text.trim().isNotEmpty;
@@ -127,6 +128,10 @@ class _MultiPageSignUpPageState extends State<MultiPageSignUpPage> {
     setState(() => _isLoading = true);
 
     try {
+      // Get phone number - only send if not empty (match webapp behavior)
+      final phoneText = _phoneController.text.trim();
+      final phone = phoneText.isEmpty ? null : phoneText;
+      
       final result = await AuthService.register(
         firstname: _firstNameController.text.trim(),
         lastname: _lastNameController.text.trim(),
@@ -135,7 +140,7 @@ class _MultiPageSignUpPageState extends State<MultiPageSignUpPage> {
         dob: _selectedDate != null
             ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
             : null,
-        phone: _phoneController.text.trim(),
+        phone: phone,
         gender: _gender,
         address: _addressController.text.trim(),
         notificationPreferences: {
@@ -412,7 +417,7 @@ class _MultiPageSignUpPageState extends State<MultiPageSignUpPage> {
             keyboardType: TextInputType.phone,
             style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
-              labelText: 'Phone Number',
+              labelText: 'Phone Number (Optional)',
               labelStyle: const TextStyle(color: Colors.black54),
               hintText: 'Enter your phone number',
               hintStyle: const TextStyle(color: Colors.grey),

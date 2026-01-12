@@ -213,7 +213,8 @@ class AuthService {
         'lastname': lastname,
         'email': email,
         'password': password,
-        if (phone != null) 'phone': phone,
+        // Always send phone (even if empty string) to match webapp behavior
+        'phone': phone ?? '',
         if (gender != null) 'gender': gender,
         if (dob != null) 'dob': dob,
         if (address != null) 'address': address,

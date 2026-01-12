@@ -29,31 +29,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isPhoneLogin = false;
-  bool _biometricAvailable = false; // Check if device supports biometrics
-  
-  @override
-  void initState() {
-    super.initState();
-    _checkBiometricAvailability();
-  }
-  
-  Future<void> _checkBiometricAvailability() async {
-    try {
-      final authBackend = AuthBackend();
-      final isSupported = await authBackend.isBiometricSupported();
-      if (mounted) {
-        setState(() {
-          _biometricAvailable = isSupported;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _biometricAvailable = false;
-        });
-      }
-    }
-  }
 
   @override
   void dispose() {
@@ -142,8 +117,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
             // Send a welcome notification immediately after login
             await Future.delayed(const Duration(seconds: 1));
             await NotificationService.createNotification(
-              title: 'Welcome to YooKatale! 🎉',
-              body: 'You\'re all set! Notifications are now active.',
+              title: 'Welcome to Yookatale! 🎉',
+              body: 'Experience the convenience of Yookatale - your trusted partner for fresh groceries, customizable meals, and premium subscription plans. From breakfast to supper, we deliver quality food right to your doorstep. Join thousands of satisfied customers enjoying our exceptional service, competitive prices, and reliable delivery. Start shopping now!',
               type: 'welcome',
             );
           } catch (e) {
@@ -262,210 +237,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
     }
   }
 
-  Future<void> _handleFingerprintAuth() async {
-    try {
-      setState(() => _isLoading = true);
-      
-      final authBackend = AuthBackend();
-      final result = await authBackend.authenticateWithFingerprint();
-
-      if (!mounted) return;
-
-      if (result['success'] == true) {
-        // Get saved credentials and login
-        final userData = await AuthService.getUserData();
-        final token = await AuthService.getToken();
-        
-        if (!mounted) return;
-        
-        if (userData != null && userData.isNotEmpty && token != null) {
-          // Update auth state provider (same as email login)
-          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-          
-          if (userId != null) {
-            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-              userId: userId,
-              email: userData['email']?.toString(),
-              firstName: userData['firstname']?.toString(),
-              lastName: userData['lastname']?.toString(),
-            );
-            
-            // Initialize push notifications after login (like webapp)
-            // CRITICAL: Initialize all notification services to ensure notifications work immediately
-            try {
-              // Initialize push notification service (FCM)
-              await PushNotificationService.initialize();
-              
-              // Initialize local notification service (for in-app notifications)
-              await NotificationService.initialize();
-              
-              // Start notification polling service (ensures notifications work even if FCM fails)
-              // This polls backend every minute like the webapp does
-              NotificationPollingService.startPolling();
-              
-              // Send a welcome notification immediately after login
-              await Future.delayed(const Duration(seconds: 1));
-              await NotificationService.createNotification(
-                title: 'Welcome to YooKatale! 🎉',
-                body: 'You\'re all set! Notifications are now active.',
-                type: 'welcome',
-              );
-            } catch (e) {
-              // Non-blocking - notifications will work even if init fails
-              if (kDebugMode) {
-                print('Notification initialization error (non-blocking): $e');
-              }
-            }
-            
-            // Get user name for welcome message
-            final userName = userData['lastname']?.toString() ?? 
-                           userData['firstname']?.toString() ?? 
-                           userData['email']?.toString() ?? 
-                           'User';
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Welcome back, $userName!'),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-              
-              // Get redirect route or default to home
-              final redirectRoute = ref.read(redirectRouteProvider);
-              final targetRoute = redirectRoute ?? '/home';
-              
-              // Clear redirect route
-              ref.read(redirectRouteProvider.notifier).state = null;
-              
-              // Navigate to app
-              Navigator.of(context).pushReplacementNamed(targetRoute);
-            }
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Invalid saved credentials. Please sign in manually.'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            }
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No saved credentials found. Please sign in manually first.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        }
-      } else {
-        // Show user-friendly error message
-        final errorMessage = result['error'] ?? 'Authentication failed. Please try again.';
-        final errorType = result['errorType'] ?? 'unknown';
-
-        // Show appropriate dialog for different error types
-        if (errorType == 'not_enrolled' || errorType == 'not_available' || errorType == 'not_supported') {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.info_outline, color: Colors.orange, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Biometric Setup Required',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    errorMessage,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'To use biometric authentication:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '1. Go to your device Settings\n2. Set up Fingerprint or Face ID\n3. Return to the app and try again',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          // Show professional error message
-          if (errorType == 'cancelled') {
-            // User cancelled - don't show error, just return
-            return;
-          } else if (errorType == 'locked_out' || errorType == 'permanently_locked_out') {
-            // Show dialog for locked out errors
-            if (!mounted) return;
-            ErrorHandlerService.showErrorDialog(
-              context,
-              title: 'Biometric Authentication Locked',
-              message: errorMessage,
-              showSupportOptions: false,
-            );
-          } else {
-            // Show snackbar for other errors
-            if (!mounted) return;
-            ErrorHandlerService.showErrorSnackBar(
-              context,
-              message: errorMessage,
-              duration: const Duration(seconds: 5),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        // Use ErrorHandlerService to show user-friendly error message
-        final errorMessage = ErrorHandlerService.getErrorMessage(e);
-        ErrorHandlerService.showErrorSnackBar(
-          context,
-          message: errorMessage,
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -818,39 +589,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                 ),
                 const SizedBox(height: 24),
                 */
-                
-                // Fingerprint Authentication - Show if device supports biometrics and not phone login
-                if (!_isPhoneLogin && _biometricAvailable)
-                  SizedBox(
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _handleFingerprintAuth,
-                      icon: const Icon(
-                        Icons.fingerprint,
-                        color: Color.fromRGBO(24, 95, 45, 1),
-                        size: 24,
-                      ),
-                      label: const Text(
-                        'Sign in with Fingerprint',
-                        style: TextStyle(
-                          color: Color.fromRGBO(24, 95, 45, 1),
-                          fontFamily: 'Raleway',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color.fromRGBO(24, 95, 45, 1),
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      ),
-                    ),
-                  ),
                 
                 const SizedBox(height: 24),
                 

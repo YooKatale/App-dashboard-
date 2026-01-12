@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.yookatale.mobile"
+    namespace = "com.yookataleapp.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -47,7 +47,7 @@ android {
 
     defaultConfig {
         // Unique Application ID for Play Store
-        applicationId = "com.yookatale.mobile"
+        applicationId = "com.yookataleapp.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

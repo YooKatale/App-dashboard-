@@ -108,6 +108,7 @@ class _LocationSearchPickerState extends State<LocationSearchPicker> {
 
   Future<void> _searchPlaces(String query) async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
       });
@@ -115,12 +116,14 @@ class _LocationSearchPickerState extends State<LocationSearchPicker> {
       // Use geocoding package to search addresses
       final locations = await locationFromAddress(query);
       
+      if (!mounted) return;
       if (locations.isNotEmpty) {
         final placemarks = await placemarkFromCoordinates(
           locations.first.latitude,
           locations.first.longitude,
         );
 
+        if (!mounted) return;
         if (placemarks.isNotEmpty) {
           final placemark = placemarks.first;
           final address = [
@@ -130,26 +133,32 @@ class _LocationSearchPickerState extends State<LocationSearchPicker> {
             placemark.country,
           ].where((s) => s != null && s.isNotEmpty).join(', ');
 
-          setState(() {
-            _suggestions = [
-              {
-                'address': address,
-                'lat': locations.first.latitude,
-                'lng': locations.first.longitude,
-              }
-            ];
-          });
+          if (mounted) {
+            setState(() {
+              _suggestions = [
+                {
+                  'address': address,
+                  'lat': locations.first.latitude,
+                  'lng': locations.first.longitude,
+                }
+              ];
+            });
+          }
         }
       }
     } catch (e) {
       // No results found or error
-      setState(() {
-        _suggestions = [];
-      });
+      if (mounted) {
+        setState(() {
+          _suggestions = [];
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -287,6 +296,7 @@ class _LocationSearchPickerState extends State<LocationSearchPicker> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [

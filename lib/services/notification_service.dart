@@ -19,9 +19,7 @@ class NotificationService {
   static const String _channelName = 'YooKatale Notifications';
   static const String _channelDescription = 'Notifications for orders, offers, and updates';
   
-  // Test notification timer
-  static Timer? _testNotificationTimer;
-  static int _testNotificationCount = 0;
+  // Test notification code removed - backend scheduler handles all notifications
 
   /// Initialize notification service
   static Future<void> initialize() async {
@@ -81,9 +79,8 @@ class NotificationService {
         // Sync notifications from server
         await syncNotificationsFromServer();
 
-        // Start test notification scheduler (for emulator testing - every minute)
-        // This sends notifications every minute that appear in the notification tab
-        startTestNotifications();
+        // Test notifications disabled - backend scheduler handles notifications at scheduled meal times
+        // startTestNotifications(); // REMOVED: Notifications now sent only at scheduled meal times
       }
     } catch (e) {
       if (kDebugMode) {
@@ -471,66 +468,5 @@ class NotificationService {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
-  /// Start test notifications (sends every minute)
-  /// For testing purposes only
-  static void startTestNotifications() {
-    // Cancel any existing timer
-    stopTestNotifications();
-    
-    _testNotificationCount = 0;
-    
-    // Send first notification immediately
-    _sendTestNotification();
-    
-    // Then send every minute
-    _testNotificationTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _sendTestNotification();
-    });
-    
-    if (kDebugMode) {
-      print('🧪 Test notifications started - sending every minute');
-    }
-  }
-
-  /// Stop test notifications
-  static void stopTestNotifications() {
-    _testNotificationTimer?.cancel();
-    _testNotificationTimer = null;
-    if (kDebugMode) {
-      print('🛑 Test notifications stopped');
-    }
-  }
-
-  /// Send a test notification
-  static Future<void> _sendTestNotification() async {
-    _testNotificationCount++;
-    final now = DateTime.now();
-    final timeString = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-    
-    // Rotate through meal types for variety
-    final mealTypes = ['breakfast', 'lunch', 'supper'];
-    final mealType = mealTypes[_testNotificationCount % 3];
-    final mealEmojis = {'breakfast': '🍳', 'lunch': '🍽️', 'supper': '🌙'};
-    
-    await _createNotification(
-      title: '🧪 Test: ${mealEmojis[mealType]} ${mealType.toUpperCase()} Time!',
-      body: 'Test notification #$_testNotificationCount at $timeString. This is a $mealType reminder notification.',
-      type: 'meal_calendar',
-      data: {
-        'mealType': mealType,
-        'testMode': true,
-        'count': _testNotificationCount,
-        'timestamp': now.toIso8601String(),
-      },
-    );
-    
-    if (kDebugMode) {
-      print('🧪 Test notification #$_testNotificationCount sent at $timeString');
-    }
-  }
-
-  /// Check if test notifications are running
-  static bool isTestNotificationsRunning() {
-    return _testNotificationTimer != null && _testNotificationTimer!.isActive;
-  }
+  // Test notifications removed - backend scheduler handles notifications at scheduled meal times only
 }

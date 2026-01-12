@@ -24,11 +24,64 @@ final vegetablesProvider = FutureProvider.autoDispose<Products>(
 );
 
 final grainsProvider = FutureProvider.autoDispose<Products>(
-  (ref) async => await ProductService.fetchProductsByCategory('grains and flour'),
+  (ref) async {
+    // Try multiple category name variations (case-insensitive matching on backend)
+    final variations = [
+      'grains & flour',      // Most common format
+      'Grains & Flour',      // Capitalized
+      'grains and flour',    // With "and"
+      'Grains and Flour',    // Capitalized with "and"
+      'grain & flour',       // Singular grain
+      'grains',              // Just grains
+      'Grains',              // Capitalized
+      'flour',               // Just flour
+      'Flour',               // Capitalized
+    ];
+    
+    for (final category in variations) {
+      try {
+        final result = await ProductService.fetchProductsByCategory(category);
+        // Check if we got products
+        if (result.popularProducts.isNotEmpty) {
+          return result;
+        }
+      } catch (e) {
+        // Try next variation
+        continue;
+      }
+    }
+    
+    // If all variations fail, return empty products
+    return Products(popularProducts: []);
+  },
 );
 
 final meatProvider = FutureProvider.autoDispose<Products>(
-  (ref) async => await ProductService.fetchProductsByCategory('meat'),
+  (ref) async {
+    // Try multiple category name variations
+    final variations = [
+      'meat',      // Singular
+      'Meat',      // Capitalized
+      'meats',     // Plural
+      'Meats',     // Capitalized plural
+    ];
+    
+    for (final category in variations) {
+      try {
+        final result = await ProductService.fetchProductsByCategory(category);
+        // Check if we got products
+        if (result.popularProducts.isNotEmpty) {
+          return result;
+        }
+      } catch (e) {
+        // Try next variation
+        continue;
+      }
+    }
+    
+    // If all variations fail, return empty products
+    return Products(popularProducts: []);
+  },
 );
 
 final dairyProvider = FutureProvider.autoDispose<Products>(

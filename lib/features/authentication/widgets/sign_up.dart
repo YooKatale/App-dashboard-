@@ -291,12 +291,36 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                                   userEmail: email, userPassword: password);
                               if (success) {
                                 if (!mounted) return;
-                                final navigator = Navigator.of(context);
-                                navigator.push(
-                                  MaterialPageRoute(
-                                    builder: (context) => App(),
+                                // Show success message
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.check_circle, color: Colors.white),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Account created successfully! Welcome to Yookatale, ${firstName.isNotEmpty ? firstName : 'User'}!',
+                                            style: const TextStyle(fontSize: 14),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: const Duration(seconds: 3),
                                   ),
                                 );
+                                // Redirect to login page after a brief delay
+                                Future.delayed(const Duration(milliseconds: 1500), () {
+                                  if (mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginPage(),
+                                      ),
+                                    );
+                                  }
+                                });
                               } else {
                                 if (!mounted) return;
                                 final messenger = ScaffoldMessenger.of(context);

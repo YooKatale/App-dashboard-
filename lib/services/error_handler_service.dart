@@ -78,6 +78,12 @@ class ErrorHandlerService {
       return 'Invalid data format. Please try again.';
     }
 
+    // Cart/Product errors - check before generic exception handler
+    if (errorString.contains('already') && 
+        (errorString.contains('cart') || errorString.contains('added'))) {
+      return 'Product already added to cart';
+    }
+    
     // Generic fallback
     if (errorString.contains('exception')) {
       return 'Something went wrong. Please try again or contact support if the problem persists.';

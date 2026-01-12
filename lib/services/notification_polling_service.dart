@@ -18,27 +18,14 @@ class NotificationPollingService {
   static const String _channelName = 'YooKatale Notifications';
   static const String _channelDescription = 'Notifications for orders, offers, and updates';
 
-  /// Start polling for notifications from backend (like webapp)
-  /// Polls every minute to receive test notifications from server
+  /// Start polling for notifications from backend
+  /// DISABLED: Backend scheduler handles all notifications automatically at scheduled meal times
+  /// No need for frontend polling - backend sends notifications via FCM at scheduled times
   static void startPolling() {
-    // Stop existing polling if any
+    // DISABLED: Backend scheduler handles notifications automatically
+    // Notifications are sent at scheduled meal times (6-10 AM breakfast, 12-3 PM lunch, 5-10 PM supper)
     stopPolling();
-
-    _isPolling = true;
-
-    // Poll every minute (60 seconds) - EXACT WEBAPP LOGIC
-    _pollingTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _pollBackendForNotifications();
-    });
-
-    // Trigger immediately for first poll
-    Future.delayed(const Duration(seconds: 2), () {
-      _pollBackendForNotifications();
-    });
-
-    if (kDebugMode) {
-      print('🔄 Notification polling started - will poll backend every minute');
-    }
+    return; // Exit early - polling disabled
   }
 
   /// Stop notification polling

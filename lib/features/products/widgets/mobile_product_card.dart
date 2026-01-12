@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../common/models/products_model.dart';
+import '../../cart/widgets/add_to_cart_button.dart';
 
 class MobileProductCard extends StatelessWidget {
   final PopularDetails product;
@@ -153,32 +154,35 @@ class MobileProductCard extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         height: 26,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            if (onTap != null) onTap!();
-                          },
-                          icon: const Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 11,
-                          ),
-                          label: const Text(
-                            'Add',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'Raleway',
+                        child: AddToCartButton(
+                          productId: product.id.toString(),
+                          productName: product.title,
+                          quantity: 1,
+                          child: ElevatedButton.icon(
+                            onPressed: () {}, // Handled by AddToCartButton
+                            icon: const Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 11,
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                            label: const Text(
+                              'Add',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Raleway',
+                              ),
                             ),
-                            elevation: 0,
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ),
                       ),

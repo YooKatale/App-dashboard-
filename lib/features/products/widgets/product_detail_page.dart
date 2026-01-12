@@ -44,23 +44,14 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
           _isLoading = false;
         });
       } else {
+        // Product details failed to load, but allow add to cart to work with widget.productId
         setState(() => _isLoading = false);
-        if (mounted) {
-          ErrorHandlerService.showErrorSnackBar(
-            context,
-            message: response['message']?.toString() ?? 'Product not found. Please try again.',
-          );
-        }
+        // Don't show error - allow user to still add to cart using widget.productId
       }
     } catch (e) {
+      // Product details failed to load, but allow add to cart to work with widget.productId
       setState(() => _isLoading = false);
-      if (mounted) {
-        final errorMessage = ErrorHandlerService.getErrorMessage(e);
-        ErrorHandlerService.showErrorSnackBar(
-          context,
-          message: 'Failed to load product. $errorMessage',
-        );
-      }
+      // Don't show error - allow user to still add to cart using widget.productId
     }
   }
 
@@ -118,6 +109,11 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
           widget.productId.isNotEmpty && 
           widget.productId != 'null') {
         actualProductId = widget.productId;
+      }
+      
+      // Final fallback: use widget.product.actualId or widget.product.id
+      if ((actualProductId == null || actualProductId.isEmpty || actualProductId == 'null')) {
+        actualProductId = widget.product.actualId ?? widget.product.id?.toString();
       }
 
       if (actualProductId == null || actualProductId.isEmpty || actualProductId == 'null') {

@@ -329,7 +329,6 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                   children: [
                     // Filter Tabs
                     Container(
-                      color: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,

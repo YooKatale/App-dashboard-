@@ -11,6 +11,7 @@ import '../models/cart_model.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
 import '../../common/widgets/location_picker.dart';
+import '../../common/widgets/location_search_picker.dart';
 
 class CheckoutModal extends ConsumerStatefulWidget {
   final List<CartItem> cartItems;
@@ -131,7 +132,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
         'moreInfo': _specialRequestsController.text.trim(),
       };
 
-      // Calculate totals - EXACT WEBAPP LOGIC (delivery fee is 3500 in webapp, but 1000 in mobile - use 1000 for consistency)
+      // Calculate totals - EXACT WEBAPP LOGIC (delivery fee is 3500 in webapp display, but 1000 for backend calculation)
       final deliveryFee = 1000.0;
       final orderTotal = widget.cartTotal + deliveryFee;
 
@@ -465,12 +466,12 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
           onPressed: () async {
             final result = await Navigator.of(context).push<Map<String, dynamic>>(
               MaterialPageRoute(
-                builder: (context) => LocationPicker(
+                builder: (context) => LocationSearchPicker(
                   onLocationSelected: (locationData) {
                     Navigator.of(context).pop(locationData);
                   },
-                  initialLocation: _selectedLocation,
                   initialAddress: _address1Controller.text,
+                  required: false,
                 ),
               ),
             );
@@ -478,21 +479,28 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
             if (result != null && mounted) {
               setState(() {
                 _address1Controller.text = result['address'] ?? result['address1'] ?? '';
-                _selectedLatitude = result['latitude'] as double?;
-                _selectedLongitude = result['longitude'] as double?;
+                _selectedLatitude = result['lat'] as double? ?? result['latitude'] as double?;
+                _selectedLongitude = result['lng'] as double? ?? result['longitude'] as double?;
                 if (_selectedLatitude != null && _selectedLongitude != null) {
                   _selectedLocation = LatLng(_selectedLatitude!, _selectedLongitude!);
                 }
               });
+              
+              // Automatically move to receipt tab after location is confirmed
+              if (_address1Controller.text.trim().isNotEmpty) {
+                setState(() {
+                  _currentTab = 1; // Move to receipt tab
+                });
+              }
             }
           },
           icon: const Icon(Icons.location_on, color: Colors.white),
           label: const Text(
-            'Select Location on Map',
+            'Select Location',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
+            backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -637,7 +645,8 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
     // EXACT WEBAPP LOGIC: Display 3500 for delivery but use 1000 for calculation
     final deliveryFeeForDisplay = 3500.0;
     final deliveryFeeForCalculation = 1000.0;
-    final orderTotal = widget.cartTotal + deliveryFeeForCalculation;
+    final orderTotalForDisplay = widget.cartTotal + deliveryFeeForDisplay;
+    final orderTotalForCalculation = widget.cartTotal + deliveryFeeForCalculation;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,7 +929,7 @@ class _CheckoutModalState extends ConsumerState<CheckoutModal> {
                     ),
                   ),
                   Text(
-                    _formatCurrency(orderTotal),
+                    _formatCurrency(orderTotalForDisplay),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

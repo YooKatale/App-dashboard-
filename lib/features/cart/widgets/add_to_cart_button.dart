@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../services/cart_service.dart';
 import '../../authentication/providers/auth_provider.dart';
+import '../../../services/auth_service.dart';
+import '../providers/cart_provider.dart';
 
 class AddToCartButton extends ConsumerStatefulWidget {
   final String productId;
@@ -97,11 +99,11 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
             ),
           );
         } else {
-          // Handle "already in cart" case gracefully
+          // Handle "already in cart" case gracefully - match webapp message
           if (result['alreadyInCart'] == true) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Product is already in your cart. You can update quantity from the cart page.'),
+                content: Text('Product already added to cart'),
                 backgroundColor: Colors.blue,
                 duration: Duration(seconds: 3),
               ),
@@ -121,12 +123,13 @@ class _AddToCartButtonState extends ConsumerState<AddToCartButton> {
       if (mounted) {
         final errorMessage = e.toString().replaceAll('Exception: ', '');
         
-        // EXACT WEBAPP LOGIC: Handle errors gracefully
-        if (errorMessage.contains('Product already added to cart') || 
-            errorMessage.contains('already added')) {
+        // EXACT WEBAPP LOGIC: Handle errors gracefully - match webapp behavior
+        if (errorMessage.toLowerCase().contains('already') && 
+            (errorMessage.toLowerCase().contains('cart') || 
+             errorMessage.toLowerCase().contains('added'))) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Product is already in your cart. You can update quantity from the cart page.'),
+              content: Text('Product already added to cart'),
               backgroundColor: Colors.blue,
               duration: Duration(seconds: 3),
             ),

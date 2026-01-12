@@ -1,4 +1,4 @@
-package com.yookatale.mobile
+package com.yookataleapp.app
 
 import io.flutter.embedding.android.FlutterActivity
 

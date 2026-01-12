@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'auth_service.dart';
 import 'error_handler_service.dart';
 
@@ -76,8 +78,10 @@ class ApiService {
   // Fetch products by category
   static Future<Map<String, dynamic>> fetchProductsByCategory(String category) async {
     try {
+      // URL encode the category name to handle spaces and special characters
+      final encodedCategory = Uri.encodeComponent(category.toLowerCase());
       final response = await http.get(
-        Uri.parse('$baseUrl/products/$category'),
+        Uri.parse('$baseUrl/products/$encodedCategory'),
         headers: getHeaders(),
       );
 
@@ -722,12 +726,35 @@ class ApiService {
     String? token,
   }) async {
     try {
+      // Determine platform: android, ios, or web
+      // Ensure we always send a valid platform value
+      String platform = 'web'; // Default to web
+      
+      if (!kIsWeb) {
+        // Running on mobile (not web)
+        if (Platform.isAndroid) {
+          platform = 'android';
+        } else if (Platform.isIOS) {
+          platform = 'ios';
+        }
+        // If neither Android nor iOS, keep 'web' as fallback
+      }
+      
+      // Ensure platform is lowercase and trimmed (backend requirement)
+      platform = platform.toLowerCase().trim();
+      
+      // Validate platform value before sending
+      if (platform != 'android' && platform != 'ios' && platform != 'web') {
+        platform = 'android'; // Fallback to android for mobile apps
+      }
+      
       final response = await http.post(
         Uri.parse('$baseUrl/ratings/platform'),
         headers: getHeaders(token: token),
         body: json.encode({
           'name': name,
           'message': message,
+          'platform': platform,
           if (rating != null) 'rating': rating,
         }),
       );

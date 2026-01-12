@@ -98,10 +98,10 @@ class CartService {
           errorMessage.toLowerCase().contains('out of stock') ||
           errorMessage.toLowerCase().contains('stock')) {
         userMessage = 'This product is currently out of stock.';
-      } else if (errorMessage.contains('Product already added to cart') || 
-                 errorMessage.contains('already added') ||
-                 errorMessage.contains('already in cart')) {
-        userMessage = 'This product is already in your cart.';
+      } else if (errorMessage.toLowerCase().contains('already') && 
+                 (errorMessage.toLowerCase().contains('cart') || 
+                  errorMessage.toLowerCase().contains('added'))) {
+        userMessage = 'Product already added to cart';
         return {
           'success': false,
           'message': userMessage,

@@ -8,7 +8,6 @@ import 'banner_image.dart';
 import 'categories_section.dart';
 import '../../../widgets/ratings_dialog.dart';
 import '../../../services/ratings_service.dart';
-import '../../../services/api_service.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({

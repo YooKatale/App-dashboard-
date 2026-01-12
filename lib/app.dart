@@ -193,7 +193,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           // PERSISTENT SIGN-IN: If already logged in, redirect to home
           final authState = ref.read(authStateProvider);
           if (authState.isLoggedIn) {
-            return const LocationGate(child: App());
+            return LocationGate(child: App());
           }
           return MobileSignInPage();
         },

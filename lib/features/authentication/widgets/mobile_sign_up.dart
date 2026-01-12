@@ -14,19 +14,54 @@ class MobileSignUpPage extends ConsumerStatefulWidget {
 
 class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _dateController = TextEditingController();
+  DateTime? _selectedDate;
+  String? _gender;
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _agreeTerms = false;
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _dateController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      firstDate: DateTime(1930),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color.fromRGBO(24, 95, 45, 1),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
   }
 
   Future<void> _handleSignUp() async {
@@ -45,18 +80,24 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
     setState(() => _isLoading = true);
 
     try {
-      final nameParts = _fullNameController.text.trim().split(' ');
-      final firstname = nameParts.isNotEmpty ? nameParts[0] : '';
-      final lastname = nameParts.length > 1 
-          ? nameParts.sublist(1).join(' ') 
-          : '';
+      // Get phone - send empty string if not provided (match webapp behavior)
+      final phoneText = _phoneController.text.trim();
+      final phone = phoneText.isEmpty ? '' : phoneText;
 
       await AuthService.register(
-        firstname: firstname,
-        lastname: lastname,
+        firstname: _firstNameController.text.trim(),
+        lastname: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        dob: null,
+        phone: phone.isEmpty ? null : phone, // Backend handles empty/null
+        gender: _gender,
+        dob: _selectedDate != null
+            ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
+            : null,
+        address: _addressController.text.trim().isEmpty 
+            ? null 
+            : _addressController.text.trim(),
+        vegan: false,
         notificationPreferences: {
           'email': true,
           'calls': false,
@@ -65,9 +106,23 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
       );
 
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => App()),
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully! Please login to continue.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
         );
+        
+        // Redirect to login page after a short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const MobileSignInPage()),
+            );
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -99,7 +154,7 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
               children: [
                 const SizedBox(height: 40),
                 
-                // Logo - Large and prominent
+                // Logo
                 Center(
                   child: Image.asset(
                     'assets/logo1.webp',
@@ -138,14 +193,14 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 32),
                 
-                // Full Name Field
+                // First Name Field
                 TextFormField(
-                  controller: _fullNameController,
+                  controller: _firstNameController,
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
-                    labelText: 'Full Name',
+                    labelText: 'First Name *',
                     labelStyle: const TextStyle(color: Colors.black54),
-                    hintText: 'Enter your full name',
+                    hintText: 'Enter your first name',
                     hintStyle: const TextStyle(color: Colors.grey),
                     prefixIcon: const Icon(
                       Icons.person_outline,
@@ -164,7 +219,40 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Full name is required';
+                      return 'First name is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Last Name Field
+                TextFormField(
+                  controller: _lastNameController,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Last Name *',
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    hintText: 'Enter your last name',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Last name is required';
                     }
                     return null;
                   },
@@ -177,7 +265,7 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Email *',
                     labelStyle: const TextStyle(color: Colors.black54),
                     hintText: 'Enter your email',
                     hintStyle: const TextStyle(color: Colors.grey),
@@ -208,13 +296,135 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 16),
                 
+                // Phone Field (Optional)
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number (Optional)',
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    hintText: 'Include country code [+256.....]',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: Text(
+                        '+256',
+                        style: TextStyle(
+                          color: Color.fromRGBO(24, 95, 45, 1),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Date of Birth Field
+                TextFormField(
+                  controller: _dateController,
+                  readOnly: true,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Date of Birth',
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    hintText: 'Select your date of birth',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  onTap: () => _selectDate(context),
+                ),
+                const SizedBox(height: 16),
+                
+                // Gender Field
+                DropdownButtonFormField<String>(
+                  value: _gender,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Gender',
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    prefixIcon: const Icon(
+                      Icons.person,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'male', child: Text('Male')),
+                    DropdownMenuItem(value: 'female', child: Text('Female')),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _gender = value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Address Field
+                TextFormField(
+                  controller: _addressController,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'Address',
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    hintText: 'Enter your address',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    prefixIcon: const Icon(
+                      Icons.location_on,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
                 // Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Password *',
                     labelStyle: const TextStyle(color: Colors.black54),
                     hintText: 'Enter your password',
                     hintStyle: const TextStyle(color: Colors.grey),
@@ -254,7 +464,7 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Terms and Conditions - Required checkbox (EXACT WEBAPP LOGIC)
+                // Terms and Conditions
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -369,49 +579,6 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Google Sign Up Button - COMMENTED OUT FOR FUTURE USE
-                /*
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: OutlinedButton(
-                    onPressed: _isLoading ? null : _handleGoogleSignUp,
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF1F1F1F),
-                      side: BorderSide(color: Colors.grey[300]!, width: 1),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Original Google "G" Logo
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: _buildGoogleLogo(),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Sign up with Google',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF1F1F1F),
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                */
-                
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -447,262 +614,3 @@ class _MobileSignUpPageState extends ConsumerState<MobileSignUpPage> {
     );
   }
 }
-
-// Handle Google Sign Up - Integrated with Backend
-// COMMENTED OUT FOR FUTURE USE
-/*
-  Future<void> _handleGoogleSignUp() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final authBackend = AuthBackend();
-      final user = await authBackend.signInWithGoogle();
-      
-      if (user != null && mounted) {
-        // Get user data from Firebase
-        final displayName = user.displayName ?? '';
-        final nameParts = displayName.split(' ');
-        final firstname = nameParts.isNotEmpty ? nameParts[0] : '';
-        final lastname = nameParts.length > 1 
-            ? nameParts.sublist(1).join(' ')
-            : '';
-
-        // Get Firebase ID token for backend authentication
-        final idToken = await user.getIdToken();
-        
-        if (idToken == null) {
-          throw Exception('Failed to get authentication token');
-        }
-
-        // Register/Login with backend using Google auth
-        try {
-          final backendResponse = await ApiService.googleAuth(
-            idToken: idToken,
-            email: user.email ?? '',
-            firstName: firstname,
-            lastName: lastname,
-            photoUrl: user.photoURL ?? '',
-          );
-
-          // Save backend token and user data
-          if (backendResponse['token'] != null) {
-            await AuthService.saveToken(backendResponse['token'] as String);
-          }
-
-          // Get user data from backend response (preferred) or use Firebase data
-          Map<String, dynamic> userData;
-          if (backendResponse['user'] != null && backendResponse['user'] is Map) {
-            userData = backendResponse['user'] as Map<String, dynamic>;
-            if (backendResponse['token'] != null) {
-              userData['token'] = backendResponse['token'];
-            }
-          } else {
-            // Fallback to Firebase user data
-            userData = {
-              'id': user.uid,
-              '_id': user.uid,
-              'email': user.email ?? '',
-              'firstname': firstname,
-              'lastname': lastname,
-              'phone': user.phoneNumber ?? '',
-              'photoUrl': user.photoURL ?? '',
-            };
-            if (backendResponse['token'] != null) {
-              userData['token'] = backendResponse['token'];
-            }
-          }
-
-          await AuthService.saveUserData(userData);
-
-          // Update auth state
-          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-          if (userId != null) {
-            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-              userId: userId,
-              email: userData['email']?.toString(),
-              firstName: userData['firstname']?.toString(),
-              lastName: userData['lastname']?.toString(),
-            );
-          }
-
-          // Initialize push notifications
-          try {
-            await PushNotificationService.initialize();
-          } catch (e) {
-            // Non-blocking
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Successfully signed up with Google'),
-                backgroundColor: Colors.green,
-              ),
-            );
-
-            // Check for pending payment URL
-            final prefs = await SharedPreferences.getInstance();
-            final pendingPaymentUrl = prefs.getString('pending_payment_url');
-            
-            if (pendingPaymentUrl != null && mounted) {
-              await prefs.remove('pending_payment_url');
-              final uri = Uri.parse(pendingPaymentUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-                Navigator.of(context).pushReplacementNamed('/home');
-              } else {
-                Navigator.of(context).pushReplacementNamed('/subscription');
-              }
-            } else {
-              // Get redirect route or default to home
-              final redirectRoute = ref.read(redirectRouteProvider);
-              final targetRoute = redirectRoute ?? '/home';
-              ref.read(redirectRouteProvider.notifier).state = null;
-              
-              await Future.delayed(const Duration(milliseconds: 800));
-              if (mounted) {
-                Navigator.of(context).pushReplacementNamed(targetRoute);
-              }
-            }
-          }
-        } catch (backendError) {
-          // If backend auth fails, still save Firebase data as fallback
-          final userData = {
-            'id': user.uid,
-            '_id': user.uid,
-            'email': user.email ?? '',
-            'firstname': firstname,
-            'lastname': lastname,
-            'phone': user.phoneNumber ?? '',
-            'photoUrl': user.photoURL ?? '',
-          };
-          if (idToken != null) {
-            await AuthService.saveToken(idToken);
-            userData['token'] = idToken;
-          }
-          await AuthService.saveUserData(userData);
-
-          // Update auth state
-          final userId = userData['_id']?.toString() ?? userData['id']?.toString();
-          if (userId != null) {
-            ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
-              userId: userId,
-              email: userData['email']?.toString(),
-              firstName: userData['firstname']?.toString(),
-              lastName: userData['lastname']?.toString(),
-            );
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Signed up with Google (backend sync may be delayed): ${backendError.toString().replaceAll('Exception: ', '')}'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => App()),
-            );
-          }
-        }
-      } else {
-        throw Exception('Google sign-up was cancelled or failed');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to sign up with Google: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-  */
-
-  // Build Google Logo - Original Google G Logo
-  // COMMENTED OUT FOR FUTURE USE
-  /*
-  Widget _buildGoogleLogo() {
-    return CustomPaint(
-      size: const Size(20, 20),
-      painter: GoogleLogoPainter(),
-    );
-  }
-  */
-
-// Google Logo Painter - Draws the original multicolored Google "G" logo
-// COMMENTED OUT FOR FUTURE USE
-/*
-class GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    
-    // Original Google G logo colors and structure
-    // Blue section (top-left quadrant)
-    paint.color = const Color(0xFF4285F4);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width * 0.5, size.height * 0.5),
-      paint,
-    );
-    
-    // Green section (bottom-left quadrant)
-    paint.color = const Color(0xFF34A853);
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height * 0.5, size.width * 0.5, size.height * 0.5),
-      paint,
-    );
-    
-    // Yellow section (top-right quadrant)
-    paint.color = const Color(0xFFFBBC05);
-    canvas.drawRect(
-      Rect.fromLTWH(size.width * 0.5, 0, size.width * 0.5, size.height * 0.5),
-      paint,
-    );
-    
-    // Red section (bottom-right quadrant)
-    paint.color = const Color(0xFFEA4335);
-    canvas.drawRect(
-      Rect.fromLTWH(size.width * 0.5, size.height * 0.5, size.width * 0.5, size.height * 0.5),
-      paint,
-    );
-    
-    // Draw the white "G" shape - more accurate to original
-    final gPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    
-    // Draw the G shape using a more accurate path
-    final path = Path()
-      // Top horizontal line
-      ..moveTo(size.width * 0.35, size.height * 0.25)
-      ..lineTo(size.width * 0.65, size.height * 0.25)
-      // Right vertical line (top part)
-      ..lineTo(size.width * 0.65, size.height * 0.45)
-      // Horizontal line going left (middle)
-      ..lineTo(size.width * 0.5, size.height * 0.45)
-      // Vertical line going down (middle)
-      ..lineTo(size.width * 0.5, size.height * 0.6)
-      // Horizontal line going right (bottom)
-      ..lineTo(size.width * 0.65, size.height * 0.6)
-      // Right vertical line (bottom part)
-      ..lineTo(size.width * 0.65, size.height * 0.75)
-      // Bottom horizontal line
-      ..lineTo(size.width * 0.35, size.height * 0.75)
-      // Left vertical line
-      ..lineTo(size.width * 0.35, size.height * 0.25)
-      ..close();
-    
-    canvas.drawPath(path, gPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-*/

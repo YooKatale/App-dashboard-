@@ -72,30 +72,33 @@ class _HeroBannerSlideshowState extends State<HeroBannerSlideshow> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Happy New Year Banner
+        // Yookatale Slogan Banner
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.purple[400]!,
-                Colors.purple[600]!,
+                const Color.fromRGBO(24, 95, 45, 1),
+                const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.8),
               ],
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.celebration, color: Colors.white, size: 24),
+              const Icon(Icons.restaurant_menu, color: Colors.white, size: 24),
               const SizedBox(width: 8),
-              const Text(
-                'Happy New Year | Shop Now!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Raleway',
+              const Flexible(
+                child: Text(
+                  'Fresh Food Delivered',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Raleway',
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

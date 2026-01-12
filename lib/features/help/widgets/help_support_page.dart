@@ -327,19 +327,111 @@ class HelpSupportPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
+              // Version Banner - Advert Style
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Version 1.0.0',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color.fromRGBO(24, 95, 45, 1),
+                      const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.info,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Version 2.0.0',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Latest Release',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Slogan Banner - Advert Style
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.restaurant_menu,
+                      color: Color.fromRGBO(24, 95, 45, 1),
+                      size: 32,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'To make food accessible everywhere.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Color.fromRGBO(24, 95, 45, 1),
+                        fontWeight: FontWeight.bold,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'To connect people & communities to healthy food anywhere.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

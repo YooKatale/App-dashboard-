@@ -469,7 +469,7 @@ class _MobileCategoriesPageState extends ConsumerState<MobileCategoriesPage> {
                                       
                                       return MobileProductCard(
                                         product: productModel,
-                                        showAddButton: false, // Remove Add button on categories page
+                                        showAddButton: true, // Enable Add button on categories page
                                         onTap: () {
                                           Navigator.pushNamed(
                                             context,
