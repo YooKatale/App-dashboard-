@@ -124,13 +124,35 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   Future<void> _handleEmailLogin() async {
     final formState = _formKey.currentState;
     if (formState == null || !formState.validate()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Validate inputs
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your password'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
+      if (kDebugMode) print('Email Login: Attempting login for $email');
+
       final response = await AuthService.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
+
+      if (kDebugMode) print('Email Login: Success - received response');
 
       String userName = _extractUserName(response);
       await Future.delayed(const Duration(milliseconds: 500));
@@ -148,6 +170,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
             profilePicUrl: extractProfilePicUrl(userData),
           );
           _initNotifications();
+
+          if (kDebugMode) print('Email Login: Auth state updated');
         }
       }
 
@@ -164,6 +188,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         await _navigateAfterAuth();
       }
     } catch (e) {
+      if (kDebugMode) print('Email Login Error: $e');
       if (mounted) {
         ErrorHandlerService.showErrorSnackBar(context,
             message: ErrorHandlerService.getErrorMessage(e));
