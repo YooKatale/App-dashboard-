@@ -95,7 +95,8 @@ class _HeroBannerSlideshowState extends ConsumerState<HeroBannerSlideshow> {
         final useNetwork = networkImages.isNotEmpty;
         final count = useNetwork ? networkImages.length : _heroSlides.length;
 
-        if (_timer == null) {
+        // Ensure timer is always running for slideshow
+        if (_timer == null || !_timer!.isActive) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _startTimer(count);
           });
@@ -121,7 +122,10 @@ class _HeroBannerSlideshowState extends ConsumerState<HeroBannerSlideshow> {
         currentPage: _currentPage,
         onPageChanged: (i) => setState(() {
           _currentPage = i;
-          _startTimer(_heroSlides.length);
+          // Ensure timer is running
+          if (_timer == null || !_timer!.isActive) {
+            _startTimer(_heroSlides.length);
+          }
         }),
       ),
       error: (_, __) => _GradientBanner(
