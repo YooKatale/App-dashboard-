@@ -3,6 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../common/models/products_model.dart';
 import '../services/product_service.dart';
 
+/// Budget filter state - empty = all, "low"|"middle"|"high"
+final budgetFilterProvider = StateProvider<String>((ref) => '');
+
 // Fetch products from API (syncs with backend) - Used for Latest Products
 final productsProvider = FutureProvider.autoDispose<Products>((ref) async {
   return await ProductService.fetchProductsFromApi();
@@ -11,6 +14,17 @@ final productsProvider = FutureProvider.autoDispose<Products>((ref) async {
 // Fetch popular products from API - Same as productsProvider but can be customized later
 final popularProductsProvider = FutureProvider.autoDispose<Products>((ref) async {
   return await ProductService.fetchProductsFromApi();
+});
+
+// Fetch products filtered by budget (refreshes when budget changes)
+final productsFilteredByBudgetProvider = FutureProvider.autoDispose<Products>((ref) async {
+  final budget = ref.watch(budgetFilterProvider);
+  return await ProductService.fetchProductsFiltered(budget);
+});
+
+// Fetch categories from API (like web /categories)
+final apiCategoriesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return await ProductService.fetchCategoriesFromApi();
 });
 
 // Fetch fruits from API (using category filter)
@@ -96,7 +110,7 @@ final juiceProvider = FutureProvider.autoDispose<Products>(
   (ref) async => await ProductService.fetchProductsByCategory('juice'),
 );
 
-// Fetch categories - keep using local JSON for category list
+// Fetch categories - keep using local JSON for category list (legacy)
 final categoriesProvider = FutureProvider.autoDispose<Products>(
   (ref) async =>
       await ProductService.fetchProducts(url: 'assets/categories.json'),

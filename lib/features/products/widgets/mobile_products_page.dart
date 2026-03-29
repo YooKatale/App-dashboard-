@@ -39,7 +39,7 @@ class MobileProductsPage extends ConsumerWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 0),
       body: productProvider.when(
         data: (products) {
           // Filter products by search query if provided

@@ -12,7 +12,7 @@ import '../../payment/widgets/flutter_wave.dart';
 
 class MealCalendarPage extends ConsumerStatefulWidget {
   final String? planType;
-  
+
   const MealCalendarPage({super.key, this.planType});
 
   @override
@@ -29,8 +29,38 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
     'saturday': false,
     'sunday': false,
   };
-  
+
   bool _isLoading = false;
+  String _selectedDay = 'Monday';
+
+  // Meal image keyword map
+  static const Map<String, String> _mealImages = {
+    'chapati': 'https://images.unsplash.com/photo-1626844400890-6498f80f3a55?w=200',
+    'beans': 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=200',
+    'rice': 'https://images.unsplash.com/photo-1536304993881-ff86e6cee51a?w=200',
+    'matooke': 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=200',
+    'bread': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200',
+    'eggs': 'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=200',
+    'chicken': 'https://images.unsplash.com/photo-1598103442097-8b74394b95c3?w=200',
+    'fish': 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=200',
+    'beef': 'https://images.unsplash.com/photo-1558030006-450675393462?w=200',
+    'posho': 'https://images.unsplash.com/photo-1625944230945-1b7dd3b949ab?w=200',
+    'porridge': 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200',
+    'pancakes': 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=200',
+    'groundnut': 'https://images.unsplash.com/photo-1607330289024-1535c6b4e1c1?w=200',
+    'vegetables': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200',
+    'potatoes': 'https://images.unsplash.com/photo-1518977676405-d674f-a6d6-b58f-406974b29ab4?w=200',
+    'mandazi': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200',
+    'peanut': 'https://images.unsplash.com/photo-1542990253-a781e04b4571?w=200',
+  };
+
+  String _getMealImage(String mealName) {
+    final lower = mealName.toLowerCase();
+    for (final entry in _mealImages.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    return 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200';
+  }
 
   // Sample meal data - in production, this would come from API
   final Map<String, Map<String, List<Map<String, dynamic>>>> _weeklyMenu = {
@@ -160,6 +190,9 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final dayKey = _selectedDay.toLowerCase();
+    final dayMeals = _weeklyMenu[dayKey] ?? {};
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -168,298 +201,285 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 3),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color.fromRGBO(24, 95, 45, 1),
-                    Color.fromRGBO(40, 120, 60, 1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.calendar_today, color: Colors.white, size: 28),
-                      SizedBox(width: 12),
-                      Text(
-                        'Weekly Meal Plan',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Raleway',
-                          color: Colors.white,
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
+      body: Column(
+        children: [
+          // Day-selector pill row
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: SizedBox(
+              height: 44,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: _daysOfWeek.length,
+                itemBuilder: (context, index) {
+                  final day = _daysOfWeek[index];
+                  final shortDay = day.substring(0, 3);
+                  final isSelected = _selectedDay == day;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedDay = day);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color.fromRGBO(24, 95, 45, 1)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color.fromRGBO(24, 95, 45, 1)
+                              : Colors.grey[300]!,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Plan Type: ${widget.planType ?? 'Premium'}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                      child: Text(
+                        shortDay,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontFamily: 'Raleway',
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 24),
+          ),
 
-            // Meal Calendar Table
-            ..._daysOfWeek.map((day) {
-              final dayKey = day.toLowerCase();
-              final dayMeals = _weeklyMenu[dayKey] ?? {};
-              
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ExpansionTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(24, 95, 45, 1).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_today,
-                      color: Color.fromRGBO(24, 95, 45, 1),
-                    ),
-                  ),
-                  title: Text(
-                    day,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${dayMeals.length} meal types',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Breakfast
-                          if (dayMeals['breakfast'] != null) ...[
-                            _buildMealSection('Breakfast', dayMeals['breakfast']!, dayKey),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          // Lunch
-                          if (dayMeals['lunch'] != null) ...[
-                            _buildMealSection('Lunch', dayMeals['lunch']!, dayKey),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          // Supper
-                          if (dayMeals['supper'] != null) ...[
-                            _buildMealSection('Supper', dayMeals['supper']!, dayKey),
-                            const SizedBox(height: 16),
-                          ],
-                          
-                          // Vegetarian Sauce Option
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: _vegetarianSauceOptions[dayKey] ?? false,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _vegetarianSauceOptions[dayKey] = value ?? false;
-                                    });
-                                  },
-                                  activeColor: const Color.fromRGBO(24, 95, 45, 1),
-                                ),
-                                const Expanded(
-                                  child: Text(
-                                    'Vegetarian Sauce Option',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-            const SizedBox(height: 24),
-            
-            // Delivery Information
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blue[50]!,
-                    Colors.blue[100]!,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blue[200]!),
-              ),
+          // Day content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[700],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.local_shipping,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                  // Day heading card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color.fromRGBO(24, 95, 45, 1),
+                          Color.fromRGBO(40, 120, 60, 1),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Text(
-                          'Free Delivery',
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.white, size: 22),
+                        const SizedBox(width: 12),
+                        Text(
+                          '$_selectedDay — ${widget.planType ?? 'Premium'} Plan',
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Raleway',
+                            color: Colors.white,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 44),
+                  const SizedBox(height: 20),
+
+                  // Breakfast
+                  if (dayMeals['breakfast'] != null) ...[
+                    _buildMealSection('Breakfast', dayMeals['breakfast']!, dayKey),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Lunch
+                  if (dayMeals['lunch'] != null) ...[
+                    _buildMealSection('Lunch', dayMeals['lunch']!, dayKey),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Supper
+                  if (dayMeals['supper'] != null) ...[
+                    _buildMealSection('Supper', dayMeals['supper']!, dayKey),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Vegetarian Sauce Option
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: _vegetarianSauceOptions[dayKey] ?? false,
+                          onChanged: (value) {
+                            setState(() {
+                              _vegetarianSauceOptions[dayKey] = value ?? false;
+                            });
+                          },
+                          activeColor: const Color.fromRGBO(24, 95, 45, 1),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Vegetarian Sauce Option',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Delivery Information
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[50]!, Colors.blue[100]!],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.check_circle, 
-                              color: Colors.blue[700], size: 16),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Within 3km distance',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[700],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.local_shipping,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Flexible(
+                              child: Text(
+                                'Free Delivery',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, 
-                              color: Colors.blue[700], size: 16),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Extra: 950 UGX per additional kilometer',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 44),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      color: Colors.blue[700], size: 16),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Within 3km distance',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      color: Colors.blue[700], size: 16),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Extra: 950 UGX per additional kilometer',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Checkout Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _handleCheckout,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.shopping_cart),
+                      label: Text(
+                        _isLoading ? 'Processing...' : 'Checkout Meal Plan',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Checkout Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _handleCheckout,
-                icon: _isLoading 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.shopping_cart),
-                label: Text(
-                  _isLoading ? 'Processing...' : 'Checkout Meal Plan',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMealSection(String mealType, List<Map<String, dynamic>> meals, String dayKey) {
+  Widget _buildMealSection(
+      String mealType, List<Map<String, dynamic>> meals, String dayKey) {
     final mealKey = '${dayKey}_${mealType.toLowerCase()}';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section header pill
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
@@ -469,7 +489,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
           child: Row(
             children: [
               Icon(
-                mealType == 'Breakfast' 
+                mealType == 'Breakfast'
                     ? Icons.wb_sunny
                     : mealType == 'Lunch'
                         ? Icons.lunch_dining
@@ -490,19 +510,23 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
           ),
         ),
         const SizedBox(height: 12),
+
         ...meals.map((meal) {
           final mealId = '${mealKey}_${meal['meal']}_${meal['type']}';
+          final mealName = meal['meal'] as String? ?? '';
+          final imageUrl = _getMealImage(mealName);
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.05),
-                  blurRadius: 4,
+                  color: Colors.grey.withValues(alpha: 0.06),
+                  blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -510,40 +534,50 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Food image + meal name row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: meal['type'] == 'ready-to-eat'
-                            ? Colors.green[50]
-                            : Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        meal['type'] == 'ready-to-eat'
-                            ? Icons.restaurant
-                            : Icons.restaurant_menu,
-                        color: meal['type'] == 'ready-to-eat'
-                            ? Colors.green[700]
-                            : Colors.blue[700],
-                        size: 20,
+                    // Food image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageUrl,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(24, 95, 45, 1)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.restaurant,
+                            color: Color.fromRGBO(24, 95, 45, 1),
+                            size: 28,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
+                    // Meal info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            meal['meal'] ?? '',
+                            mealName,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               fontSize: 15,
                               color: Colors.black87,
+                              fontFamily: 'Raleway',
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Row(
                             children: [
                               Container(
@@ -588,6 +622,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 12),
+
                 // Allergy Dropdown with Multi-Select
                 const Text(
                   'Food Allergies/Preferences:',
@@ -601,7 +636,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                 InkWell(
                   onTap: () => _showAllergyDialog(mealId),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(8),
@@ -649,16 +685,19 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                     }).toList(),
                   ),
                 ],
-                // Single Payment Button per Meal Type per Day
+
+                // Payment Button
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _handleMealPayment(meal, mealId, meal['type'] ?? 'ready-to-eat', mealType, dayKey),
+                    onPressed: () => _handleMealPayment(
+                        meal, mealId, meal['type'] ?? 'ready-to-eat',
+                        mealType, dayKey),
                     icon: const Icon(Icons.payment, size: 18),
-                    label: Text('Pay for ${meal['meal']}'),
+                    label: Text('Pay for $mealName'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
                       foregroundColor: Colors.white,
@@ -689,7 +728,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: _commonAllergies.map((allergy) {
-                  final isSelected = _mealAllergies[mealId]?.contains(allergy) ?? false;
+                  final isSelected =
+                      _mealAllergies[mealId]?.contains(allergy) ?? false;
                   return CheckboxListTile(
                     title: Text(allergy),
                     value: isSelected,
@@ -721,7 +761,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
     });
   }
 
-  // Handle meal payment - unified for all meal types (breakfast, lunch, supper)
+  // Handle meal payment
   Future<void> _handleMealPayment(
     Map<String, dynamic> meal,
     String mealId,
@@ -732,7 +772,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
     final userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
     final authState = ref.read(authStateProvider);
-    
+
     String? userId;
     if (authState.isLoggedIn && authState.userId != null) {
       userId = authState.userId;
@@ -754,7 +794,6 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       return;
     }
 
-    // Calculate price (example: 5000 UGX per meal)
     const basePrice = 5000.0;
     final orderTotal = basePrice;
 
@@ -772,12 +811,17 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
           },
         },
         'scheduleDays': [dayKey],
-        'scheduleTime': mealType == 'Breakfast' ? '8:00 AM' : mealType == 'Lunch' ? '1:00 PM' : '7:00 PM',
+        'scheduleTime': mealType == 'Breakfast'
+            ? '8:00 AM'
+            : mealType == 'Lunch'
+                ? '1:00 PM'
+                : '7:00 PM',
         'repeatSchedule': false,
         'order': {
           'payment': {'paymentMethod': '', 'transactionId': ''},
           'deliveryAddress': userData?['address']?.toString() ?? 'NAN',
-          'specialRequests': 'Single ${mealType.toLowerCase()} order - ${meal['meal']}',
+          'specialRequests':
+              'Single ${mealType.toLowerCase()} order - ${meal['meal']}',
           'orderTotal': orderTotal,
         },
       };
@@ -788,17 +832,16 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       );
 
       if (mounted) {
-        // Extract order ID - same as subscription: res.data.Order
         String? orderId;
         if (response['data'] != null && response['data'] is Map) {
           final data = response['data'] as Map<String, dynamic>;
           orderId = data['Order']?.toString() ?? data['order']?.toString();
         }
-        
+
         if (orderId != null && orderId.isNotEmpty) {
           final webappUrl = 'https://www.yookatale.app/payment/$orderId';
           final uri = Uri.parse(webappUrl);
-          
+
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -813,7 +856,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response['message']?.toString() ?? 'Failed to create order'),
+              content: Text(
+                  response['message']?.toString() ?? 'Failed to create order'),
               backgroundColor: Colors.red,
             ),
           );
@@ -844,7 +888,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
     final userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
     final authState = ref.read(authStateProvider);
-    
+
     String? userId;
     if (authState.isLoggedIn && authState.userId != null) {
       userId = authState.userId;
@@ -866,7 +910,6 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       return;
     }
 
-    // Calculate price (example: 5000 UGX per breakfast)
     const basePrice = 5000.0;
     final orderTotal = basePrice;
 
@@ -883,7 +926,7 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
             'allergies': _mealAllergies[mealId]?.toList() ?? [],
           },
         },
-        'scheduleDays': [], // Single breakfast order
+        'scheduleDays': [],
         'scheduleTime': '8:00 AM',
         'repeatSchedule': false,
         'order': {
@@ -900,13 +943,14 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       );
 
       if (mounted) {
-        if (response['status'] == 'Success' && response['data']?['Order'] != null) {
+        if (response['status'] == 'Success' &&
+            response['data']?['Order'] != null) {
           final orderId = response['data']['Order'].toString();
           final webappUrl = 'https://yookatale.app/payment/$orderId';
-          
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('pending_payment_url', webappUrl);
-          
+
           final uri = Uri.parse(webappUrl);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -922,7 +966,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response['message']?.toString() ?? 'Failed to create order'),
+              content: Text(
+                  response['message']?.toString() ?? 'Failed to create order'),
               backgroundColor: Colors.red,
             ),
           );
@@ -943,38 +988,31 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       }
     }
   }
-  
+
   Future<void> _handleCheckout() async {
-    // EXACT WEBAPP LOGIC: const { userInfo } = useSelector((state) => state.auth)
-    // Webapp checks: if (!userInfo || userInfo == {} || userInfo == "") then redirect
     final userData = await AuthService.getUserData();
     final token = await AuthService.getToken();
-    
-    // EXACT webapp check: if (!userInfo || userInfo == {} || userInfo == "")
+
     String? userId;
-    
+
     if (userData != null && userData.isNotEmpty) {
-      // Ensure we have a valid _id or id (like webapp checks userInfo?._id)
       final id = userData['_id']?.toString() ?? userData['id']?.toString();
       if (id != null && id.isNotEmpty) {
         userId = id;
       }
     }
-    
-    // If no userId from stored data, check auth state
+
     if (userId == null) {
       final authState = ref.read(authStateProvider);
       if (authState.isLoggedIn && authState.userId != null) {
         userId = authState.userId;
       }
     }
-    
-    // EXACT WEBAPP LOGIC: Only check userId, token is optional
+
     if (userId == null) {
       if (mounted) {
-        // Save redirect route for after login
         ref.read(redirectRouteProvider.notifier).state = '/schedule';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please login to checkout'),
@@ -989,14 +1027,12 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       }
       return;
     }
-    
-    // Token is optional - try to get it but don't block
+
     String? finalToken = token;
     if (finalToken == null) {
       finalToken = await AuthService.getToken();
     }
-    
-    // Update auth state if not already set (sync with stored data)
+
     final authState = ref.read(authStateProvider);
     if (!authState.isLoggedIn && userData != null) {
       ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
@@ -1006,28 +1042,32 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         lastName: userData['lastname']?.toString(),
       );
     }
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
-      // Get user data
       final userData = await AuthService.getUserData();
-      
-      // Calculate order total (example: 7 days * 3 meals * base price)
-      // This should match webapp logic
-      const baseMealPrice = 5000; // UGX per meal
-      const orderTotal = 7 * 3 * baseMealPrice; // Weekly plan
-      
-      // Create schedule/order data (similar to webapp)
+
+      const baseMealPrice = 5000;
+      const orderTotal = 7 * 3 * baseMealPrice;
+
       final scheduleData = {
         'user': userData,
         'products': {
           'planType': widget.planType ?? 'premium',
           'vegetarianOptions': _vegetarianSauceOptions,
-          'allergies': _mealAllergies, // Include allergy preferences
+          'allergies': _mealAllergies,
         },
-        'scheduleDays': ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-        'scheduleTime': '12:00', // Default lunch time
+        'scheduleDays': [
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+          'sunday'
+        ],
+        'scheduleTime': '12:00',
         'repeatSchedule': true,
         'order': {
           'payment': {'paymentMethod': '', 'transactionId': ''},
@@ -1036,22 +1076,21 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
           'orderTotal': orderTotal,
         },
       };
-      
+
       final response = await ApiService.createSchedule(
         scheduleData: scheduleData,
         token: finalToken,
       );
-      
-        if (mounted) {
-        if (response['status'] == 'Success' && response['data']?['Order'] != null) {
-          // Redirect to webapp for payment (as requested)
+
+      if (mounted) {
+        if (response['status'] == 'Success' &&
+            response['data']?['Order'] != null) {
           final orderId = response['data']['Order'].toString();
           final webappUrl = 'https://yookatale.app/payment/$orderId';
-          
-          // Save payment URL for redirect after login if needed
+
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('pending_payment_url', webappUrl);
-          
+
           final uri = Uri.parse(webappUrl);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -1063,7 +1102,6 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
               ),
             );
           } else {
-            // Fallback to in-app payment
             Navigator.pushNamed(
               context,
               '/payment/$orderId',
@@ -1073,7 +1111,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response['message']?.toString() ?? 'Failed to create order'),
+              content: Text(
+                  response['message']?.toString() ?? 'Failed to create order'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1083,7 +1122,8 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+            content: Text(
+                'Error: ${e.toString().replaceAll('Exception: ', '')}'),
             backgroundColor: Colors.red,
           ),
         );

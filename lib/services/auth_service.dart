@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
@@ -148,7 +148,7 @@ class AuthService {
           
           notifications.insert(0, {
             'id': 'login_${now.millisecondsSinceEpoch}',
-            'title': '✅ Welcome Back!',
+            'title': 'âœ… Welcome Back!',
             'body': 'You have successfully logged in at $timeString on ${now.toString().split(' ')[0]}',
             'type': 'login',
             'data': {
@@ -320,3 +320,4 @@ class AuthService {
     }
   }
 }
+

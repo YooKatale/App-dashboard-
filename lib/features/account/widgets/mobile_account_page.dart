@@ -58,7 +58,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
         
         setState(() {
           _userData = userData;
-          _profilePicUrl = userData['profilePic']?.toString();
+          _profilePicUrl = userData['profilePic']?.toString() ?? userData['photoUrl']?.toString();
           _isLoading = false;
         });
         return;
@@ -733,14 +733,7 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                 title: 'My Orders',
                 subtitle: 'View your order history',
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const MobileOrdersTab(),
-                    ),
-                  );
-                },
+                onTap: () => Navigator.pushNamed(context, '/orders'),
               ),
               _ProfileTile(
                 icon: Icons.card_membership,
@@ -769,12 +762,33 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
           ),
           const SizedBox(height: 24),
 
-          // Social & Referrals
+          // Rewards & Cashout
           _ProfileSection(
-            title: 'Social & Referrals',
+            title: 'Rewards & Earnings',
             children: [
               _ProfileTile(
+                icon: Icons.star_rounded,
+                title: 'Rewards',
+                subtitle: 'Redeem your points for rewards',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/rewards'),
+              ),
+              _ProfileTile(
                 icon: Icons.card_giftcard,
+                title: 'Gift Cards',
+                subtitle: 'Buy or redeem gift cards',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/gift-cards'),
+              ),
+              _ProfileTile(
+                icon: Icons.account_balance_wallet,
+                title: 'Cashout',
+                subtitle: 'Withdraw your earnings',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/cashout'),
+              ),
+              _ProfileTile(
+                icon: Icons.card_giftcard_outlined,
                 title: 'Invite Friends',
                 subtitle: 'Earn rewards by inviting friends',
                 trailing: Row(
@@ -833,6 +847,66 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
                 onTap: () {
                   Navigator.pushNamed(context, '/faqs');
                 },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          const SizedBox(height: 24),
+
+          // Explore
+          _ProfileSection(
+            title: 'Explore & Opportunities',
+            children: [
+              _ProfileTile(
+                icon: Icons.two_wheeler,
+                title: 'Driver Dashboard',
+                subtitle: 'Manage your deliveries & earnings',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/driver-dashboard'),
+              ),
+              _ProfileTile(
+                icon: Icons.storefront,
+                title: 'Become a Partner',
+                subtitle: 'Sell or deliver on YooKatale',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/partner'),
+              ),
+              _ProfileTile(
+                icon: Icons.work_outline,
+                title: 'Careers',
+                subtitle: 'Join the YooKatale team',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/careers'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // About & More
+          _ProfileSection(
+            title: 'About & More',
+            children: [
+              _ProfileTile(
+                icon: Icons.info_outline,
+                title: 'About YooKatale',
+                subtitle: 'Our story, mission, and team',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/about'),
+              ),
+              _ProfileTile(
+                icon: Icons.headset_mic_outlined,
+                title: 'Contact Us',
+                subtitle: 'Get in touch with our team',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/contact'),
+              ),
+              _ProfileTile(
+                icon: Icons.campaign_outlined,
+                title: 'Advertise With Us',
+                subtitle: 'Reach thousands of food lovers',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/advertise'),
               ),
             ],
           ),

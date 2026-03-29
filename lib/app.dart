@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'features/authentication/providers/auth_provider.dart';
+// extractProfilePicUrl imported via auth_provider.dart
 import 'features/common/controller/utility_method.dart';
 import 'features/common/responsive.dart';
 import 'features/common/widgets/base_widget.dart';
@@ -33,12 +34,22 @@ import 'features/categories/widgets/mobile_categories_page.dart';
 import 'features/products/widgets/product_detail_page.dart';
 import 'features/common/models/products_model.dart';
 import 'features/common/widgets/bottom_navigation_bar.dart';
+import 'features/common/widgets/app_drawer.dart';
 import 'features/common/widgets/splash_screen.dart';
-import 'features/common/widgets/location_gate.dart';
 import 'features/settings/widgets/settings_page.dart';
 import 'features/wishlist/widgets/wishlist_page.dart';
 import 'features/help/widgets/help_support_page.dart';
 import 'features/notifications/widgets/notifications_page.dart';
+import 'features/cashout/widgets/cashout_page.dart';
+import 'features/rewards/widgets/rewards_page.dart';
+import 'features/driver/widgets/driver_dashboard_page.dart';
+import 'features/partner/widgets/partner_page.dart';
+import 'features/careers/widgets/careers_page.dart';
+import 'features/gift_cards/widgets/gift_cards_page.dart';
+import 'features/orders/widgets/orders_page.dart';
+import 'features/info/widgets/about_page.dart';
+import 'features/info/widgets/contact_page.dart';
+import 'features/info/widgets/advertise_page.dart';
 import 'services/auth_service.dart';
 import 'services/ratings_service.dart';
 import 'services/push_notification_service.dart';
@@ -103,8 +114,9 @@ class _MyAppState extends ConsumerState<MyApp> {
           email: userData['email']?.toString(),
           firstName: userData['firstname']?.toString(),
           lastName: userData['lastname']?.toString(),
+          profilePicUrl: extractProfilePicUrl(userData),
         );
-        
+
         // PERSISTENT SIGN-IN: If logged in, always go to home, never show signin/signup
         // Increment app open count for ratings
         await RatingsService.incrementAppOpenCount();
@@ -193,7 +205,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           // PERSISTENT SIGN-IN: If already logged in, redirect to home
           final authState = ref.read(authStateProvider);
           if (authState.isLoggedIn) {
-            return LocationGate(child: App());
+            return App();
           }
           return MobileSignInPage();
         },
@@ -204,6 +216,22 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/terms': (context) => const TermsPage(),
         '/notifications': (context) => const NotificationsPage(),
         '/edit-profile': (context) => const EditProfilePage(),
+        '/cashout': (context) => const CashoutPage(),
+        '/rewards': (context) => const RewardsPage(),
+        '/driver-dashboard': (context) {
+          final authState = ref.read(authStateProvider);
+          if (authState.isLoggedIn) {
+            return const DriverDashboardPage();
+          }
+          return MobileSignInPage();
+        },
+        '/partner': (context) => const PartnerPage(),
+        '/careers': (context) => const CareersPage(),
+        '/gift-cards': (context) => const GiftCardsPage(),
+        '/orders': (context) => const OrdersPage(),
+        '/about': (context) => const AboutPage(),
+        '/contact': (context) => const ContactPage(),
+        '/advertise': (context) => const AdvertisePage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/payment/') == true) {
@@ -291,23 +319,17 @@ class _AppState extends ConsumerState<App> {
       onTapDown: (details) {
         tapPosition = details.globalPosition;
       },
-      child: LocationGate(
-        child: Scaffold(
-          body: Responsive(
-            mobile:
-                // DesktopView(),
-                BaseWidget(
-              child: HomePage(),
-              // child: SignUpPage(),
-            ),
-            tablet: const DesktopView(),
-            desktop: const DesktopView(),
-          ),
-          bottomNavigationBar: Responsive(
-            mobile: const MobileBottomNavigationBar(currentIndex: 0),
-            tablet: const SizedBox.shrink(),
-            desktop: const SizedBox.shrink(),
-          ),
+      child: Scaffold(
+        drawer: const AppDrawer(),
+        body: Responsive(
+          mobile: HomePage(),
+          tablet: const DesktopView(),
+          desktop: const DesktopView(),
+        ),
+        bottomNavigationBar: Responsive(
+          mobile: const MobileBottomNavigationBar(currentIndex: 0),
+          tablet: const SizedBox.shrink(),
+          desktop: const SizedBox.shrink(),
         ),
       ),
     );

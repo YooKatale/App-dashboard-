@@ -863,7 +863,83 @@ class ApiService {
     }
   }
 
-  // Fetch wishlist
+  // Fetch country cuisines - GET /country-cuisines
+  static Future<Map<String, dynamic>> fetchCountryCuisines() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/country-cuisines'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load country cuisines: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Fetch homepage config - GET /homepage-config (hero slides, side cards, promo banners)
+  static Future<Map<String, dynamic>> fetchHomepageConfig() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/homepage-config'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load homepage config: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Fetch products filtered by budget (low/middle/high) - GET /products/filter/:data
+  // data is JSON-encoded array e.g. ["low"], ["middle"], ["high"]
+  static Future<Map<String, dynamic>> fetchProductsFiltered(List<String> filters) async {
+    try {
+      final encodedData = Uri.encodeComponent(json.encode(filters));
+      final response = await http.get(
+        Uri.parse('$baseUrl/products/filter/$encodedData'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load filtered products: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Fetch product categories - GET /categories
+  static Future<Map<String, dynamic>> fetchCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load categories: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Wishlist - Backend has NO wishlist routes; web uses localStorage (wishlistSlice).
+  // These methods are kept for future backend support; mobile uses local storage (SharedPreferences).
+  // When backend adds wishlist: GET /wishlist, POST /wishlist, DELETE /wishlist/:productId
   static Future<Map<String, dynamic>> fetchWishlist({String? token}) async {
     try {
       final response = await http.get(
@@ -881,7 +957,6 @@ class ApiService {
     }
   }
 
-  // Add to wishlist
   static Future<bool> addToWishlist({
     required String userId,
     required String productId,
@@ -903,7 +978,6 @@ class ApiService {
     }
   }
 
-  // Remove from wishlist
   static Future<bool> removeFromWishlist({
     required String productId,
     String? token,
@@ -1004,6 +1078,393 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error getting delivery location: $e');
+    }
+  }
+
+  // Cashout - requires auth
+  static Future<Map<String, dynamic>> fetchCashoutStats({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cashout/stats'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      throw Exception('Failed to load cashout stats: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchPayoutMethods({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/payout-methods'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      throw Exception('Failed to load payout methods: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchWithdrawals({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cashout/withdrawals'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      throw Exception('Failed to load withdrawals: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> withdrawFunds({
+    required String token,
+    required double amount,
+    String? payoutMethodId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/cashout/withdraw'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'amount': amount,
+          if (payoutMethodId != null) 'payoutMethodId': payoutMethodId,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      }
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Withdraw failed: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Rewards - public list, authenticated for my rewards
+  static Future<Map<String, dynamic>> fetchRewards() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      throw Exception('Failed to load rewards: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchMyRewards({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards/my'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      throw Exception('Failed to load my rewards: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> redeemReward({
+    required String token,
+    required String rewardId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/redeem'),
+        headers: getHeaders(token: token),
+        body: json.encode({'rewardId': rewardId}),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      }
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Redeem failed: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Driver Dashboard ───────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> fetchDriverStats({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/stats'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to load driver stats');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchAvailableOrders({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/orders/available'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to load available orders');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchActiveDelivery({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/delivery/active'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': null};
+    } catch (e) {
+      return {'data': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> toggleDriverAvailability({
+    required String token,
+    required bool isOnline,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/driver/availability'),
+        headers: getHeaders(token: token),
+        body: json.encode({'isOnline': isOnline}),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to toggle availability');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> acceptDeliveryOrder({
+    required String token,
+    required String orderId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/driver/orders/$orderId/accept'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to accept order');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateDeliveryStatus({
+    required String token,
+    required String orderId,
+    required String status,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/driver/orders/$orderId/status'),
+        headers: getHeaders(token: token),
+        body: json.encode({'status': status}),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to update status');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Partner Registration ────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> registerVendor({
+    String? token,
+    required String storeName,
+    required String address,
+    required String phone,
+    required String email,
+    required String category,
+    bool isVegetarian = false,
+    bool isVegan = false,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/vendor/register'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'storeName': storeName,
+          'address': address,
+          'phone': phone,
+          'email': email,
+          'category': category,
+          'isVegetarian': isVegetarian,
+          'isVegan': isVegan,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Vendor registration failed');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> registerDeliveryDriver({
+    String? token,
+    required String name,
+    required String phone,
+    required String email,
+    String? location,
+    required String vehicleType,
+    String? numberPlate,
+    bool hasPermit = false,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/driver/register'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'name': name,
+          'phone': phone,
+          'email': email,
+          if (location != null) 'location': location,
+          'vehicleType': vehicleType,
+          if (numberPlate != null) 'numberPlate': numberPlate,
+          'hasPermit': hasPermit,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Driver registration failed');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Job Applications ────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> submitJobApplication({
+    required String jobId,
+    required String jobTitle,
+    required String name,
+    required String email,
+    required String phone,
+    String? coverLetter,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/careers/apply'),
+        headers: getHeaders(),
+        body: json.encode({
+          'jobId': jobId,
+          'jobTitle': jobTitle,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          if (coverLetter != null && coverLetter.isNotEmpty) 'coverLetter': coverLetter,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to submit application');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Gift Cards ──────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> purchaseGiftCard({
+    String? token,
+    required int amount,
+    required String occasion,
+    required String userId,
+    bool sendToSomeone = false,
+    String? recipientName,
+    String? recipientEmail,
+    String? message,
+    String paymentMethod = 'mobile_money',
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/gift-cards/purchase'),
+        headers: getHeaders(token: token),
+        body: json.encode({
+          'amount': amount,
+          'occasion': occasion,
+          'userId': userId,
+          'sendToSomeone': sendToSomeone,
+          if (recipientName != null) 'recipientName': recipientName,
+          if (recipientEmail != null) 'recipientEmail': recipientEmail,
+          if (message != null) 'message': message,
+          'paymentMethod': paymentMethod,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to purchase gift card');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchMyGiftCards({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/gift-cards/my'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': {'received': [], 'sent': []}};
+    } catch (e) {
+      return {'data': {'received': [], 'sent': []}};
+    }
+  }
+
+  static Future<Map<String, dynamic>> redeemGiftCard({
+    String? token,
+    required String code,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/gift-cards/redeem'),
+        headers: getHeaders(token: token),
+        body: json.encode({'code': code}),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to redeem gift card');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Referrals ───────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> fetchReferralData({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/referrals/stats'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': null};
+    } catch (e) {
+      return {'data': null};
     }
   }
 }

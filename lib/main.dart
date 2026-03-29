@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -45,6 +46,15 @@ Future preInitialize() async {
       print('Firebase initialization error: $e');
     }
     // Continue even if Firebase initialization fails
+  }
+
+  // Initialize Google Sign-In with web serverClientId (required by google_sign_in v7 on Android)
+  try {
+    await GoogleSignIn.instance.initialize(
+      serverClientId: '1091927934214-r9dadofr1tv84lhgfkijkeqr8ds4nqmb.apps.googleusercontent.com',
+    );
+  } catch (e) {
+    if (kDebugMode) print('Google Sign-In init error (non-blocking): $e');
   }
 
   try {

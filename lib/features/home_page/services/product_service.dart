@@ -140,4 +140,37 @@ class ProductService {
       rethrow;
     }
   }
+
+  /// Fetch products filtered by budget (low/middle/high).
+  /// Backend /products/filter may not support budget; we filter client-side by price.
+  static Future<Products> fetchProductsFiltered(String budget) async {
+    final all = await fetchProductsFromApi();
+    if (budget.isEmpty) return all;
+    // Price ranges (UGX): low < 10000, middle 10000-50000, high > 50000
+    final filtered = all.popularProducts.where((p) {
+      final price = double.tryParse(p.price) ?? 0;
+      switch (budget.toLowerCase()) {
+        case 'low': return price < 10000;
+        case 'middle': return price >= 10000 && price <= 50000;
+        case 'high': return price > 50000;
+        default: return true;
+      }
+    }).toList();
+    return Products(popularProducts: filtered);
+  }
+
+  /// Fetch categories from API
+  static Future<List<Map<String, dynamic>>> fetchCategoriesFromApi() async {
+    try {
+      final response = await ApiService.fetchCategories();
+      if (response['success'] == true && response['categories'] != null) {
+        final cats = response['categories'] as List;
+        return cats.map((c) => c is Map ? Map<String, dynamic>.from(c as Map) : <String, dynamic>{}).toList();
+      }
+      return [];
+    } catch (e) {
+      log('Error fetching categories: $e');
+      return [];
+    }
+  }
 }

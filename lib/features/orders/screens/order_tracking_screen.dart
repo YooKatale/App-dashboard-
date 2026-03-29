@@ -32,7 +32,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Future<void> _loadOrder() async {
     try {
       final userData = await AuthService.getUserData();
-      final token = await AuthService.getAuthToken();
+      final token = await AuthService.getToken();
       
       final response = await ApiService.fetchOrder(widget.orderId, token: token);
       if (response['status'] == 'Success' || response['data'] != null) {

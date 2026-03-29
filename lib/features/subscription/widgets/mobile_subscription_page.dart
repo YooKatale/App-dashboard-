@@ -10,6 +10,70 @@ import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../schedule/widgets/meal_calendar_page.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
+
+/// PLAN_CONFIG - matches web subscription page (premium, family, business)
+const Map<String, Map<String, dynamic>> _planConfig = {
+  'premium': {
+    'name': 'Premium',
+    'tagline': 'SINGLE USER',
+    'color': 0xFF7c3aed,
+    'gradient': [0xFF4c1d95, 0xFF7c3aed],
+    'ctaLabel': 'Subscribe to premium',
+    'popular': false,
+    'features': [
+      'Premium Membership Fee',
+      '1 Premium Food Test',
+      '24 - 45 mins Delivery',
+      'Cashless Shopping',
+      'Same Day Delivery',
+      '12 months Membership',
+      '24/7 Customer Support',
+    ],
+  },
+  'family': {
+    'name': 'Family',
+    'tagline': '2-6 FAMILY MEMBERS',
+    'color': 0xFFe07820,
+    'gradient': [0xFF92400e, 0xFFe07820],
+    'ctaLabel': 'Subscribe to family',
+    'popular': true,
+    'features': [
+      '2-6 users',
+      'Account activation',
+      '1 Food test',
+      'Diet insights & meal planning',
+      'Promotional offers & discounts',
+      'Credit line: pay-later model',
+      'Unlimited food varieties',
+      'Loyalty points',
+      'Gas credit',
+      'Express delivery 24/7',
+    ],
+  },
+  'business': {
+    'name': 'Business',
+    'tagline': '10+ EMPLOYEES',
+    'color': 0xFF0ea5e9,
+    'gradient': [0xFF0c4a6e, 0xFF0ea5e9],
+    'ctaLabel': 'Subscribe to business',
+    'popular': false,
+    'features': [
+      '10+ users',
+      'Account activation',
+      '1 Food test',
+      'Employee meal cards',
+      'Gym and wellness cards',
+      'Diet insights',
+      'Promotional offers & discounts',
+      'Credit line',
+      'Unlimited food varieties',
+      'Loyalty points',
+      'Gas credit',
+      'Express delivery 24/7',
+    ],
+  },
+};
 
 class MobileSubscriptionPage extends ConsumerStatefulWidget {
   const MobileSubscriptionPage({super.key});
@@ -210,15 +274,48 @@ class _MobileSubscriptionPageState
   Widget build(BuildContext context) {
     // Watch auth state in build method (like webapp watches Redux state)
     final authState = ref.watch(authStateProvider);
-    
+    final notificationCount = ref.watch(notificationCountProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Subscription Packages'),
-        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+        backgroundColor: const Color(0xFF0B2416),
         foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              ),
+              if (notificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF0B2416), width: 1.5),
+                    ),
+                    child: Text(
+                      notificationCount > 9 ? '9+' : '$notificationCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
-      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 3),
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _packages.isEmpty
@@ -240,6 +337,48 @@ class _MobileSubscriptionPageState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Hero gradient header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color.fromRGBO(24, 95, 45, 1),
+                              Color.fromRGBO(40, 140, 70, 1),
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Meal Plans',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                fontFamily: 'Raleway',
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Choose the plan that fits your lifestyle',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white.withValues(alpha: 0.88),
+                                fontFamily: 'Raleway',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
                       // Subscription Packages (First)
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
@@ -260,10 +399,18 @@ class _MobileSubscriptionPageState
                         itemCount: _packages.length,
                         itemBuilder: (context, index) {
                     final package = _packages[index];
-                    final name = package['name']?.toString() ?? 'Subscription';
+                    final type = (package['type'] ?? '').toString().toLowerCase();
+                    final config = _planConfig[type] ?? _planConfig['premium']!;
+                    final name = package['name']?.toString() ?? config['name'] ?? 'Subscription';
                     final price = package['price']?.toString() ?? '0';
                     final description = package['description']?.toString() ?? '';
+                    final details = package['details'];
+                    final features = details is List && (details as List).isNotEmpty
+                        ? (details as List).map((e) => e.toString()).toList()
+                        : (config['features'] as List?)?.map((e) => e.toString()).toList() ?? [];
                     final benefits = package['benefits']?.toString() ?? '';
+                    final gradient = config['gradient'] as List<int>? ?? [0xFF185f2d, 0xFF185f2d];
+                    final isPopular = config['popular'] == true;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
@@ -282,16 +429,31 @@ class _MobileSubscriptionPageState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Header - Improved Design
-                          Container(
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              if (isPopular)
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFe07820),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text('MOST POPULAR', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  ),
+                                ),
+                              Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  const Color.fromRGBO(24, 95, 45, 1),
-                                  const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.8),
+                                  Color(gradient[0]),
+                                  Color(gradient.length > 1 ? gradient[1] : gradient[0]),
                                 ],
                               ),
                               borderRadius: const BorderRadius.vertical(
@@ -343,7 +505,8 @@ class _MobileSubscriptionPageState
                               ],
                             ),
                           ),
-                          
+                            ],
+                          ),
                           // Content
                           Padding(
                             padding: const EdgeInsets.all(20),
@@ -362,54 +525,33 @@ class _MobileSubscriptionPageState
                                   const SizedBox(height: 16),
                                 ],
                                 
-                                if (benefits.isNotEmpty) ...[
-                                  const Text(
-                                    'Benefits:',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    benefits,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                ],
-                                
-                                // Package Details
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Package Details:',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _buildDetailRow(Icons.restaurant, '3 meals per day', Colors.black87),
-                                      _buildDetailRow(Icons.local_grocery_store, 'Fresh ingredients', Colors.black87),
-                                      _buildDetailRow(Icons.delivery_dining, 'Free delivery: Within 3km distance. Extra: 950 UGX per additional kilometer.', Colors.black87),
-                                      _buildDetailRow(Icons.calendar_today, 'Weekly meal calendar', Colors.black87),
-                                      _buildDetailRow(Icons.support_agent, '24/7 Support', Colors.black87),
-                                      _buildDetailRow(Icons.security, 'Safe, instant and secured', Colors.black87),
-                                    ],
+                                if (features.isNotEmpty) ...[
+                                const Text(
+                                  'Plan Benefits',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                const SizedBox(height: 8),
+                                ...features.map((f) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.check_circle, size: 16, color: Color.fromRGBO(24, 95, 45, 1)),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(f, style: const TextStyle(fontSize: 13, color: Colors.black87))),
+                                    ],
+                                  ),
+                                )),
                                 const SizedBox(height: 20),
+                                ] else if (benefits.isNotEmpty) ...[
+                                const Text('Benefits:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Text(benefits, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                                const SizedBox(height: 20),
+                                ],
                                 
                                 // Subscribe Button
                                 SizedBox(

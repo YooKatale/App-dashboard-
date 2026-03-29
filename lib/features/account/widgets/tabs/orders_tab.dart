@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../services/api_service.dart';
+import '../../../../services/auth_service.dart';
 import '../../../authentication/providers/auth_provider.dart';
+import '../../../orders/screens/order_tracking_screen.dart';
 
 class OrdersTab extends ConsumerStatefulWidget {
   const OrdersTab({super.key});
@@ -30,9 +31,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
 
     try {
       final authState = ref.read(authStateProvider);
-      final user = FirebaseAuth.instance.currentUser;
+      final token = await AuthService.getToken();
 
-      if (user == null || authState.userId == null) {
+      if (authState.userId == null || token == null) {
         setState(() {
           _error = 'Please login to view orders';
           _isLoading = false;
@@ -42,7 +43,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
 
       final response = await ApiService.fetchUserOrders(
         authState.userId!,
-        token: await user.getIdToken(),
+        token: token,
       );
 
       if (response['status'] == 'Success' && response['data'] != null) {
@@ -163,10 +164,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                               color: Colors.black87,
                             ),
                             onTap: () {
-                              // TODO: Navigate to order details
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Order details coming soon')),
-                              );
+                              final orderId = order['_id']?.toString() ?? order['id']?.toString() ?? '';
+                              if (orderId.isNotEmpty) {
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => OrderTrackingScreen(orderId: orderId),
+                                ));
+                              }
                             },
                           ),
                         );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bcrypt/bcrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -194,39 +195,65 @@ class AuthBackend {
 
   Future<User?> signInWithGoogle() async {
     try {
-      // Sign in with Google - use authenticate() method (as used in login.dart)
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
+      if (kDebugMode) print('Google Sign-In: Starting...');
+
+      // Trigger the sign-in flow with timeout to prevent indefinite hanging
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate()
+          .timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw TimeoutException('Google Sign-In took too long. Please try again.'),
+          );
+
       if (googleUser == null) {
-        // User cancelled the sign-in
+        if (kDebugMode) print('Google Sign-In: User cancelled');
         return null;
       }
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      // Get authorization client for access token (as used in login.dart)
-      final clientAuth = await googleUser.authorizationClient
-          .authorizationForScopes(<String>['email', 'profile', 'openid']);
+      if (kDebugMode) print('Google Sign-In: Got account - ${googleUser.email}');
 
-      // Create a new credential using idToken and accessToken
-      final credential = GoogleAuthProvider.credential(
-        accessToken: clientAuth?.accessToken,
+      // Get authentication
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw TimeoutException('Failed to get Google auth. Please try again.'),
+          );
+
+      if (kDebugMode) print('Google Sign-In: Got auth - idToken: ${googleAuth.idToken != null}');
+
+      if (googleAuth.idToken == null) {
+        throw AuthException('Failed to get ID token from Google Sign-In');
+      }
+
+      // Create Firebase credential (only use idToken for google_sign_in 7.2.0)
+      final AuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with the Google credential
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      // Sign in to Firebase
+      final UserCredential result = await _auth
+          .signInWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw TimeoutException('Firebase sign-in took too long. Please try again.'),
+          );
 
-      // Log Google sign-in event
-      _analytics.logEvent(name: 'google_sign_in', parameters: null);
+      if (kDebugMode) print('Google Sign-In: SUCCESS - ${result.user?.email}');
 
-      return userCredential.user;
+      // Log event
+      await _analytics.logEvent(name: 'google_sign_in', parameters: null);
+
+      return result.user;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) print('Google Sign-In Timeout: $e');
+      throw AuthException('Google Sign-In timed out. Please check your internet connection and try again.');
     } catch (e) {
-      if (kDebugMode) {
-        print('Google Sign-In Error: $e');
+      if (kDebugMode) print('Google Sign-In Error: $e');
+      // Suppress cancel errors
+      if (e.toString().contains('cancel') || e.toString().contains('CANCELED') || e.toString().contains('sign_in_canceled')) {
+        return null;
       }
-      throw AuthException('Failed to sign in with Google: $e');
+      throw AuthException('Google Sign-In failed: $e');
     }
   }
 

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../services/auth_service.dart';
-import '../../../services/api_service.dart';
+import '../../../services/wishlist_service.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../products/widgets/product_detail_page.dart';
 import '../../common/models/products_model.dart';
+import '../providers/wishlist_provider.dart';
 
+/// Wishlist page - uses local storage (WishlistService), syncs with web wishlistSlice.
+/// Backend has NO wishlist API.
 class WishlistPage extends ConsumerStatefulWidget {
   const WishlistPage({super.key});
 
@@ -15,81 +17,22 @@ class WishlistPage extends ConsumerStatefulWidget {
 }
 
 class _WishlistPageState extends ConsumerState<WishlistPage> {
-  List<dynamic> _wishlistItems = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadWishlist();
-  }
-
-  Future<void> _loadWishlist() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final userData = await AuthService.getUserData();
-      final token = await AuthService.getToken();
-      
-      if (userData == null || token == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      // Fetch wishlist from API or use local storage
-      // For now, using shared preferences as fallback
-      final response = await ApiService.fetchWishlist(token: token);
-      
-      if (response['status'] == 'Success' && response['data'] != null) {
-        setState(() {
-          _wishlistItems = response['data'] is List 
-              ? response['data'] as List 
-              : [response['data']];
-          _isLoading = false;
-        });
-      } else {
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
   Future<void> _removeFromWishlist(String productId) async {
-    try {
-      final token = await AuthService.getToken();
-      if (token == null) return;
-
-      final success = await ApiService.removeFromWishlist(
-        productId: productId,
-        token: token,
+    await WishlistService.removeFromWishlist(productId);
+    ref.read(wishlistRefreshProvider.notifier).state++;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed from wishlist'),
+          backgroundColor: Colors.green,
+        ),
       );
-
-      if (success) {
-        _loadWishlist();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Removed from wishlist'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final wishlistAsync = ref.watch(wishlistProvider);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -104,10 +47,9 @@ class _WishlistPageState extends ConsumerState<WishlistPage> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 4),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _wishlistItems.isEmpty
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 3),
+      body: wishlistAsync.when(
+        data: (items) => items.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -145,9 +87,9 @@ class _WishlistPageState extends ConsumerState<WishlistPage> {
                     mainAxisSpacing: 12,
                     childAspectRatio: 0.68,
                   ),
-                  itemCount: _wishlistItems.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = _wishlistItems[index];
+                    final item = items[index];
                     final product = item['product'] ?? item;
                     final name = product['name']?.toString() ?? 
                                 product['title']?.toString() ?? 
@@ -314,6 +256,18 @@ class _WishlistPageState extends ConsumerState<WishlistPage> {
                     );
                   },
                 ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text('Failed to load wishlist', style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

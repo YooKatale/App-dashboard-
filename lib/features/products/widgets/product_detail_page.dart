@@ -229,7 +229,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
+      bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 0),
       body: CustomScrollView(
         slivers: [
           // App Bar with Image

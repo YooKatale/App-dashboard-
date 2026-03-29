@@ -11,6 +11,7 @@ import '../../../features/common/widgets/custom_button.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_modal.dart';
 
@@ -381,6 +382,7 @@ class _CartPageState extends ConsumerState<CartPage> {
     // Watch auth state and cart count in build method (like webapp watches Redux state)
     final authState = ref.watch(authStateProvider);
     final cartCount = ref.watch(cartCountProvider);
+    final notificationCount = ref.watch(notificationCountProvider);
     
     // Reload cart if:
     // 1. Auth state changed to logged in
@@ -404,12 +406,44 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Your Cart'),
-        backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+        title: const Text('Your Cart', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        backgroundColor: const Color(0xFF0B2416),
         foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
+        actions: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              ),
+              if (notificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF0B2416), width: 1.5),
+                    ),
+                    child: Text(
+                      notificationCount > 9 ? '9+' : '$notificationCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 2),
       body: _isLoading
@@ -430,28 +464,69 @@ class _CartPageState extends ConsumerState<CartPage> {
                 )
               : _cartItems.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.shopping_cart_outlined,
-                              size: 80, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Your cart is empty',
-                            style: TextStyle(fontSize: 24, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Navigate to home/categories to add products (no auth check needed)
-                              Navigator.of(context).pushNamedAndRemoveUntil(
-                                '/home',
-                                (route) => false,
-                              );
-                            },
-                            child: const Text('Add Products'),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 80,
+                                color: Color.fromRGBO(24, 95, 45, 0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Your cart is empty',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add products from categories to get started',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 28),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/home',
+                                  (route) => false,
+                                );
+                              },
+                              icon: const Icon(Icons.add_shopping_cart),
+                              label: const Text('Browse Products'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : Column(
@@ -472,15 +547,15 @@ class _CartPageState extends ConsumerState<CartPage> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Colors.white,
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withAlpha(77),
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                                offset: const Offset(0, -3),
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, -4),
                               ),
                             ],
                           ),
