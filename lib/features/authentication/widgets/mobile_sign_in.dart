@@ -32,11 +32,9 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _phoneController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
-  bool _isPhoneLogin = false;
 
   @override
   void initState() {
@@ -48,7 +46,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -249,32 +246,6 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
         Navigator.of(context)
             .pushReplacementNamed(redirectRoute ?? '/home');
       }
-    }
-  }
-
-  // ── Phone login ──────────────────────────────────────────────
-  Future<void> _handlePhoneLogin() async {
-    if (_phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please enter your mobile number'),
-          backgroundColor: Colors.red));
-      return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      await AuthService.loginWithPhone(phone: _phoneController.text.trim());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('OTP sent to your phone'),
-            backgroundColor: Colors.green));
-      }
-    } catch (e) {
-      if (mounted) {
-        ErrorHandlerService.showErrorSnackBar(context,
-            message: ErrorHandlerService.getErrorMessage(e));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -566,121 +537,64 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // Email/Phone toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                        onPressed: () => setState(() => _isPhoneLogin = false),
-                        child: Text(
-                          'Email',
-                          style: TextStyle(
-                            color: !_isPhoneLogin ? _green : Colors.grey,
-                            fontWeight: !_isPhoneLogin
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                      const Text('|'),
-                      TextButton(
-                        onPressed: () => setState(() => _isPhoneLogin = true),
-                        child: Text(
-                          'Phone',
-                          style: TextStyle(
-                            color: _isPhoneLogin ? _green : Colors.grey,
-                            fontWeight: _isPhoneLogin
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ],
+                  // Email login fields
+                  _StyledField(
+                    controller: _emailController,
+                    label: 'Email',
+                    hint: 'Enter your email',
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Email is required';
+                      if (!v.contains('@')) return 'Enter a valid email';
+                      return null;
+                    },
                   ),
-                  const SizedBox(height: 18),
-
-                  if (!_isPhoneLogin) ...[
-                    _StyledField(
-                      controller: _emailController,
-                      label: 'Email',
-                      hint: 'Enter your email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Email is required';
-                        if (!v.contains('@')) return 'Enter a valid email';
-                        return null;
+                  const SizedBox(height: 14),
+                  _StyledField(
+                    controller: _passwordController,
+                    label: 'Password',
+                    hint: 'Enter your password',
+                    icon: Icons.lock_outline,
+                    obscureText: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: Colors.grey[500],
+                        size: 20,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Password is required';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () async {
+                        try {
+                          final uri = Uri.parse(
+                              'https://www.yookatale.app/signin?forgot=true');
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                        } catch (_) {}
                       },
+                      style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 36)),
+                      child: const Text('Forgot password?',
+                          style: TextStyle(
+                              color: _green,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
                     ),
-                    const SizedBox(height: 14),
-                    _StyledField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      hint: 'Enter your password',
-                      icon: Icons.lock_outline,
-                      obscureText: _obscurePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: Colors.grey[500],
-                          size: 20,
-                        ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Password is required';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 4),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () async {
-                          try {
-                            final uri = Uri.parse(
-                                'https://www.yookatale.app/signin?forgot=true');
-                            await launchUrl(uri,
-                                mode: LaunchMode.externalApplication);
-                          } catch (_) {}
-                        },
-                        style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 36)),
-                        child: const Text('Forgot password?',
-                            style: TextStyle(
-                                color: _green,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500)),
-                      ),
-                    ),
-                  ] else ...[
-                    _StyledField(
-                      controller: _phoneController,
-                      label: 'Mobile Number',
-                      hint: 'Enter your mobile number',
-                      keyboardType: TextInputType.phone,
-                      prefixWidget: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 16),
-                        child: const Text('+256',
-                            style: TextStyle(
-                                color: _green,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15)),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Text('We will send you a verification code',
-                          style:
-                              TextStyle(color: Colors.grey[500], fontSize: 12)),
-                    ),
-                  ],
+                  ),
                   const SizedBox(height: 24),
 
                   // Sign-in button
@@ -689,9 +603,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading || _isGoogleLoading
                           ? null
-                          : (_isPhoneLogin
-                              ? _handlePhoneLogin
-                              : _handleEmailLogin),
+                          : _handleEmailLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _green,
                         foregroundColor: Colors.white,
@@ -708,8 +620,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
                                   strokeWidth: 2.5,
                                   valueColor: AlwaysStoppedAnimation(
                                       Colors.white)))
-                          : Text(_isPhoneLogin ? 'Send Code' : 'Sign In',
-                              style: const TextStyle(
+                          : const Text('Sign In',
+                              style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.3)),
