@@ -38,21 +38,6 @@ class SideCardsSection extends ConsumerWidget {
             onTap: () => Navigator.pushNamed(context, '/subscription'),
           ),
           const SizedBox(height: 10),
-
-          // Side card 3: Download App
-          _SideCard(
-            eyebrow: 'Download',
-            title: 'Yookatale App — Android & iOS',
-            ctaText: 'Get the app',
-            gradient: [const Color(0xFF0a1a00), const Color(0xFF294d00)],
-            icon: Icons.download_rounded,
-            iconColor: Color(0xFFa8e060),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open Play Store link')),
-              );
-            },
-          ),
         ],
       ),
     );
