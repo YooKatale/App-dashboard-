@@ -19,6 +19,7 @@ class _RewardsPageState extends ConsumerState<RewardsPage> {
   List<dynamic> _rewards = [];
   List<dynamic> _myRewards = [];
   Map<String, dynamic>? _referralData;
+  Map<String, dynamic>? _referralRewards;
   int _myPoints = 0;
   bool _isLoading = true;
   String? _error;
@@ -50,6 +51,12 @@ class _RewardsPageState extends ConsumerState<RewardsPage> {
         try {
           final refRes = await ApiService.fetchReferralData(token: token);
           _referralData = refRes['data'] as Map<String, dynamic>?;
+        } catch (_) {}
+        try {
+          final refRewardsRes = await ApiService.fetchReferralRewards(token: token);
+          _referralRewards = (refRewardsRes['data'] ?? refRewardsRes) is Map
+              ? Map<String, dynamic>.from((refRewardsRes['data'] ?? refRewardsRes) as Map)
+              : null;
         } catch (_) {}
       }
       if (mounted) {
@@ -121,6 +128,7 @@ class _RewardsPageState extends ConsumerState<RewardsPage> {
                       children: [
                         _buildPointsBanner(),
                         if (_referralData != null) _buildReferralCard(),
+                        if (_referralRewards != null) _buildReferralRewardsCard(),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                           child: const Text('Available Rewards', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -295,6 +303,61 @@ class _RewardsPageState extends ConsumerState<RewardsPage> {
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color)),
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
+    );
+  }
+
+  Widget _buildReferralRewardsCard() {
+    final rr = _referralRewards!;
+    const referralTargetCash = 50000;
+    final rewardPerReferral = ((rr['rewardPerReferral'] ?? rr['pointsPerReferral'] ?? 0) as num).toDouble();
+    final cashEquivalent = ((rr['cashEquivalent'] ?? rr['cashPerReferral'] ?? 0) as num).toDouble();
+    final totalReferrals = ((rr['totalReferrals'] ?? 0) as num).toInt();
+    final referralsNeeded = cashEquivalent > 0 ? (referralTargetCash / cashEquivalent).ceil() : 25;
+    final progress = (totalReferrals / referralsNeeded).clamp(0.0, 1.0);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.green[100]!),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.trending_up, color: _green, size: 20),
+              const SizedBox(width: 8),
+              const Text('Referral Progress', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: Colors.grey[200],
+              color: _green,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$totalReferrals / $referralsNeeded referrals to reach UGX ${referralTargetCash.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+          ),
+          if (cashEquivalent > 0) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Earn UGX ${cashEquivalent.toStringAsFixed(0)} per referral • cashout unlocks at 25 signups',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

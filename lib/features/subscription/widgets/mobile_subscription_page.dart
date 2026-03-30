@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,8 +12,9 @@ import '../../schedule/widgets/meal_calendar_page.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../authentication/providers/redirect_provider.dart';
 import '../../notifications/providers/notification_provider.dart';
+import '../../cart/providers/cart_provider.dart';
 
-/// PLAN_CONFIG - matches web subscription page (premium, family, business)
+/// PLAN_CONFIG - mirrors webapp PLAN_CONFIG exactly
 const Map<String, Map<String, dynamic>> _planConfig = {
   'premium': {
     'name': 'Premium',
@@ -21,6 +23,12 @@ const Map<String, Map<String, dynamic>> _planConfig = {
     'gradient': [0xFF4c1d95, 0xFF7c3aed],
     'ctaLabel': 'Subscribe to premium',
     'popular': false,
+    'originalPrice': 'UGX 40,000',
+    'saveAmt': 'SAVE 10,000',
+    'currentPrice': 'UGX 30,000',
+    'discount': '25% OFF',
+    'stars': 4.5,
+    'reviews': 128,
     'features': [
       'Premium Membership Fee',
       '1 Premium Food Test',
@@ -38,17 +46,23 @@ const Map<String, Map<String, dynamic>> _planConfig = {
     'gradient': [0xFF92400e, 0xFFe07820],
     'ctaLabel': 'Subscribe to family',
     'popular': true,
+    'originalPrice': 'UGX 100,000',
+    'saveAmt': 'SAVE 30,000',
+    'currentPrice': 'UGX 90,000',
+    'discount': '25% OFF',
+    'stars': 4.5,
+    'reviews': 128,
     'features': [
       '2-6 users',
       'Account activation',
       '1 Food test',
-      'Diet insights & meal planning',
-      'Promotional offers & discounts',
-      'Credit line: pay-later model',
-      'Unlimited food varieties',
-      'Loyalty points',
-      'Gas credit',
-      'Express delivery 24/7',
+      'Diet insights: Personalized nutrition advice and meal planning tips.',
+      'Promotional offers & discounts: Exclusive deals for the entire family.',
+      'Credit line: A flexible micro-credit option, pay-later model.',
+      'Unlimited food varieties in different quantities.',
+      'Loyalty points: Redeem cash for loyalty points.',
+      'Gas credit: Access to gas refills.',
+      'Express delivery 24/7: Priority delivery service.',
     ],
   },
   'business': {
@@ -58,19 +72,25 @@ const Map<String, Map<String, dynamic>> _planConfig = {
     'gradient': [0xFF0c4a6e, 0xFF0ea5e9],
     'ctaLabel': 'Subscribe to business',
     'popular': false,
+    'originalPrice': 'UGX 240,000',
+    'saveAmt': 'SAVE 60,000',
+    'currentPrice': 'UGX 180,000',
+    'discount': '25% OFF',
+    'stars': 4.5,
+    'reviews': 128,
     'features': [
       '10+ users',
       'Account activation',
       '1 Food test',
-      'Employee meal cards',
-      'Gym and wellness cards',
-      'Diet insights',
-      'Promotional offers & discounts',
-      'Credit line',
-      'Unlimited food varieties',
-      'Loyalty points',
-      'Gas credit',
-      'Express delivery 24/7',
+      'Employee meal cards: Ensure your team is well-nourished.',
+      'Gym and wellness cards: Promote wellness with gym memberships.',
+      'Diet insights: Personalized nutrition advice.',
+      'Promotional offers & discounts: Exclusive access to deals.',
+      'Credit line: Flexible micro-credit for businesses.',
+      'Unlimited food varieties in different quantities.',
+      'Loyalty points: Redeem cash for long-term savings.',
+      'Gas credit: Access to gas refills for business operations.',
+      'Express delivery 24/7: Fast priority delivery at any time.',
     ],
   },
 };
@@ -276,44 +296,16 @@ class _MobileSubscriptionPageState
     final authState = ref.watch(authStateProvider);
     final notificationCount = ref.watch(notificationCountProvider);
 
+    final cartCount = ref.watch(cartCountProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Subscription Packages'),
-        backgroundColor: const Color(0xFF0B2416),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
-                onPressed: () => Navigator.pushNamed(context, '/notifications'),
-              ),
-              if (notificationCount > 0)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF0B2416), width: 1.5),
-                    ),
-                    child: Text(
-                      notificationCount > 9 ? '9+' : '$notificationCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 4),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: _SubTopBar(
+          cartCount: cartCount,
+          notificationCount: notificationCount,
+        ),
       ),
       bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
       body: _isLoading
@@ -340,15 +332,12 @@ class _MobileSubscriptionPageState
                       // Hero gradient header
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color.fromRGBO(24, 95, 45, 1),
-                              Color.fromRGBO(40, 140, 70, 1),
-                            ],
+                            colors: [Color(0xFF0B2416), Color(0xFF185f2d)],
                           ),
                         ),
                         child: Column(
@@ -356,22 +345,37 @@ class _MobileSubscriptionPageState
                           children: [
                             const Text(
                               'Meal Plans',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                fontFamily: 'Raleway',
-                                height: 1.1,
-                              ),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Raleway', height: 1.1),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             Text(
                               'Choose the plan that fits your lifestyle',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white.withValues(alpha: 0.88),
-                                fontFamily: 'Raleway',
-                                fontWeight: FontWeight.w500,
+                              style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.85), fontFamily: 'Raleway', fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 16),
+                            // 25% OFF announcement banner
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.greenAccent.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text('25% OFF', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Colors.greenAccent)),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Text('Limited time offer on all plans', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -412,183 +416,218 @@ class _MobileSubscriptionPageState
                     final gradient = config['gradient'] as List<int>? ?? [0xFF185f2d, 0xFF185f2d];
                     final isPopular = config['popular'] == true;
 
+                    final accentColor = Color(config['color'] as int);
+                    final originalPrice = config['originalPrice']?.toString() ?? '';
+                    final saveAmt = config['saveAmt']?.toString() ?? '';
+                    final currentPrice = config['currentPrice']?.toString() ?? 'UGX ${_formatPrice(price)}';
+                    final discount = config['discount']?.toString() ?? '25% OFF';
+                    final stars = (config['stars'] as num? ?? 4.5).toDouble();
+                    final reviews = (config['reviews'] as num? ?? 0).toInt();
+                    final tagline = config['tagline']?.toString() ?? '';
+                    final ctaLabel = config['ctaLabel']?.toString() ?? 'Subscribe Now';
+
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
+                      margin: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
+                        border: isPopular ? Border.all(color: accentColor, width: 2) : null,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.1),
+                            color: accentColor.withOpacity(0.12),
                             spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              if (isPopular)
-                                Positioned(
-                                  top: 12,
-                                  right: 12,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFe07820),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Text('MOST POPULAR', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
-                                  ),
-                                ),
-                              Container(
-                            padding: const EdgeInsets.all(20),
+                          // ── Card header (gradient) ──────────────────────────
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
-                                  Color(gradient[0]),
-                                  Color(gradient.length > 1 ? gradient[1] : gradient[0]),
-                                ],
+                                colors: [Color(gradient[0]), Color(gradient.length > 1 ? gradient[1] : gradient[0])],
                               ),
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(16),
-                              ),
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                // Top row: icon + MOST POPULAR + 25% OFF
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.18),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        type == 'premium' ? Icons.favorite_rounded
+                                            : type == 'family' ? Icons.group_rounded
+                                            : Icons.trending_up_rounded,
+                                        color: Colors.white, size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Discount pill
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.22),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(discount,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.4)),
+                                    ),
+                                    const Spacer(),
+                                    if (isPopular)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFe07820),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: const Text('MOST POPULAR',
+                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                // Plan name + tagline pill
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Raleway')),
+                                    const SizedBox(width: 8),
+                                    if (tagline.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(tagline,
+                                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white70, letterSpacing: 0.5)),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Pricing rows
+                                if (originalPrice.isNotEmpty) ...[
+                                  Row(
                                     children: [
                                       Text(
-                                        name,
-                                        style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          fontFamily: 'Raleway',
+                                        originalPrice,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white.withOpacity(0.6),
+                                          decoration: TextDecoration.lineThrough,
+                                          decorationColor: Colors.white54,
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'UGX ${_formatPrice(price)}',
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          fontFamily: 'Raleway',
+                                      if (saveAmt.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.greenAccent.withOpacity(0.25),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(saveAmt,
+                                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.greenAccent)),
                                         ),
-                                      ),
+                                      ],
                                     ],
                                   ),
+                                  const SizedBox(height: 4),
+                                ],
+                                Text(
+                                  currentPrice,
+                                  style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Raleway'),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.card_membership,
-                                    color: Colors.white,
-                                    size: 32,
-                                  ),
+                                const SizedBox(height: 12),
+                                // Star rating
+                                Row(
+                                  children: [
+                                    ...List.generate(5, (i) {
+                                      final filled = i < stars.floor();
+                                      final half = !filled && i < stars;
+                                      return Icon(
+                                        half ? Icons.star_half_rounded : (filled ? Icons.star_rounded : Icons.star_outline_rounded),
+                                        color: Colors.amber,
+                                        size: 16,
+                                      );
+                                    }),
+                                    const SizedBox(width: 6),
+                                    Text('$stars', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 4),
+                                    Text('($reviews reviews)', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                            ],
-                          ),
-                          // Content
+
+                          // ── Features + CTA ──────────────────────────────────
                           Padding(
                             padding: const EdgeInsets.all(20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (description.isNotEmpty) ...[
-                                Text(
-                                  description,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black87,
-                                    height: 1.5,
-                                  ),
-                                ),
-                                  const SizedBox(height: 16),
-                                ],
-                                
                                 if (features.isNotEmpty) ...[
-                                const Text(
-                                  'Plan Benefits',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ...features.map((f) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Icon(Icons.check_circle, size: 16, color: Color.fromRGBO(24, 95, 45, 1)),
-                                      const SizedBox(width: 8),
-                                      Expanded(child: Text(f, style: const TextStyle(fontSize: 13, color: Colors.black87))),
-                                    ],
-                                  ),
-                                )),
-                                const SizedBox(height: 20),
-                                ] else if (benefits.isNotEmpty) ...[
-                                const Text('Benefits:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 8),
-                                Text(benefits, style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                                const SizedBox(height: 20),
+                                  const Text('PLAN BENEFITS',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF888888), letterSpacing: 1.2)),
+                                  const SizedBox(height: 12),
+                                  ...features.map((f) {
+                                    // Strip leading bullet/dash
+                                    final text = f.replaceFirst(RegExp(r'^[•\-]\s*'), '').trim();
+                                    if (text.isEmpty || RegExp(r'^benefits?\s*:?\s*$', caseSensitive: false).hasMatch(text)) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(Icons.check_circle_rounded, size: 16, color: accentColor),
+                                          const SizedBox(width: 8),
+                                          Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.4))),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 20),
+                                ] else if (description.isNotEmpty) ...[
+                                  Text(description, style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.5)),
+                                  const SizedBox(height: 20),
                                 ],
-                                
-                                // Subscribe Button
+
+                                // CTA
                                 SizedBox(
                                   width: double.infinity,
-                                  height: 50,
+                                  height: 52,
                                   child: ElevatedButton(
                                     onPressed: _isSubscribing
                                         ? null
-                                        : () => _subscribeToPackage(
-                                            package['_id']?.toString() ?? ''),
+                                        : () => _subscribeToPackage(package['_id']?.toString() ?? ''),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          const Color.fromRGBO(24, 95, 45, 1),
+                                      backgroundColor: accentColor,
                                       foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
+                                      disabledBackgroundColor: accentColor.withOpacity(0.5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      elevation: 0,
                                     ),
                                     child: _isSubscribing
-                                        ? const SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor:
-                                                  AlwaysStoppedAnimation<Color>(
-                                                      Colors.white),
-                                            ),
-                                          )
-                                        : const Text(
-                                            'Subscribe Now',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: 'Raleway',
-                                            ),
-                                          ),
+                                        ? const SizedBox(height: 22, width: 22,
+                                            child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                                        : Text(ctaLabel,
+                                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Raleway')),
                                   ),
                                 ),
                               ],
@@ -755,5 +794,138 @@ class _MobileSubscriptionPageState
     } catch (e) {
       return price;
     }
+  }
+}
+
+// ── Subscription top bar — matches homepage style ─────────────────────────────
+class _SubTopBar extends StatelessWidget {
+  final int cartCount;
+  final int notificationCount;
+
+  const _SubTopBar({required this.cartCount, required this.notificationCount});
+
+  static const _kPrimary = Color(0xFF0B2416);
+  static const _kAccent  = Color(0xFF2ECC71);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: _kPrimary,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 4,
+        bottom: 8,
+        left: 12,
+        right: 12,
+      ),
+      child: Row(
+        children: [
+          // Back
+          GestureDetector(
+            onTap: () => Navigator.of(context).maybePop(),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Title / search tap area
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/search'),
+              child: Container(
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.white.withOpacity(0.10)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.search_rounded, color: Colors.white.withOpacity(0.45), size: 15),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Search products…',
+                      style: GoogleFonts.inter(color: Colors.white.withOpacity(0.55), fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Notifications
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/notifications'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.white.withOpacity(0.10)),
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
+                ),
+              ),
+              if (notificationCount > 0)
+                Positioned(
+                  top: -3, right: -3,
+                  child: Container(
+                    width: 16, height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _kPrimary, width: 1.5),
+                    ),
+                    child: Text(notificationCount > 9 ? '9+' : '$notificationCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 8),
+
+          // Cart
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/cart'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.white.withOpacity(0.10)),
+                  ),
+                  child: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 20),
+                ),
+              ),
+              if (cartCount > 0)
+                Positioned(
+                  top: -3, right: -3,
+                  child: Container(
+                    width: 16, height: 16,
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _kPrimary, width: 1.5),
+                    ),
+                    child: Text(cartCount > 9 ? '9+' : '$cartCount',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +32,11 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
   };
 
   bool _isLoading = false;
+  bool _isApiLoading = true;
   String _selectedDay = 'Monday';
+
+  // API-fetched meal data: day → mealType → list of slots
+  Map<String, Map<String, List<Map<String, dynamic>>>>? _apiMenu;
 
   // Meal image keyword map
   static const Map<String, String> _mealImages = {
@@ -189,9 +194,59 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
   final Map<String, Set<String>> _mealAllergies = {};
 
   @override
+  void initState() {
+    super.initState();
+    _loadApiMealSlots();
+  }
+
+  Future<void> _loadApiMealSlots() async {
+    try {
+      final res = await ApiService.fetchMealSlotsPublic();
+      final rawSlots = (res['data'] ?? res['slots'] ?? []) as List? ?? [];
+      final grouped = <String, Map<String, List<Map<String, dynamic>>>>{};
+
+      for (final slot in rawSlots) {
+        final s = slot is Map ? Map<String, dynamic>.from(slot as Map) : <String, dynamic>{};
+        // Normalise day key
+        final rawDay = (s['day'] ?? s['dayOfWeek'] ?? '').toString().toLowerCase().trim();
+        final day = rawDay.isEmpty ? null : rawDay;
+        // Normalise meal type
+        final rawType = (s['mealType'] ?? s['type'] ?? '').toString().toLowerCase().trim();
+        final mealType = rawType.contains('break') ? 'breakfast'
+            : rawType.contains('lunch') ? 'lunch'
+            : rawType.contains('supp') || rawType.contains('dinner') ? 'supper'
+            : rawType;
+
+        if (day == null || mealType.isEmpty) continue;
+
+        grouped.putIfAbsent(day, () => {});
+        grouped[day]!.putIfAbsent(mealType, () => []);
+        grouped[day]![mealType]!.add({
+          'meal': s['name']?.toString() ?? s['title']?.toString() ?? 'Meal',
+          'type': (s['servingType'] ?? s['cookingType'] ?? 'ready-to-eat').toString(),
+          'quantity': s['quantity']?.toString() ?? s['serving']?.toString() ?? '',
+          'image': s['image']?.toString() ?? s['imageUrl']?.toString() ?? '',
+          'price': s['price']?.toString() ?? '',
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _apiMenu = grouped.isNotEmpty ? grouped : null;
+          _isApiLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isApiLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final dayKey = _selectedDay.toLowerCase();
-    final dayMeals = _weeklyMenu[dayKey] ?? {};
+    // Prefer API data; fall back to static sample menu
+    final menu = _apiMenu ?? _weeklyMenu;
+    final dayMeals = menu[dayKey] ?? {};
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -202,7 +257,9 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         elevation: 0,
       ),
       bottomNavigationBar: const MobileBottomNavigationBar(currentIndex: 1),
-      body: Column(
+      body: _isApiLoading
+          ? const Center(child: CircularProgressIndicator(color: Color.fromRGBO(24, 95, 45, 1)))
+          : Column(
         children: [
           // Day-selector pill row
           Container(
@@ -514,7 +571,9 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
         ...meals.map((meal) {
           final mealId = '${mealKey}_${meal['meal']}_${meal['type']}';
           final mealName = meal['meal'] as String? ?? '';
-          final imageUrl = _getMealImage(mealName);
+          // Use API image if present, otherwise keyword-match fallback
+          final apiImage = meal['image']?.toString() ?? '';
+          final imageUrl = apiImage.isNotEmpty ? apiImage : _getMealImage(mealName);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -541,24 +600,26 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                     // Food image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        imageUrl,
-                        width: 60,
-                        height: 60,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: 72,
+                        height: 72,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 60,
-                          height: 60,
+                        placeholder: (_, __) => Container(
+                          width: 72, height: 72,
                           decoration: BoxDecoration(
-                            color: const Color.fromRGBO(24, 95, 45, 1)
-                                .withValues(alpha: 0.1),
+                            color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.08),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
-                            Icons.restaurant,
-                            color: Color.fromRGBO(24, 95, 45, 1),
-                            size: 28,
+                          child: const Icon(Icons.restaurant, color: Color.fromRGBO(24, 95, 45, 1), size: 28),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          width: 72, height: 72,
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(24, 95, 45, 1).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: const Icon(Icons.fastfood_rounded, color: Color.fromRGBO(24, 95, 45, 1), size: 28),
                         ),
                       ),
                     ),
@@ -604,14 +665,15 @@ class _MealCalendarPageState extends ConsumerState<MealCalendarPage> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                meal['quantity'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
+                              if ((meal['quantity'] ?? '').toString().isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(meal['quantity'] ?? '', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                              ],
+                              if ((meal['price'] ?? '').toString().isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text('UGX ${meal['price']}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color.fromRGBO(24, 95, 45, 1))),
+                              ],
                             ],
                           ),
                         ],

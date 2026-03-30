@@ -79,6 +79,7 @@ dependencies:
   geocoding: ^3.0.0
   smooth_page_indicator: ^1.1.0
   google_fonts: ^6.1.0
+  fl_chart: ^0.70.2
 
 dependency_overrides:
   fluttertoast: ^9.0.0

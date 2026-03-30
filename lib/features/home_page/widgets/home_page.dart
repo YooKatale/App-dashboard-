@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../notifiers/product_notifier.dart';
 import 'products.dart';
 import 'hero_banner_slideshow.dart';
@@ -13,8 +15,8 @@ import 'discover_banner.dart';
 import 'payment_banner.dart';
 import 'boda_loan_card.dart';
 import 'side_cards_section.dart';
-import 'promo_banners_section.dart';
 import 'meal_sections.dart';
+import '../providers/homepage_providers.dart';
 import '../../../widgets/ratings_dialog.dart';
 import '../../../services/ratings_service.dart';
 import '../../cart/providers/cart_provider.dart';
@@ -74,6 +76,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final filteredProducts  = ref.watch(productsFilteredByBudgetProvider);
     final popularProducts   = ref.watch(popularProductsProvider);
     final notificationCount = ref.watch(notificationCountProvider);
+    final configAsync       = ref.watch(homepageConfigProvider);
+    final promoBanners      = configAsync.valueOrNull?['promoBanners'] as List? ?? [];
 
     return Column(
       children: [
@@ -140,6 +144,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: popularProducts, title: 'Most Popular'),
+                      if (promoBanners.isNotEmpty)
+                        _SectionPromoBanner(banner: promoBanners[0 % promoBanners.length]),
 
                       // Payment banner
                       const PaymentBanner(),
@@ -153,6 +159,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: filteredProducts, title: 'Latest Products'),
+                      if (promoBanners.isNotEmpty)
+                        _SectionPromoBanner(banner: promoBanners[1 % promoBanners.length]),
 
                       // Boda Loan card
                       const BodaLoanCard(),
@@ -165,6 +173,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: ref.watch(fruitProvider), title: 'Fruits'),
+                      if (promoBanners.isNotEmpty)
+                        _SectionPromoBanner(banner: promoBanners[2 % promoBanners.length]),
 
                       _SectionHeader(
                         icon: Icons.grass_rounded,
@@ -173,6 +183,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: ref.watch(vegetablesProvider), title: 'Vegetables'),
+                      if (promoBanners.isNotEmpty)
+                        _SectionPromoBanner(banner: promoBanners[3 % promoBanners.length]),
 
                       _SectionHeader(
                         icon: Icons.grain_rounded,
@@ -189,6 +201,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: ref.watch(meatProvider), title: 'Meat'),
+                      if (promoBanners.isNotEmpty)
+                        _SectionPromoBanner(banner: promoBanners[4 % promoBanners.length]),
 
                       _SectionHeader(
                         icon: Icons.water_drop_rounded,
@@ -339,7 +353,7 @@ class _TopBar extends StatelessWidget {
           // Search field
           Expanded(
             child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/categories'),
+              onTap: () => Navigator.pushNamed(context, '/search'),
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
@@ -404,6 +418,131 @@ class _TopBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION PROMO BANNER (between product sections)
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionPromoBanner extends StatelessWidget {
+  final dynamic banner;
+  const _SectionPromoBanner({required this.banner});
+
+  Color _parseColor(String hex) {
+    try {
+      return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
+    } catch (_) {
+      return const Color(0xFFe07820);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = banner is Map ? banner as Map : {};
+    final title    = b['title']?.toString() ?? '';
+    final sub      = b['sub']?.toString() ?? '';
+    final cta      = b['cta']?.toString() ?? 'Explore';
+    final link     = b['link']?.toString() ?? '/subscription';
+    final ctaColor = b['ctaColor']?.toString() ?? '#e07820';
+    final imageUrl = b['imageUrl']?.toString();
+
+    if (title.isEmpty && sub.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: GestureDetector(
+        onTap: () async {
+          if (link.startsWith('http')) {
+            final uri = Uri.parse(link);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          } else if (link.isNotEmpty) {
+            Navigator.pushNamed(context, link);
+          }
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0B2416), Color(0xFF1A6B3A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title.isNotEmpty)
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontFamily: 'Raleway',
+                        ),
+                      ),
+                    if (sub.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        sub,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _parseColor(ctaColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        cta,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: 70,
+                    height: 70,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,14 +1,53 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../authentication/providers/auth_provider.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/api_service.dart';
+import '../../wishlist/providers/wishlist_provider.dart';
 
-const _kDark   = Color(0xFF112D1C);
-const _kPrimary = Color(0xFF0B2416);
-const _kAccent = Color(0xFF2ECC71);
-const _kBg     = Color(0xFFF4F6F4);
+// ── Theme colors (matching webapp exactly) ────────────────────────────────────
+const _kPrimary  = Color(0xFF0B2416);
+const _kDark     = Color(0xFF1A5C1A);
+const _kAccent   = Color(0xFF2ECC71);
+const _kOrange   = Color(0xFFE07820);
+const _kRed      = Color(0xFFD32F2F);
 
+// ── Providers for sidebar stats ───────────────────────────────────────────────
+final _drawerOrdersCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  try {
+    final token = await AuthService.getToken();
+    final userData = await AuthService.getUserData();
+    if (token == null) return 0;
+    final userId = userData?['_id']?.toString() ?? userData?['id']?.toString() ?? '';
+    if (userId.isEmpty) return 0;
+    final res = await ApiService.fetchUserOrders(userId, token: token);
+    final orders = res['data'] ?? res['orders'] ?? res;
+    if (orders is List) return orders.length;
+    return 0;
+  } catch (_) {
+    return 0;
+  }
+});
+
+final _drawerWalletProvider = FutureProvider.autoDispose<double>((ref) async {
+  try {
+    final token = await AuthService.getToken();
+    if (token == null) return 0;
+    final res = await ApiService.fetchCashoutStats(token: token);
+    final data = res['data'] ?? res;
+    if (data is Map) {
+      final bal = data['balance'] ?? data['wallet'] ?? data['totalEarnings'] ?? 0;
+      return (bal is num) ? bal.toDouble() : double.tryParse(bal.toString()) ?? 0;
+    }
+    return 0;
+  } catch (_) {
+    return 0;
+  }
+});
+
+// ── Main Drawer widget ────────────────────────────────────────────────────────
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -23,218 +62,124 @@ class AppDrawer extends ConsumerWidget {
     final isLoggedIn    = authState.isLoggedIn;
     final profilePicUrl = authState.profilePicUrl;
 
+    // Wishlist count
+    final wishlistAsync = ref.watch(wishlistProvider);
+    final wishlistCount = wishlistAsync.valueOrNull?.length ?? 0;
+
+    // Orders count
+    final ordersAsync  = isLoggedIn ? ref.watch(_drawerOrdersCountProvider) : const AsyncValue.data(0);
+    final ordersCount  = ordersAsync.valueOrNull ?? 0;
+
+    // Wallet balance
+    final walletAsync  = isLoggedIn ? ref.watch(_drawerWalletProvider) : const AsyncValue.data(0.0);
+    final walletBal    = walletAsync.valueOrNull ?? 0.0;
+    final walletStr    = 'UGX ${walletBal.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+
     return Drawer(
       backgroundColor: Colors.white,
-      width: MediaQuery.of(context).size.width * 0.82,
+      width: MediaQuery.of(context).size.width * 0.84,
       child: Column(
         children: [
           // ── Header ──────────────────────────────────────────────────────────
-          Container(
-            width: double.infinity,
-            color: _kPrimary,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              bottom: 20,
-              left: 20,
-              right: 20,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    // Avatar — shows real profile image if available (like webapp)
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: profilePicUrl == null
-                            ? const LinearGradient(
-                                colors: [Color(0xFF1A5E35), Color(0xFF27AE60)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : null,
-                        border: Border.all(color: _kAccent.withOpacity(0.4), width: 2),
-                      ),
-                      child: ClipOval(
-                        child: profilePicUrl != null
-                            ? CachedNetworkImage(
-                                imageUrl: profilePicUrl,
-                                width: 54,
-                                height: 54,
-                                fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => _DrawerInitialAvatar(initial: initial),
-                              )
-                            : _DrawerInitialAvatar(initial: initial),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isLoggedIn ? (fullName.isNotEmpty ? fullName : 'Welcome') : 'Guest',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (isLoggedIn && email.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              email,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.55),
-                                fontSize: 11,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // YooKatale Pro badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _kAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _kAccent.withOpacity(0.4)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.verified_rounded, color: _kAccent, size: 12),
-                      SizedBox(width: 5),
-                      Text(
-                        'YooKatale Pro',
-                        style: TextStyle(color: _kAccent, fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _DrawerHeader(
+            profilePicUrl: profilePicUrl,
+            fullName: isLoggedIn ? (fullName.isNotEmpty ? fullName : 'Welcome') : 'Guest',
+            email: isLoggedIn ? email : '',
+            initial: initial,
+            onClose: () => Navigator.of(context).pop(),
           ),
 
-          // ── Nav items ────────────────────────────────────────────────────────
+          // ── Stats row ────────────────────────────────────────────────────────
+          if (isLoggedIn)
+            _StatsRow(
+              ordersCount: ordersCount,
+              wishlistCount: wishlistCount,
+              walletStr: walletStr,
+            ),
+
+          // ── Scrollable nav ───────────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
-                  _DrawerSection(title: 'Main', items: [
-                    _DrawerItem(icon: Icons.home_rounded,          label: 'Home',              route: '/home'),
-                    _DrawerItem(icon: Icons.grid_view_rounded,     label: 'Subscribe',         route: '/subscription'),
-                    _DrawerItem(icon: Icons.shopping_cart_rounded, label: 'Cart',              route: '/cart'),
-                    _DrawerItem(icon: Icons.favorite_rounded,      label: 'Wishlist',          route: '/wishlist'),
-                    _DrawerItem(icon: Icons.receipt_long_rounded,  label: 'My Orders',         route: '/orders'),
-                    _DrawerItem(icon: Icons.calendar_month_rounded,label: 'Meal Calendar',     route: '/meal-calendar'),
-                    _DrawerItem(icon: Icons.schedule_rounded,      label: 'Schedule',          route: '/schedule'),
-                  ]),
+                  // "Start Selling Today" CTA
+                  _StartSellingBanner(context: context),
 
-                  _DrawerSection(title: 'Shop', items: [
-                    _DrawerItem(icon: Icons.category_rounded,      label: 'All Categories',    route: '/categories'),
-                    _DrawerItem(icon: Icons.card_giftcard_rounded, label: 'Gift Cards',        route: '/gift-cards'),
-                    _DrawerItem(icon: Icons.stars_rounded,         label: 'Rewards',           route: '/rewards'),
-                    _DrawerItem(icon: Icons.account_balance_wallet_rounded, label: 'Cashout',  route: '/cashout'),
-                  ]),
+                  const SizedBox(height: 4),
 
-                  _DrawerSection(title: 'Account', items: [
-                    _DrawerItem(icon: Icons.person_rounded,        label: 'Profile',           route: '/account'),
-                    _DrawerItem(icon: Icons.edit_rounded,          label: 'Edit Profile',      route: '/edit-profile'),
-                    _DrawerItem(icon: Icons.notifications_rounded, label: 'Notifications',     route: '/notifications'),
-                    _DrawerItem(icon: Icons.settings_rounded,      label: 'Settings',          route: '/settings'),
-                  ]),
+                  // SHOP & EXPLORE section
+                  _SectionLabel(label: 'SHOP & EXPLORE'),
+                  _NavTile(icon: Icons.home_rounded,        label: 'Home',        route: '/home',         context: context),
+                  _NavTile(icon: Icons.grid_view_rounded,   label: 'Categories',  route: '/categories',   context: context),
+                  _NavTile(icon: Icons.storefront_rounded,  label: 'Marketplace', route: '/marketplace',  context: context, badge: 'NEW', badgeColor: _kDark),
+                  _NavTile(icon: Icons.local_offer_rounded, label: 'Promotions',  route: '/rewards',      context: context, badge: 'HOT', badgeColor: _kOrange),
+                  _NavTile(icon: Icons.card_giftcard_rounded, label: 'Gift Cards', route: '/gift-cards',  context: context),
+                  _NavTile(icon: Icons.stars_rounded,       label: 'Rewards',     route: '/rewards',      context: context),
 
-                  _DrawerSection(title: 'Services', items: [
-                    _DrawerItem(icon: Icons.electric_rickshaw_rounded, label: 'Driver Dashboard', route: '/driver-dashboard'),
-                    _DrawerItem(icon: Icons.handshake_rounded,     label: 'Become a Partner', route: '/partner'),
-                    _DrawerItem(icon: Icons.work_rounded,          label: 'Careers',           route: '/careers'),
-                    _DrawerItem(icon: Icons.campaign_rounded,      label: 'Advertise',         route: '/advertise'),
-                  ]),
+                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 2),
 
-                  _DrawerSection(title: 'Info', items: [
-                    _DrawerItem(icon: Icons.help_rounded,          label: 'Help & Support',    route: '/help'),
-                    _DrawerItem(icon: Icons.quiz_rounded,          label: 'FAQs',              route: '/faqs'),
-                    _DrawerItem(icon: Icons.info_rounded,          label: 'About Us',          route: '/about'),
-                    _DrawerItem(icon: Icons.mail_rounded,          label: 'Contact Us',        route: '/contact'),
-                    _DrawerItem(icon: Icons.lock_rounded,          label: 'Privacy Policy',    route: '/privacy'),
-                    _DrawerItem(icon: Icons.description_rounded,   label: 'Terms of Service',  route: '/terms'),
-                  ]),
+                  // MY ACCOUNT section
+                  _SectionLabel(label: 'MY ACCOUNT'),
+                  _NavTile(icon: Icons.receipt_long_rounded,       label: 'My Orders',    route: '/orders',        context: context),
+                  _NavTile(icon: Icons.favorite_rounded,           label: 'Wishlist',     route: '/wishlist',      context: context),
+                  _NavTile(icon: Icons.account_balance_wallet_rounded, label: 'Cashout', route: '/cashout',        context: context),
+                  _NavTile(icon: Icons.person_rounded,             label: 'Profile',      route: '/account',       context: context),
+                  _NavTile(icon: Icons.calendar_month_rounded,     label: 'Meal Calendar',route: '/meal-calendar', context: context),
+                  _NavTile(icon: Icons.grid_view_rounded,          label: 'Subscribe',    route: '/subscription',  context: context),
+                  _NavTile(icon: Icons.notifications_rounded,      label: 'Notifications',route: '/notifications', context: context),
 
-                  const SizedBox(height: 8),
+                  const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 2),
 
-                  // Sign in / Sign out
-                  if (!isLoggedIn)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/signin');
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          decoration: BoxDecoration(
-                            color: _kPrimary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Sign In',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: GestureDetector(
-                        onTap: () async {
-                          Navigator.pop(context);
-                          await AuthService.clearUserData();
-                          ref.read(authStateProvider.notifier).state = const AuthState.loggedOut();
-                          if (context.mounted) {
-                            Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEEEE),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFCCCC)),
-                          ),
-                          child: const Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.logout_rounded, color: Color(0xFFD32F2F), size: 16),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Sign Out',
-                                  style: TextStyle(color: Color(0xFFD32F2F), fontWeight: FontWeight.w700, fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
+                  // COMPANY section
+                  _SectionLabel(label: 'COMPANY'),
+                  _NavTile(icon: Icons.info_rounded,            label: 'About Us',        route: '/about',     context: context),
+                  _NavTile(icon: Icons.mail_rounded,            label: 'Contact Us',      route: '/contact',   context: context),
+                  _NavTile(icon: Icons.work_rounded,            label: 'Careers',         route: '/careers',   context: context),
+                  _NavTile(icon: Icons.campaign_rounded,        label: 'Advertise',       route: '/advertise', context: context),
+                  _NavTile(icon: Icons.handshake_rounded,       label: 'Become a Partner',route: '/partner',   context: context),
+                  _NavTile(icon: Icons.electric_rickshaw_rounded,label: 'Driver Portal',  route: '/driver',    context: context),
+                  _NavTile(icon: Icons.help_rounded,            label: 'Help & FAQs',     route: '/help',      context: context),
+
+                  const SizedBox(height: 12),
+
+                  // ── Call button ──────────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _CallButton(),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // ── Sign in / Sign out ────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: isLoggedIn
+                        ? _LogoutButton(ref: ref, context: context)
+                        : _SignInButton(context: context),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ── Footer ───────────────────────────────────────────────────
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 20),
+                      child: Text(
+                        'YooKatale · fresh produce & groceries\nKampala, Uganda',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFFAAAAAA),
+                          height: 1.5,
                         ),
                       ),
                     ),
-
-                  const SizedBox(height: 24),
+                  ),
                 ],
               ),
             ),
@@ -245,95 +190,319 @@ class AppDrawer extends ConsumerWidget {
   }
 }
 
-// ── Section with title ─────────────────────────────────────────────────────────
-class _DrawerSection extends StatelessWidget {
-  final String title;
-  final List<_DrawerItem> items;
-  const _DrawerSection({required this.title, required this.items});
+// ── Header ────────────────────────────────────────────────────────────────────
+class _DrawerHeader extends StatelessWidget {
+  final String? profilePicUrl;
+  final String fullName;
+  final String email;
+  final String initial;
+  final VoidCallback onClose;
+
+  const _DrawerHeader({
+    required this.profilePicUrl,
+    required this.fullName,
+    required this.email,
+    required this.initial,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-          child: Text(
-            title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFAAAAAA),
-              letterSpacing: 0.8,
+    return Container(
+      width: double.infinity,
+      color: _kPrimary,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        bottom: 16,
+        left: 16,
+        right: 12,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _kAccent.withOpacity(0.5), width: 2),
+            ),
+            child: ClipOval(
+              child: profilePicUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: profilePicUrl!,
+                      width: 52,
+                      height: 52,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _InitialAvatar(initial: initial),
+                    )
+                  : _InitialAvatar(initial: initial),
             ),
           ),
-        ),
-        ...items.map((item) => _DrawerNavTile(item: item)),
-        const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFEEEEEE)),
-      ],
+          const SizedBox(width: 12),
+          // Name & email
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fullName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.55),
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Close button
+          IconButton(
+            onPressed: onClose,
+            icon: const Icon(Icons.close, color: Colors.white, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ── Individual drawer tile ─────────────────────────────────────────────────────
-class _DrawerItem {
-  final IconData icon;
-  final String label;
-  final String route;
-  const _DrawerItem({required this.icon, required this.label, required this.route});
-}
+// ── Stats row ─────────────────────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  final int ordersCount;
+  final int wishlistCount;
+  final String walletStr;
 
-class _DrawerNavTile extends StatelessWidget {
-  final _DrawerItem item;
-  const _DrawerNavTile({required this.item});
+  const _StatsRow({
+    required this.ordersCount,
+    required this.wishlistCount,
+    required this.walletStr,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    final isActive = currentRoute == item.route;
+    return Container(
+      color: const Color(0xFFF7F9F7),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Row(
+        children: [
+          _StatCell(value: ordersCount.toString(), label: 'Orders'),
+          _StatDivider(),
+          _StatCell(value: wishlistCount.toString(), label: 'Wishlist'),
+          _StatDivider(),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  walletStr,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A5C1A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Wallet',
+                  style: TextStyle(fontSize: 10, color: Color(0xFF888888)),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
+class _StatCell extends StatelessWidget {
+  final String value;
+  final String label;
+  const _StatCell({required this.value, required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A5C1A))),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF888888))),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 30, color: const Color(0xFFDDDDDD));
+  }
+}
+
+// ── Start Selling CTA ─────────────────────────────────────────────────────────
+class _StartSellingBanner extends StatelessWidget {
+  final BuildContext context;
+  const _StartSellingBanner({required this.context});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pushNamed('/partner');
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE07820), Color(0xFFFF9944)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.storefront_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Start Selling Today',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFAAAAAA),
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Nav tile ──────────────────────────────────────────────────────────────────
+class _NavTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String route;
+  final BuildContext context;
+  final String? badge;
+  final Color? badgeColor;
+
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.route,
+    required this.context,
+    this.badge,
+    this.badgeColor,
+  });
+
+  @override
+  Widget build(BuildContext ctx) {
+    final currentRoute = ModalRoute.of(ctx)?.settings.name;
+    final isActive = currentRoute == route;
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context);
-        if (currentRoute != item.route) {
-          Navigator.pushNamed(context, item.route);
+        Navigator.of(ctx).pop();
+        if (currentRoute != route) {
+          Navigator.of(ctx).pushNamed(route);
         }
       },
       behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFFE8F5EE) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
         ),
         child: Row(
           children: [
-            Icon(
-              item.icon,
-              size: 20,
-              color: isActive ? _kPrimary : const Color(0xFF555555),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? _kPrimary : const Color(0xFF333333),
-              ),
-            ),
-            if (isActive) ...[
-              const Spacer(),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: _kAccent,
-                  shape: BoxShape.circle,
+            Icon(icon, size: 19,
+                color: isActive ? _kDark : const Color(0xFF555555)),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? _kDark : const Color(0xFF333333),
                 ),
               ),
-            ],
+            ),
+            if (badge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor ?? _kDark,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  badge!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            if (isActive && badge == null)
+              Container(
+                width: 4, height: 4,
+                decoration: const BoxDecoration(color: _kAccent, shape: BoxShape.circle),
+              ),
           ],
         ),
       ),
@@ -341,13 +510,127 @@ class _DrawerNavTile extends StatelessWidget {
   }
 }
 
-class _DrawerInitialAvatar extends StatelessWidget {
+// ── Call button ───────────────────────────────────────────────────────────────
+class _CallButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse('tel:+256786118137');
+        if (await canLaunchUrl(uri)) launchUrl(uri);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F5EE),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _kAccent.withOpacity(0.4)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.phone_rounded, color: Color(0xFF1A5C1A), size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Call +256 786 118137',
+              style: TextStyle(
+                color: Color(0xFF1A5C1A),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Logout button ─────────────────────────────────────────────────────────────
+class _LogoutButton extends StatelessWidget {
+  final WidgetRef ref;
+  final BuildContext context;
+  const _LogoutButton({required this.ref, required this.context});
+
+  @override
+  Widget build(BuildContext ctx) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.of(ctx).pop();
+        await AuthService.clearUserData();
+        ref.read(authStateProvider.notifier).state = const AuthState.loggedOut();
+        if (ctx.mounted) {
+          Navigator.of(ctx).pushNamedAndRemoveUntil('/', (_) => false);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _kRed.withOpacity(0.4)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.logout_rounded, color: _kRed, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Logout',
+              style: TextStyle(
+                color: _kRed,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sign in button ────────────────────────────────────────────────────────────
+class _SignInButton extends StatelessWidget {
+  final BuildContext context;
+  const _SignInButton({required this.context});
+
+  @override
+  Widget build(BuildContext ctx) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(ctx).pop();
+        Navigator.of(ctx).pushNamed('/signin');
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: _kPrimary,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Center(
+          child: Text(
+            'Sign In',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Initial avatar ────────────────────────────────────────────────────────────
+class _InitialAvatar extends StatelessWidget {
   final String initial;
-  const _DrawerInitialAvatar({required this.initial});
+  const _InitialAvatar({required this.initial});
   @override
   Widget build(BuildContext context) => Container(
-    width: 54,
-    height: 54,
+    width: 52,
+    height: 52,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
         colors: [Color(0xFF1A5E35), Color(0xFF27AE60)],
@@ -356,7 +639,9 @@ class _DrawerInitialAvatar extends StatelessWidget {
       ),
     ),
     child: Center(
-      child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+      child: Text(initial,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
     ),
   );
 }

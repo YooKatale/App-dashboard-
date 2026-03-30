@@ -26,6 +26,12 @@ const List<Map<String, dynamic>> _occasions = [
   {'name': 'Congratulations', 'emoji': '🏆'},
   {'name': 'Get Well Soon', 'emoji': '💊'},
   {'name': 'Just Because', 'emoji': '✨'},
+  {'name': 'Housewarming', 'emoji': '🏠'},
+  {'name': "Women's Day", 'emoji': '👩'},
+  {'name': 'Independence Day', 'emoji': '🇺🇬'},
+  {'name': 'Eid', 'emoji': '🌙'},
+  {'name': "Teachers' Day", 'emoji': '📚'},
+  {'name': 'Friendship Day', 'emoji': '🤝'},
 ];
 
 const List<int> _presetAmounts = [10000, 20000, 50000, 100000, 200000, 500000];

@@ -70,12 +70,6 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Check if online first
-      final isOnline = await ErrorHandlerService.isOnline();
-      if (!isOnline) {
-        throw Exception('No internet connection');
-      }
-
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {

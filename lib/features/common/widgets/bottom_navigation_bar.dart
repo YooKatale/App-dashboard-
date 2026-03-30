@@ -4,11 +4,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../authentication/providers/auth_provider.dart';
 
-// Exact colors from the HTML spec
-const _kDark   = Color(0xFF112D1C); // var(--g-dark) - active color
-const _kAccent = Color(0xFF2ECC71); // var(--g-bright)
-const _kInactive = Color(0xFFAAAAAA); // #aaa
-const _kRed    = Color(0xFFE53935); // var(--red)
+// Exact colors from the webapp MobileBottomNav.jsx
+const _kDark     = Color(0xFF1A5C1A); // ACTIVE_COLOR "#1a5c1a"
+const _kAccent   = Color(0xFF2ECC71); // var(--g-bright)
+const _kInactive = Color(0xFF8A9E87); // INACTIVE_COLOR "#8a9e87"
+const _kBadge    = Color(0xFFE07820); // BADGE_BG "#e07820" (orange, same as webapp)
 
 // ── Wishlist count provider (updated by WishlistPage/service)
 final wishlistCountProvider = StateProvider<int>((ref) => 0);
@@ -91,7 +91,7 @@ class _MobileBottomNavigationBarState
               active: _idx == 2,
               onTap: _tap,
               badge: cartCount,
-              badgeColor: _kRed,
+              badgeColor: _kBadge,
             ),
             // ── Wishlist ──
             _NavItem(
@@ -102,7 +102,7 @@ class _MobileBottomNavigationBarState
               active: _idx == 3,
               onTap: _tap,
               badge: wishlistCount,
-              badgeColor: _kRed,
+              badgeColor: _kBadge,
             ),
             // ── Profile ──
             _ProfileItem(
@@ -139,7 +139,7 @@ class _NavItem extends StatelessWidget {
     required this.active,
     required this.onTap,
     this.badge = 0,
-    this.badgeColor = _kRed,
+    this.badgeColor = _kBadge,
   });
 
   @override
@@ -236,7 +236,7 @@ class _ProfileItem extends StatelessWidget {
                         end: Alignment.bottomRight,
                       )
                     : null,
-                border: active ? Border.all(color: _kAccent, width: 2) : null,
+                border: active ? Border.all(color: _kDark, width: 2) : null,
               ),
               child: ClipOval(
                 child: profilePicUrl != null

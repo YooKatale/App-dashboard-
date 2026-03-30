@@ -213,11 +213,7 @@ class AuthBackend {
       if (kDebugMode) print('Google Sign-In: Got account - ${googleUser.email}');
 
       // Get authentication
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw TimeoutException('Failed to get Google auth. Please try again.'),
-          );
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       if (kDebugMode) print('Google Sign-In: Got auth - idToken: ${googleAuth.idToken != null}');
 

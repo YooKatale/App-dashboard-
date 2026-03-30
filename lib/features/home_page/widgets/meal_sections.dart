@@ -1,120 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../../../services/api_service.dart';
 
 const _kPrimary = Color(0xFF0B2416);
 const _kAccent  = Color(0xFF2ECC71);
 
 final mealsProvider = StateProvider<String>((ref) => 'breakfast');
 
-class MealSectionsWidget extends ConsumerStatefulWidget {
+final _mealSlotsProvider = FutureProvider<Map<String, List<Map<String, dynamic>>>>((ref) async {
+  final res = await ApiService.fetchMealSlotsPublic();
+  final slots = (res['data'] ?? res['slots'] ?? res) as List? ?? [];
+  final Map<String, List<Map<String, dynamic>>> grouped = {
+    'breakfast': [],
+    'lunch': [],
+    'supper': [],
+  };
+  for (final slot in slots) {
+    final s = slot is Map ? Map<String, dynamic>.from(slot as Map) : <String, dynamic>{};
+    final type = (s['mealType'] ?? s['type'] ?? '').toString().toLowerCase();
+    if (grouped.containsKey(type)) {
+      grouped[type]!.add(s);
+    } else if (type.contains('break')) {
+      grouped['breakfast']!.add(s);
+    } else if (type.contains('lunch') || type.contains('dinner')) {
+      grouped['lunch']!.add(s);
+    } else if (type.contains('supp') || type.contains('dinner')) {
+      grouped['supper']!.add(s);
+    }
+  }
+  return grouped;
+});
+
+class MealSectionsWidget extends ConsumerWidget {
   const MealSectionsWidget({super.key});
 
   @override
-  ConsumerState<MealSectionsWidget> createState() => _MealSectionsState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mealSlotsAsync = ref.watch(_mealSlotsProvider);
 
-class _MealSectionsState extends ConsumerState<MealSectionsWidget> {
-  final ScrollController _scrollController = ScrollController();
+    return mealSlotsAsync.when(
+      loading: () => const SizedBox(
+        height: 200,
+        child: Center(child: CircularProgressIndicator(color: _kPrimary)),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (grouped) {
+        final breakfast = grouped['breakfast']!;
+        final lunch = grouped['lunch']!;
+        final supper = grouped['supper']!;
 
-  // Dummy meal data - should come from backend in real app
-  final List<Map<String, dynamic>> breakfast = [
-    {'id': '1', 'name': 'Eggs & Bacon', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Breakfast1'},
-    {'id': '2', 'name': 'Pancakes', 'type': 'Ready-to-cook', 'image': 'https://via.placeholder.com/150?text=Breakfast2'},
-    {'id': '3', 'name': 'Cereal', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Breakfast3'},
-  ];
+        if (breakfast.isEmpty && lunch.isEmpty && supper.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-  final List<Map<String, dynamic>> lunch = [
-    {'id': '4', 'name': 'Grilled Chicken', 'type': 'Ready-to-cook', 'image': 'https://via.placeholder.com/150?text=Lunch1'},
-    {'id': '5', 'name': 'Pasta Carbonara', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Lunch2'},
-    {'id': '6', 'name': 'Fish & Chips', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Lunch3'},
-  ];
-
-  final List<Map<String, dynamic>> supper = [
-    {'id': '7', 'name': 'Beef Stew', 'type': 'Ready-to-cook', 'image': 'https://via.placeholder.com/150?text=Supper1'},
-    {'id': '8', 'name': 'Rice & Beans', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Supper2'},
-    {'id': '9', 'name': 'Grilled Vegetables', 'type': 'Ready-to-eat', 'image': 'https://via.placeholder.com/150?text=Supper3'},
-  ];
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Budget level selector
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Budget Level:',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
+        return Column(
+          children: [
+            const SizedBox(height: 4),
+            if (breakfast.isNotEmpty)
+              _MealSection(
+                title: 'Breakfast',
+                icon: Icons.sunny_snowing,
+                color: Color(0xFFe07820),
+                meals: breakfast,
               ),
-              Row(
-                children: ['Low', 'Middle', 'High']
-                    .asMap()
-                    .entries
-                    .map((e) => Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: e.key == 1 ? _kPrimary : Colors.transparent,
-                              border: Border.all(color: _kPrimary),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              e.value,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: e.key == 1 ? Colors.white : _kPrimary,
-                              ),
-                            ),
-                          ),
-                        ))
-                    .toList(),
+            if (lunch.isNotEmpty)
+              _MealSection(
+                title: 'Lunch',
+                icon: Icons.restaurant_menu_rounded,
+                color: _kPrimary,
+                meals: lunch,
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-
-        // Breakfast section
-        _MealSection(
-          title: 'Breakfast',
-          icon: Icons.sunny_snowing,
-          color: Color(0xFFe07820),
-          meals: breakfast,
-        ),
-
-        // Lunch section
-        _MealSection(
-          title: 'Lunch',
-          icon: Icons.restaurant_menu_rounded,
-          color: _kPrimary,
-          meals: lunch,
-        ),
-
-        // Supper section
-        _MealSection(
-          title: 'Supper',
-          icon: Icons.nights_stay_rounded,
-          color: Color(0xFF7c3aed),
-          meals: supper,
-        ),
-      ],
+            if (supper.isNotEmpty)
+              _MealSection(
+                title: 'Supper',
+                icon: Icons.nights_stay_rounded,
+                color: Color(0xFF7c3aed),
+                meals: supper,
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -208,6 +174,10 @@ class _MealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final name = meal['name']?.toString() ?? meal['title']?.toString() ?? 'Meal';
+    final type = meal['mealType']?.toString() ?? meal['type']?.toString() ?? '';
+    final image = meal['image']?.toString() ?? meal['imageUrl']?.toString() ?? '';
+
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/subscription'),
       child: ClipRRect(
@@ -230,18 +200,23 @@ class _MealCard extends StatelessWidget {
             children: [
               // Image
               Expanded(
-                child: CachedNetworkImage(
-                  imageUrl: meal['image'] ?? '',
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.fastfood, color: Colors.grey),
-                  ),
-                  errorWidget: (_, __, ___) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.fastfood, color: Colors.grey),
-                  ),
-                ),
+                child: image.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: image,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.fastfood, color: Colors.grey),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.fastfood, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.fastfood, color: Colors.grey),
+                      ),
               ),
 
               // Info
@@ -251,7 +226,7 @@ class _MealCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      meal['name'] ?? 'Meal',
+                      name,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -260,15 +235,17 @@ class _MealCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      meal['type'] ?? 'Type',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
+                    if (type.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        type,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

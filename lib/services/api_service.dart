@@ -491,12 +491,13 @@ class ApiService {
     }
   }
 
+  // Subscriptions — matches webapp: GET /subscription/me (requires auth token)
   static Future<Map<String, dynamic>> fetchUserSubscriptions(String userId, {String? token}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/subscriptions/user/$userId'),
+        Uri.parse('$baseUrl/subscription/me'),
         headers: getHeaders(token: token),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -549,13 +550,13 @@ class ApiService {
     }
   }
 
-  // Orders
+  // Orders — matches webapp: GET /orders/me (requires auth token)
   static Future<Map<String, dynamic>> fetchUserOrders(String userId, {String? token}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/orders/user/$userId'),
+        Uri.parse('$baseUrl/orders/me'),
         headers: getHeaders(token: token),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -668,6 +669,31 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error updating profile: $e');
+    }
+  }
+
+  // Upload user avatar (profile picture)
+  static Future<Map<String, dynamic>> uploadUserAvatar({
+    required String userId,
+    required String filePath,
+    String? token,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/users/$userId/avatar'),
+      );
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(await http.MultipartFile.fromPath('avatar', filePath));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Avatar upload failed');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
     }
   }
 
@@ -913,6 +939,25 @@ class ApiService {
         return json.decode(response.body);
       } else {
         throw Exception('Failed to load filtered products: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // Search products — matches webapp: GET /products/search/:query
+  static Future<Map<String, dynamic>> searchProducts(String query) async {
+    try {
+      final encodedQuery = Uri.encodeComponent(query.trim());
+      final response = await http.get(
+        Uri.parse('$baseUrl/products/search/$encodedQuery'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Search failed: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception(ErrorHandlerService.getErrorMessage(e));
@@ -1465,6 +1510,60 @@ class ApiService {
       return {'data': null};
     } catch (e) {
       return {'data': null};
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchReferralRewards({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cashout/referral-rewards'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': null};
+    } catch (e) {
+      return {'data': null};
+    }
+  }
+
+  // ── Cashout history ──────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> fetchCashoutHistory({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/cashout/history'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': []};
+    } catch (e) {
+      return {'data': []};
+    }
+  }
+
+  // ── User profile ──────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> fetchUserProfile({required String token}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/profile'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': null};
+    } catch (e) {
+      return {'data': null};
+    }
+  }
+
+  // ── Meal Calendar ────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> fetchMealSlotsPublic({Map<String, String>? params}) async {
+    try {
+      final uri = Uri.parse('$baseUrl/meal-calendar/slots/public').replace(queryParameters: params);
+      final response = await http.get(uri, headers: getHeaders()).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'data': []};
+    } catch (e) {
+      return {'data': []};
     }
   }
 }

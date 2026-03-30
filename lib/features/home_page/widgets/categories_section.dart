@@ -11,13 +11,44 @@ const _kAccent  = Color(0xFF2ECC71);
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 final categoriesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  // Try direct /categories endpoint first
   try {
     final data = await ApiService.fetchCategories();
-    final list = data['categories'] as List? ?? data['data'] as List? ?? [];
-    return list.cast<Map<String, dynamic>>();
-  } catch (_) {
-    return [];
-  }
+    final list = (data['categories'] as List? ?? data['data'] as List? ?? []).cast<Map<String, dynamic>>();
+    // Only use if at least one category has an image
+    if (list.any((c) => (c['imageUrl']?.toString() ?? '').isNotEmpty)) {
+      return list;
+    }
+  } catch (_) {}
+
+  // Fallback: derive categories with real product images from /products
+  try {
+    final response = await ApiService.fetchProducts();
+    if (response['status'] == 'Success' && response['data'] != null) {
+      final products = response['data'] is List
+          ? response['data'] as List
+          : [response['data']];
+      final categoryMap = <String, Map<String, dynamic>>{};
+      for (final product in products) {
+        final category = product['category']?.toString() ?? '';
+        if (category.isEmpty || categoryMap.containsKey(category)) continue;
+        final capitalized =
+            category[0].toUpperCase() + category.substring(1).toLowerCase();
+        final images = product['images'];
+        final imageUrl = images is List && (images as List).isNotEmpty
+            ? images[0].toString()
+            : product['image']?.toString() ?? '';
+        categoryMap[category] = {
+          'name': capitalized,
+          'imageUrl': imageUrl,
+          'slug': category,
+        };
+      }
+      if (categoryMap.isNotEmpty) return categoryMap.values.toList();
+    }
+  } catch (_) {}
+
+  return [];
 });
 
 // ── 15 fallback categories matching webapp CategoriesJson exactly ─────────────
@@ -78,7 +109,7 @@ class _CategoriesSectionState extends ConsumerState<CategoriesSection> {
 
   void _onTapBackend(BuildContext context, Map<String, dynamic> cat) {
     final name = cat['name']?.toString() ?? '';
-    final slug = cat['slug']?.toString() ?? cat['category']?.toString() ?? name.toLowerCase();
+    final slug = cat['slug']?.toString() ?? cat['category']?.toString() ?? name.toLowerCase().replaceAll(' ', '_');
     Navigator.push(
       context,
       MaterialPageRoute(

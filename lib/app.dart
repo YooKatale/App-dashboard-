@@ -43,6 +43,8 @@ import 'features/notifications/widgets/notifications_page.dart';
 import 'features/cashout/widgets/cashout_page.dart';
 import 'features/rewards/widgets/rewards_page.dart';
 import 'features/driver/widgets/driver_dashboard_page.dart';
+import 'features/driver/widgets/driver_login_page.dart';
+import 'features/driver/widgets/driver_app_page.dart';
 import 'features/partner/widgets/partner_page.dart';
 import 'features/careers/widgets/careers_page.dart';
 import 'features/gift_cards/widgets/gift_cards_page.dart';
@@ -50,6 +52,7 @@ import 'features/orders/widgets/orders_page.dart';
 import 'features/info/widgets/about_page.dart';
 import 'features/info/widgets/contact_page.dart';
 import 'features/info/widgets/advertise_page.dart';
+import 'features/search/widgets/search_page.dart';
 import 'services/auth_service.dart';
 import 'services/ratings_service.dart';
 import 'services/push_notification_service.dart';
@@ -225,6 +228,9 @@ class _MyAppState extends ConsumerState<MyApp> {
           }
           return MobileSignInPage();
         },
+        '/driver': (context) => const DriverLoginPage(),
+        '/driver-app': (context) => const DriverAppPage(),
+        '/marketplace': (context) => const MobileCategoriesPage(),
         '/partner': (context) => const PartnerPage(),
         '/careers': (context) => const CareersPage(),
         '/gift-cards': (context) => const GiftCardsPage(),
@@ -232,6 +238,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         '/about': (context) => const AboutPage(),
         '/contact': (context) => const ContactPage(),
         '/advertise': (context) => const AdvertisePage(),
+        '/search': (context) => const SearchPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/payment/') == true) {

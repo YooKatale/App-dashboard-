@@ -30,44 +30,20 @@ class HomepageBannersSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => Column(
-        children: [_buildMiniCardsRow(context, []), _buildDownloadCard(context)],
-      ),
-      error: (_, __) => Column(
-        children: [_buildMiniCardsRow(context, []), _buildDownloadCard(context)],
-      ),
+      loading: () => _buildDownloadCard(context),
+      error: (_, __) => _buildDownloadCard(context),
     );
   }
 
   Widget _buildMiniCardsRow(BuildContext context, List<dynamic> sideCards) {
-    final hasAdmin = sideCards.length >= 2;
+    if (sideCards.length < 2) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
       child: Row(
         children: [
-          Expanded(
-            child: hasAdmin
-                ? _AdminSideCard(card: sideCards[0] as Map)
-                : _MiniCard(
-                    icon: Icons.redeem_rounded,
-                    tag: 'OCCASION',
-                    title: "Mother's Day\nOffers",
-                    gradient: [const Color(0xFF5B1A4A), const Color(0xFF7D2E5E)],
-                    route: '/subscription',
-                  ),
-          ),
+          Expanded(child: _AdminSideCard(card: sideCards[0] as Map)),
           const SizedBox(width: 10),
-          Expanded(
-            child: hasAdmin
-                ? _AdminSideCard(card: sideCards[1] as Map)
-                : _MiniCard(
-                    icon: Icons.delivery_dining_rounded,
-                    tag: 'FREE DELIVERY',
-                    title: 'Free delivery\nwithin 3km',
-                    gradient: [const Color(0xFF1A2F5B), const Color(0xFF2A4A8E)],
-                    route: '/subscription',
-                  ),
-          ),
+          Expanded(child: _AdminSideCard(card: sideCards[1] as Map)),
         ],
       ),
     );

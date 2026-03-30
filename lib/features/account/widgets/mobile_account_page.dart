@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../services/auth_service.dart';
+import '../../../services/api_service.dart';
 import '../../authentication/widgets/mobile_sign_in.dart';
 import '../../authentication/providers/auth_provider.dart';
 import 'tabs/mobile_profile_tabs.dart';
@@ -56,9 +57,15 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
           );
         }
         
+        // Extract profile pic from all possible keys (matching webapp)
+        final authStateNow = ref.read(authStateProvider);
         setState(() {
           _userData = userData;
-          _profilePicUrl = userData['profilePic']?.toString() ?? userData['photoUrl']?.toString();
+          _profilePicUrl = authStateNow.profilePicUrl
+              ?? userData['avatar']?.toString()
+              ?? userData['profilePic']?.toString()
+              ?? userData['photoUrl']?.toString()
+              ?? userData['profileImage']?.toString();
           _isLoading = false;
         });
         return;
@@ -141,40 +148,57 @@ class _MobileAccountPageState extends ConsumerState<MobileAccountPage> {
   }
 
   Future<void> _uploadProfilePicture(File imageFile) async {
-    setState(() {
-      _isUploadingPic = true;
-    });
-
+    setState(() => _isUploadingPic = true);
     try {
-      // TODO: Implement actual upload to Firebase Storage or your backend
-      // For now, just set a local state
-      // You would typically:
-      // 1. Upload to Firebase Storage
-      // 2. Get download URL
-      // 3. Update user profile in Firestore/Database
-      // 4. Update local state
+      final token  = await AuthService.getToken();
+      final userData = await AuthService.getUserData();
+      final userId = userData?['_id']?.toString() ?? userData?['id']?.toString();
+      if (token == null || userId == null) throw Exception('Not authenticated');
 
-      // Simulate upload delay
-      await Future.delayed(const Duration(seconds: 1));
+      final res = await ApiService.uploadUserAvatar(
+        userId: userId,
+        filePath: imageFile.path,
+        token: token,
+      );
+      final newUrl = res['data']?['avatar']?.toString()
+          ?? res['user']?['avatar']?.toString()
+          ?? res['avatar']?.toString();
 
       if (mounted) {
-        setState(() {
-          _isUploadingPic = false;
-          // _profilePicUrl = downloadUrl; // Set after actual upload
-        });
-
+        // Update local state
+        if (newUrl != null) {
+          setState(() => _profilePicUrl = newUrl);
+          // Persist to local storage
+          final updatedData = {...?_userData, 'avatar': newUrl};
+          await AuthService.saveUserData(updatedData);
+          // Update auth state
+          final authState = ref.read(authStateProvider);
+          ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
+            userId: authState.userId,
+            email: authState.email,
+            firstName: authState.firstName,
+            lastName: authState.lastName,
+            profilePicUrl: newUrl,
+          );
+        }
+        setState(() => _isUploadingPic = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile picture updated')),
+          const SnackBar(
+            content: Text('Profile picture updated!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isUploadingPic = false;
-        });
-
+        setState(() => _isUploadingPic = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading image: $e')),
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }

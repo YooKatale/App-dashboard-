@@ -157,7 +157,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
       }
 
       final total = CartService.calculateTotal(cartItems);
-      final deliveryFee = 1000.0; // Delivery fee like webapp
+      final deliveryFee = total >= 50000 ? 0.0 : 3500.0;
       final orderTotal = total + deliveryFee;
 
       // userData already fetched above
@@ -513,7 +513,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                     future: _getTotal(),
                     builder: (context, snapshot) {
                       final total = snapshot.data ?? 0.0;
-                      final deliveryFee = 1000.0;
+                      final deliveryFee = total >= 50000 ? 0.0 : 3500.0;
                       final orderTotal = total + deliveryFee;
                       return Column(
                         children: [
