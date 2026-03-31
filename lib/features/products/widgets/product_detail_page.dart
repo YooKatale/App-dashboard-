@@ -8,6 +8,8 @@ import '../../../services/error_handler_service.dart';
 import '../../common/widgets/bottom_navigation_bar.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../cart/services/cart_service.dart';
+import '../../wishlist/providers/wishlist_provider.dart';
+import '../../../services/wishlist_service.dart';
 import 'product_ratings_widget.dart';
 
 class ProductDetailPage extends ConsumerStatefulWidget {
@@ -28,11 +30,47 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
   Map<String, dynamic>? _productDetails;
   bool _isLoading = true;
   int _quantity = 1;
+  bool _inWishlist = false;
 
   @override
   void initState() {
     super.initState();
     _loadProductDetails();
+    _checkWishlist();
+  }
+
+  Future<void> _checkWishlist() async {
+    final pid = _effectivePid();
+    if (pid.isEmpty) return;
+    final inList = await WishlistService.isInWishlist(pid);
+    if (mounted) setState(() => _inWishlist = inList);
+  }
+
+  String _effectivePid() => widget.productId.isNotEmpty
+      ? widget.productId
+      : widget.product.actualId ?? widget.product.id.toString();
+
+  Future<void> _toggleWishlist() async {
+    final pid = _effectivePid();
+    if (pid.isEmpty) return;
+    final product = {
+      'name': _productDetails?['name']?.toString() ?? widget.product.title,
+      'price': _productDetails?['price']?.toString() ?? widget.product.price,
+      'image': _productDetails?['images'] is List && (_productDetails!['images'] as List).isNotEmpty
+          ? (_productDetails!['images'] as List).first.toString()
+          : widget.product.image,
+    };
+    final nowInList = await WishlistService.toggleWishlist(pid, product);
+    ref.read(wishlistRefreshProvider.notifier).state++;
+    if (mounted) {
+      setState(() => _inWishlist = nowInList);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(nowInList ? 'Added to wishlist' : 'Removed from wishlist'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
+      ));
+    }
   }
 
   Future<void> _loadProductDetails() async {
@@ -265,6 +303,16 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
             ),
             backgroundColor: const Color.fromRGBO(24, 95, 45, 1),
             foregroundColor: Colors.white,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  _inWishlist ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: _inWishlist ? Colors.red[300] : Colors.white,
+                ),
+                onPressed: _toggleWishlist,
+                tooltip: _inWishlist ? 'Remove from wishlist' : 'Add to wishlist',
+              ),
+            ],
           ),
           
           // Product Details
