@@ -337,10 +337,12 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
             photoUrl: user.photoURL ?? '',
           );
 
-          if (backendResponse['token'] != null) {
-            await AuthService.saveToken(backendResponse['token'] as String);
+          final savedToken = backendResponse['token'] as String?;
+          if (savedToken != null) {
+            await AuthService.saveToken(savedToken);
           }
 
+          // Build initial userData from backend response
           Map<String, dynamic> userData;
           if (backendResponse['_id'] != null) {
             userData = {
@@ -350,7 +352,8 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
               'firstname': backendResponse['firstname'] ?? firstname,
               'lastname': backendResponse['lastname'] ?? lastname,
               'phone': backendResponse['phone'] ?? '',
-              'avatar': backendResponse['avatar'] ?? user.photoURL,
+              // Prefer backend avatar over Google photoURL
+              'avatar': backendResponse['avatar'],
             };
           } else {
             userData = {
@@ -360,10 +363,48 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
               'firstname': firstname,
               'lastname': lastname,
               'phone': user.phoneNumber ?? '',
-              'photoUrl': user.photoURL ?? '',
             };
           }
+
+          // Fetch full user profile from /auth/me to get latest avatar & data
+          if (savedToken != null) {
+            try {
+              final meResponse = await http.get(
+                Uri.parse('${AuthService.baseUrl}/auth/me'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'Authorization': 'Bearer $savedToken',
+                },
+              ).timeout(const Duration(seconds: 15));
+
+              if (meResponse.statusCode == 200) {
+                final meData = json.decode(meResponse.body);
+                Map<String, dynamic>? fullUser;
+                if (meData is Map<String, dynamic>) {
+                  fullUser = meData['user'] as Map<String, dynamic>? ?? meData;
+                }
+                if (fullUser != null && fullUser.isNotEmpty) {
+                  // Merge: prefer /auth/me data, keep token
+                  userData = {
+                    ...userData,
+                    ...fullUser,
+                    if (savedToken.isNotEmpty) 'token': savedToken,
+                  };
+                }
+              }
+            } catch (meErr) {
+              if (kDebugMode) print('auth/me fetch failed: $meErr');
+            }
+          }
+
           await AuthService.saveUserData(userData);
+          // Also store avatar URL separately for quick access
+          final avatarUrl = extractProfilePicUrl(userData);
+          if (avatarUrl != null) {
+            final prefs = await _getPrefs();
+            await prefs.setString('profile_pic_url', avatarUrl);
+          }
 
           final userId =
               userData['_id']?.toString() ?? userData['id']?.toString();
@@ -373,7 +414,7 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
               email: userData['email']?.toString(),
               firstName: userData['firstname']?.toString(),
               lastName: userData['lastname']?.toString(),
-              profilePicUrl: extractProfilePicUrl(userData),
+              profilePicUrl: avatarUrl,
             );
           }
           _initNotifications();
@@ -382,39 +423,49 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Successfully signed in with Google'),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
             ));
             await _navigateAfterAuth();
           }
         } catch (backendError) {
+          final errStr = backendError.toString();
+          // Network error check
+          final isNetworkErr = errStr.contains('SocketException') ||
+              errStr.contains('Connection') ||
+              errStr.contains('timeout') ||
+              errStr.contains('network');
+          final userMsg = isNetworkErr
+              ? 'Check your internet connection and try again'
+              : 'Signed in (backend sync delayed): ${errStr.replaceAll('Exception: ', '')}';
+
           // Fallback: save Firebase data
-          final userData = {
+          final fallbackData = {
             'id': user.uid,
             '_id': user.uid,
             'email': user.email ?? '',
             'firstname': firstname,
             'lastname': lastname,
             'phone': user.phoneNumber ?? '',
-            'photoUrl': user.photoURL ?? '',
           };
           await AuthService.saveToken(idToken);
-          await AuthService.saveUserData(userData);
+          await AuthService.saveUserData(fallbackData);
 
-          final userId =
-              userData['_id']?.toString() ?? userData['id']?.toString();
+          final userId = fallbackData['_id'];
           if (userId != null) {
             ref.read(authStateProvider.notifier).state = AuthState.loggedIn(
               userId: userId,
-              email: userData['email']?.toString(),
-              firstName: userData['firstname']?.toString(),
-              lastName: userData['lastname']?.toString(),
-              profilePicUrl: extractProfilePicUrl(userData),
+              email: fallbackData['email']?.toString(),
+              firstName: fallbackData['firstname']?.toString(),
+              lastName: fallbackData['lastname']?.toString(),
+              profilePicUrl: null,
             );
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(
-                  'Signed in (backend sync delayed): ${backendError.toString().replaceAll('Exception: ', '')}'),
-              backgroundColor: Colors.orange,
+              content: Text(userMsg),
+              backgroundColor:
+                  isNetworkErr ? Colors.red : Colors.orange,
+              behavior: SnackBarBehavior.floating,
             ));
             Navigator.of(context)
                 .pushReplacement(MaterialPageRoute(builder: (_) => App()));
@@ -425,20 +476,29 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
       }
     } catch (e) {
       final errorStr = e.toString();
-      // Suppress cancellation errors - these are normal user actions
-      if (errorStr.contains('canceled') || errorStr.contains('cancelled') || errorStr.contains('sign_in_canceled')) {
+      // Suppress cancellation errors
+      if (errorStr.contains('canceled') ||
+          errorStr.contains('cancelled') ||
+          errorStr.contains('sign_in_canceled')) {
         if (kDebugMode) print('Google sign-in cancelled by user: $e');
         return;
       }
 
       if (mounted) {
-        final msg = errorStr
-            .replaceAll('Exception: ', '')
-            .replaceAll('AuthException: ', '')
-            .replaceAll('PlatformException(sign_in_failed, ', '')
-            .replaceAll(')', '');
+        final isNetworkErr = errorStr.contains('SocketException') ||
+            errorStr.contains('Connection') ||
+            errorStr.contains('timeout');
+        final msg = isNetworkErr
+            ? 'Check your internet connection and try again'
+            : errorStr
+                .replaceAll('Exception: ', '')
+                .replaceAll('AuthException: ', '')
+                .replaceAll('PlatformException(sign_in_failed, ', '')
+                .replaceAll(')', '');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(msg.isNotEmpty ? msg : 'Google sign-in failed. Please try again.'),
+          content: Text(msg.isNotEmpty
+              ? msg
+              : 'Google sign-in failed. Please try again.'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ));
@@ -446,6 +506,10 @@ class _MobileSignInPageState extends ConsumerState<MobileSignInPage> {
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
+  }
+
+  Future<dynamic> _getPrefs() async {
+    return SharedPreferences.getInstance();
   }
 
   // ── Build ────────────────────────────────────────────────────

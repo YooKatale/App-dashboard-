@@ -5,18 +5,24 @@ final authStateProvider = StateProvider<AuthState>((ref) {
 });
 
 /// Helper to extract a profile pic URL from any user data map,
-/// checking all keys used by the webapp.
+/// checks ALL possible field names used by the webapp and backend.
+/// Priority: avatar > profilePic > profilePicture > photoUrl > profileImage > image > picture > photoURL
 String? extractProfilePicUrl(Map<String, dynamic>? userData) {
   if (userData == null) return null;
   final raw = userData['avatar']?.toString()
       ?? userData['profilePic']?.toString()
-      ?? userData['profile_pic']?.toString()
+      ?? userData['profilePicture']?.toString()
+      ?? userData['photoUrl']?.toString()
       ?? userData['profileImage']?.toString()
+      ?? userData['image']?.toString()
+      ?? userData['profile_pic']?.toString()
       ?? userData['picture']?.toString()
-      ?? userData['photoURL']?.toString()
-      ?? userData['photoUrl']?.toString();
+      ?? userData['photoURL']?.toString();
   if (raw == null || raw.trim().isEmpty) return null;
-  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:')) return raw;
+  if (raw.startsWith('http://') ||
+      raw.startsWith('https://') ||
+      raw.startsWith('data:')) return raw;
+  // Relative path — prefix with backend URL
   return 'https://yookatale-server.onrender.com/$raw';
 }
 

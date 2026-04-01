@@ -27,6 +27,16 @@ class AuthService {
     await prefs.setString('user_data', json.encode(userData));
     // Also save as 'yookatale-app' key to match webapp exactly
     await prefs.setString('yookatale-app', json.encode(userData));
+    // Store avatar URL separately for quick access (Task 6)
+    final avatarUrl = userData['avatar']?.toString()
+        ?? userData['profilePic']?.toString()
+        ?? userData['profilePicture']?.toString()
+        ?? userData['photoUrl']?.toString()
+        ?? userData['profileImage']?.toString()
+        ?? userData['image']?.toString();
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      await prefs.setString('profile_pic_url', avatarUrl);
+    }
   }
   
   // Get user data (like webapp gets from localStorage: localStorage?.getItem("yookatale-app"))
@@ -56,6 +66,45 @@ class AuthService {
     return null;
   }
   
+  /// Fetches fresh user data from /auth/me and saves it locally.
+  /// Call this on app launch or account page load to sync avatar from webapp.
+  static Future<Map<String, dynamic>?> fetchFreshUserData() async {
+    try {
+      final token = await getToken();
+      if (token == null || token.isEmpty) return null;
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/me'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        Map<String, dynamic>? userData;
+        if (data is Map<String, dynamic>) {
+          userData = data['user'] as Map<String, dynamic>? ?? data;
+        }
+        if (userData != null && userData.isNotEmpty &&
+            (userData['_id'] != null || userData['id'] != null)) {
+          // Merge with existing to preserve token
+          final existing = await getUserData();
+          final merged = {
+            ...?existing,
+            ...userData,
+            if (existing?['token'] != null) 'token': existing!['token'],
+          };
+          await saveUserData(merged);
+          return merged;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('fetchFreshUserData error: $e');
+    }
+    return null;
+  }
+
   // Clear user data (logout) - like webapp: localStorage.removeItem("yookatale-app")
   static Future<void> clearUserData() async {
     final prefs = await SharedPreferences.getInstance();
