@@ -110,6 +110,7 @@ android {
 dependencies {
     // Required for core library desugaring (Java 8+ APIs on older devices)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Play Core split-install is pulled in transitively by Flutter — no explicit dep needed
 }
 
 flutter {
