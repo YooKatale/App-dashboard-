@@ -142,7 +142,7 @@ class AppDrawer extends ConsumerWidget {
                   _NavTile(icon: Icons.work_rounded,            label: 'Careers',         route: '/careers',   context: context),
                   _NavTile(icon: Icons.campaign_rounded,        label: 'Advertise',       route: '/advertise', context: context),
                   _NavTile(icon: Icons.handshake_rounded,       label: 'Become a Partner',route: '/partner',   context: context),
-                  _NavTile(icon: Icons.electric_rickshaw_rounded,label: 'Driver Portal',  route: '/driver',    context: context),
+                  _NavTile(icon: Icons.electric_rickshaw_rounded,label: 'Driver Portal',  route: '/driver-app', context: context),
                   _NavTile(icon: Icons.help_rounded,            label: 'Help & FAQs',     route: '/help',      context: context),
 
                   const SizedBox(height: 12),

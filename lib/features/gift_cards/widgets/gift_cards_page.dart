@@ -680,7 +680,6 @@ class _VoucherCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -688,6 +687,18 @@ class _VoucherCard extends StatelessWidget {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
       ),
       child: Column(
+        children: [
+          // Top color stripe
+          Container(
+            height: 6,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Color(0xFF185F2D), Color(0xFF43A047)]),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -758,6 +769,9 @@ class _VoucherCard extends StatelessWidget {
               ],
             ),
           ],
+        ],
+          ),
+          ),
         ],
       ),
     );

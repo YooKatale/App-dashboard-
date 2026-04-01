@@ -133,9 +133,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                       // Categories
                       const CategoriesSection(),
 
-                      // "Discover Meals" banner
-                      const DiscoverBanner(),
-
                       // Popular Products
                       _SectionHeader(
                         icon: Icons.star_rounded,
@@ -144,11 +141,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: popularProducts, title: 'Most Popular'),
+                      // Discover banner AFTER Popular
+                      const DiscoverBanner(),
                       if (promoBanners.isNotEmpty)
                         _SectionPromoBanner(banner: promoBanners[0 % promoBanners.length]),
-
-                      // Payment banner
-                      const PaymentBanner(),
 
                       // Latest / Discover Products
                       _SectionHeader(
@@ -159,11 +155,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: filteredProducts, title: 'Latest Products'),
+                      // Payment banner AFTER Discover
+                      const PaymentBanner(),
                       if (promoBanners.isNotEmpty)
                         _SectionPromoBanner(banner: promoBanners[1 % promoBanners.length]),
-
-                      // Boda Loan card
-                      const BodaLoanCard(),
 
                       // ── More product sections ──────────────────────────────
                       _SectionHeader(
@@ -173,6 +168,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onMore: () => Navigator.pushNamed(context, '/categories'),
                       ),
                       ProductsPage(productProvider: ref.watch(fruitProvider), title: 'Fruits'),
+                      // Boda Loan AFTER Fruits
+                      const BodaLoanCard(),
                       if (promoBanners.isNotEmpty)
                         _SectionPromoBanner(banner: promoBanners[2 % promoBanners.length]),
 
@@ -330,20 +327,26 @@ class _TopBar extends StatelessWidget {
         children: [
           // Hamburger (wrapped in Builder to get Scaffold context)
           Builder(
-            builder: (scaffoldContext) => GestureDetector(
-              onTap: () => Scaffold.of(scaffoldContext).openDrawer(),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(width: 18, height: 1.5, decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(height: 4.5),
-                    Container(width: 12, height: 1.5, decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(height: 4.5),
-                    Container(width: 18, height: 1.5, decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(2))),
-                  ],
+            builder: (scaffoldContext) => Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Scaffold.of(scaffoldContext).openDrawer(),
+                borderRadius: BorderRadius.circular(8),
+                splashColor: Colors.white.withOpacity(0.15),
+                highlightColor: Colors.white.withOpacity(0.08),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(width: 18, height: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(2))),
+                      const SizedBox(height: 4),
+                      Container(width: 12, height: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(2))),
+                      const SizedBox(height: 4),
+                      Container(width: 18, height: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(2))),
+                    ],
+                  ),
                 ),
               ),
             ),

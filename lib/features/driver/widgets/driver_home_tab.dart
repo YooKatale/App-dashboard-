@@ -1,566 +1,427 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../services/api_service.dart';
-import '../../../services/auth_service.dart';
+import '../../../services/driver_auth_service.dart';
 import '../../../services/error_handler_service.dart';
-import '../../authentication/providers/auth_provider.dart';
 
-const _kBg     = Color(0xFF0A0F14);
-const _kCard   = Color(0xFF111820);
-const _kBorder = Color(0xFF1E2D3D);
-const _kGreen  = Color(0xFF00C853);
-const _kGreenDim = Color(0xFF1A5C1A);
-const _kText   = Color(0xFFE0E6ED);
-const _kMuted  = Color(0xFF8A99AA);
-const _kOrange = Color(0xFFE07820);
+const _kGreen  = Color(0xFF0D7C3B);
+const _kBg     = Color(0xFFF4F5F7);
+const _kText   = Color(0xFF111111);
+const _kMuted  = Color(0xFF9CA3AF);
+const _kBorder = Color(0xFFF3F4F6);
+const _kAmber  = Color(0xFFD97706);
 
-class DriverHomeTab extends ConsumerStatefulWidget {
-  const DriverHomeTab({super.key});
+class DriverHomeTab extends StatefulWidget {
+  final VoidCallback? onSwitchToDelivery;
+  const DriverHomeTab({super.key, this.onSwitchToDelivery});
 
   @override
-  ConsumerState<DriverHomeTab> createState() => _DriverHomeTabState();
+  State<DriverHomeTab> createState() => _DriverHomeTabState();
 }
 
-class _DriverHomeTabState extends ConsumerState<DriverHomeTab> {
+class _DriverHomeTabState extends State<DriverHomeTab> {
+  bool _loading   = true;
   bool _isOnline  = false;
   bool _toggling  = false;
-  bool _loading   = true;
-  String? _error;
-  Map<String, dynamic>? _stats;
-  List<dynamic> _orders = [];
-  Timer? _timer;
+  bool _accepting = false;
+  String? _acceptingId;
+
+  Map<String, dynamic>? _dashData;
+  List<dynamic> _availableOrders = [];
+  String _driverName = '';
+  String _token      = '';
+  String _driverId   = '';
+
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
-    _load();
-    _timer = Timer.periodic(const Duration(seconds: 12), (_) => _load());
+    _init();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _pollTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _init() async {
+    final token = await DriverAuthService.getToken();
+    final id    = await DriverAuthService.getDriverId();
+    final data  = await DriverAuthService.getDriverData();
     if (!mounted) return;
+    _token      = token ?? '';
+    _driverId   = id ?? '';
+    _driverName = data?['name']?.toString() ?? data?['fullName']?.toString() ?? 'Driver';
+    await _load();
+    _pollTimer = Timer.periodic(const Duration(seconds: 12), (_) => _load());
+  }
+
+  Future<void> _load() async {
+    if (_token.isEmpty || _driverId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     try {
-      final token = await AuthService.getToken();
-      if (token == null) return;
       final results = await Future.wait([
-        ApiService.fetchDriverStats(token: token),
-        ApiService.fetchAvailableOrders(token: token),
+        ApiService.fetchDriverDashboard(token: _token, driverId: _driverId),
+        ApiService.fetchDriverAvailableOrders(token: _token, driverId: _driverId),
       ]);
-      if (mounted) {
-        final statsRaw = results[0];
-        final stats = statsRaw['data'] is Map
-            ? statsRaw['data'] as Map<String, dynamic>
-            : statsRaw;
-        final ordersRaw = results[1];
-        final orders = ordersRaw['data'] ?? ordersRaw['orders'] ?? ordersRaw;
-        setState(() {
-          _stats   = stats;
-          _isOnline = stats['isOnline'] == true || stats['online'] == true;
-          _orders   = orders is List ? orders : [];
-          _loading  = false;
-          _error    = null;
-        });
+      if (!mounted) return;
+      final dash = results[0];
+      final ordRes = results[1];
+      final dashData = dash['data'] is Map ? dash['data'] as Map<String, dynamic> : <String, dynamic>{};
+      // Robust orders parsing — handles List, Map wrapper, and alternative keys
+      final ordersRaw = ordRes['data'] ?? ordRes['orders'];
+      List<dynamic> parsedOrders = [];
+      if (ordersRaw is List) {
+        parsedOrders = ordersRaw;
+      } else if (ordersRaw is Map) {
+        final inner = ordersRaw['orders'] ?? ordersRaw['data'] ?? ordersRaw['results'];
+        if (inner is List) parsedOrders = inner;
       }
+      final drv = dashData['driver'];
+      setState(() {
+        _dashData        = dashData;
+        _isOnline        = drv?['isAvailable'] == true || drv?['isAvailable']?.toString() == 'true';
+        _availableOrders = parsedOrders;
+        _loading         = false;
+      });
     } catch (e) {
-      if (mounted) setState(() { _loading = false; _error = ErrorHandlerService.getErrorMessage(e); });
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _toggle() async {
+    if (_driverId.isEmpty || _toggling) return;
     setState(() => _toggling = true);
     try {
-      final token = await AuthService.getToken();
-      if (token == null) return;
-      await ApiService.toggleDriverAvailability(token: token, isOnline: !_isOnline);
-      setState(() => _isOnline = !_isOnline);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(ErrorHandlerService.getErrorMessage(e)),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+      final res = await ApiService.toggleDriverAvailabilityById(
+          token: _token, driverId: _driverId);
+      if (res['status'] == 'Success') {
+        setState(() => _isOnline = res['data']?['isAvailable'] == true);
+        _showToast(_isOnline ? 'You\'re online!' : 'You\'re offline');
       }
+    } catch (e) {
+      _showToast(ErrorHandlerService.getErrorMessage(e), error: true);
     } finally {
       if (mounted) setState(() => _toggling = false);
     }
   }
 
   Future<void> _accept(String orderId) async {
+    if (_accepting) return;
+    setState(() { _accepting = true; _acceptingId = orderId; });
     try {
-      final token = await AuthService.getToken();
-      if (token == null) return;
-      await ApiService.acceptDeliveryOrder(token: token, orderId: orderId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Order accepted!'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ));
-        _load();
+      final res = await ApiService.acceptDriverOrder(
+          token: _token, orderId: orderId, driverId: _driverId);
+      if (res['status'] == 'Success') {
+        _showToast('Order accepted! Navigate to pickup.');
+        await _load();
+      } else {
+        _showToast(res['message']?.toString() ?? 'Failed to accept order', error: true);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(ErrorHandlerService.getErrorMessage(e)),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
-      }
+      _showToast(ErrorHandlerService.getErrorMessage(e), error: true);
+    } finally {
+      if (mounted) setState(() { _accepting = false; _acceptingId = null; });
     }
   }
 
-  String _fmt(dynamic v) {
+  void _showToast(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: error ? Colors.red[700] : _kGreen,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 3),
+    ));
+  }
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning,';
+    if (h < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
+
+  String _fmtK(dynamic v) {
     final n = (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '0') ?? 0;
-    return 'UGX ${n.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}K';
+    return n.toStringAsFixed(0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState  = ref.watch(authStateProvider);
-    final firstName  = authState.firstName ?? 'Driver';
-    final now        = DateTime.now();
-    final greeting   = now.hour < 12 ? 'Good morning' : now.hour < 17 ? 'Good afternoon' : 'Good evening';
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: _kGreen, strokeWidth: 2.5),
+      );
+    }
 
-    return Scaffold(
-      backgroundColor: _kBg,
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator(color: _kGreen))
-            : RefreshIndicator(
-                color: _kGreen,
-                backgroundColor: _kCard,
-                onRefresh: _load,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── Top bar ──────────────────────────────────────────────
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF0D1E14), Color(0xFF0A0F14)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('$greeting,',
-                                          style: const TextStyle(
-                                              color: _kMuted, fontSize: 13)),
-                                      Text(firstName,
-                                          style: const TextStyle(
-                                              color: _kText,
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w800)),
-                                    ],
-                                  ),
-                                ),
-                                // Online/offline toggle
-                                GestureDetector(
-                                  onTap: _toggling ? null : _toggle,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _isOnline
-                                          ? _kGreen.withOpacity(0.15)
-                                          : Colors.grey.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: _isOnline ? _kGreen : Colors.grey,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: _toggling
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: _kGreen))
-                                        : Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Container(
-                                                width: 8, height: 8,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: _isOnline
-                                                      ? _kGreen
-                                                      : Colors.grey,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                _isOnline ? 'Online' : 'Offline',
-                                                style: TextStyle(
-                                                  color: _isOnline
-                                                      ? _kGreen
-                                                      : Colors.grey,
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Stats row
-                            Row(
-                              children: [
-                                _StatCard(
-                                  label: 'Deliveries',
-                                  value: (_stats?['totalDeliveries'] ??
-                                      _stats?['deliveries'] ??
-                                      _stats?['completed'] ?? 0).toString(),
-                                  icon: Icons.delivery_dining_rounded,
-                                ),
-                                const SizedBox(width: 10),
-                                _StatCard(
-                                  label: "Today's Earnings",
-                                  value: _fmt(_stats?['todayEarnings'] ??
-                                      _stats?['today'] ?? 0),
-                                  icon: Icons.payments_rounded,
-                                ),
-                                const SizedBox(width: 10),
-                                _StatCard(
-                                  label: 'Rating',
-                                  value: (_stats?['rating'] ?? 5.0).toStringAsFixed(1),
-                                  icon: Icons.star_rounded,
-                                  iconColor: const Color(0xFFFFCC00),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+    final driver        = (_dashData?['driver'] as Map?) ?? <String, dynamic>{};
+    final activeDelivery = _dashData?['activeDelivery'];
+    final todayTrips    = _dashData?['todayDeliveries'] ?? driver['todayDeliveries'] ?? 0;
+    final weekEarnings  = _dashData?['weekEarnings'] ?? 0;
+    final rating        = (driver['averageRating'] ?? 0.0) is num
+        ? (driver['averageRating'] ?? 0.0) as num : 0;
+    final ratingCount   = driver['ratingCount'] ?? 0;
 
-                      // ── Available Orders ─────────────────────────────────────
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                        child: Row(
-                          children: [
-                            const Text('Available Orders',
-                                style: TextStyle(
-                                    color: _kText,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700)),
-                            const SizedBox(width: 8),
-                            if (_orders.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _kOrange,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  _orders.length.toString(),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-
-                      if (!_isOnline)
-                        _OfflineBanner()
-                      else if (_orders.isEmpty)
-                        _EmptyOrders()
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _orders.length,
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemBuilder: (_, i) => _OrderCard(
-                            order: _orders[i] as Map<String, dynamic>,
-                            onAccept: _accept,
-                            formatCurrency: _fmt,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.iconColor = _kGreen,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: _kCard,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _kBorder),
-        ),
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: _kGreen,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconColor, size: 18),
-            const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(
-                    color: _kText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(color: _kMuted, fontSize: 9),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            // Greeting
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(_greeting(), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(_driverName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _kText)),
+              ]),
+            ),
+
+            // Stats grid — matches webapp 3-col
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(children: [
+                _statCard(
+                  icon: Icons.inventory_2_outlined, iconBg: const Color(0xFFF0FDF4), iconColor: _kGreen,
+                  value: '$todayTrips', unit: 'trips · Today',
+                ),
+                const SizedBox(width: 6),
+                _statCard(
+                  icon: Icons.trending_up_rounded, iconBg: const Color(0xFFFFFBEB), iconColor: _kAmber,
+                  value: '${_fmtK(weekEarnings)}', unit: 'UGX · Week',
+                ),
+                const SizedBox(width: 6),
+                _statCard(
+                  icon: Icons.star_rounded, iconBg: const Color(0xFFFEFCE8), iconColor: _kAmber,
+                  value: rating.toStringAsFixed(1), unit: '$ratingCount reviews',
+                  starIcon: true,
+                ),
+              ]),
+            ),
+
+            // Active delivery banner — dark button like webapp
+            if (activeDelivery != null) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GestureDetector(
+                  onTap: widget.onSwitchToDelivery,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _kText,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        width: 32, height: 32,
+                        decoration: const BoxDecoration(color: _kGreen, shape: BoxShape.circle),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 14),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Active Delivery',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                        Text(
+                          _extractAddress(activeDelivery),
+                          style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ])),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1F0D7C3B),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _statusShort(activeDelivery['status']?.toString() ?? ''),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _kGreen),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.chevron_right_rounded, color: Color(0xFF6B7280), size: 16),
+                    ]),
+                  ),
+                ),
+              ),
+            ],
+
+            // Nearby orders header
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Nearby Orders',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _kText)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFDCFCE7)),
+                  ),
+                  child: Text('${_availableOrders.length}',
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _kGreen)),
+                ),
+              ]),
+            ),
+
+            // Orders list or empty state
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: _isOnline
+                  ? _availableOrders.isEmpty
+                      ? _emptyState(Icons.inventory_2_outlined, 'No orders right now', 'Stay online')
+                      : Column(children: _availableOrders.map((o) => _orderCard(o)).toList())
+                  : _emptyState(Icons.bolt_rounded, "You're offline", 'Go online to receive orders'),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _OfflineBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _kCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder),
-      ),
-      child: const Column(
-        children: [
-          Icon(Icons.wifi_off_rounded, color: _kMuted, size: 40),
-          SizedBox(height: 10),
-          Text("You're Offline",
-              style: TextStyle(color: _kText, fontSize: 16, fontWeight: FontWeight.w700)),
-          SizedBox(height: 4),
-          Text('Go online to start receiving orders',
-              style: TextStyle(color: _kMuted, fontSize: 13),
-              textAlign: TextAlign.center),
-        ],
+  Widget _statCard({required IconData icon, required Color iconBg, required Color iconColor,
+    required String value, required String unit, bool starIcon = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _kBorder),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 26, height: 26,
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(6)),
+            alignment: Alignment.center,
+            child: Icon(icon, color: iconColor, size: 14),
+          ),
+          const SizedBox(height: 6),
+          Text(value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _kText, height: 1)),
+          Text(unit, style: const TextStyle(fontSize: 9, color: _kMuted, height: 1.4)),
+        ]),
       ),
     );
   }
-}
 
-class _EmptyOrders extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
+  Widget _emptyState(IconData icon, String title, String sub) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: const EdgeInsets.all(36),
       decoration: BoxDecoration(
-        color: _kCard,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _kBorder),
       ),
-      child: const Column(
-        children: [
-          Icon(Icons.search_off_rounded, color: _kMuted, size: 44),
-          SizedBox(height: 10),
-          Text('No available orders',
-              style: TextStyle(color: _kText, fontSize: 16, fontWeight: FontWeight.w700)),
-          SizedBox(height: 4),
-          Text('New orders will appear here when available',
-              style: TextStyle(color: _kMuted, fontSize: 13),
-              textAlign: TextAlign.center),
-        ],
-      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 28, color: const Color(0xFFD1D5DB)),
+        const SizedBox(height: 8),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _kText)),
+        const SizedBox(height: 2),
+        Text(sub, style: const TextStyle(fontSize: 11, color: _kMuted)),
+      ]),
     );
   }
-}
 
-class _OrderCard extends StatefulWidget {
-  final Map<String, dynamic> order;
-  final Future<void> Function(String) onAccept;
-  final String Function(dynamic) formatCurrency;
-
-  const _OrderCard({
-    required this.order,
-    required this.onAccept,
-    required this.formatCurrency,
-  });
-
-  @override
-  State<_OrderCard> createState() => _OrderCardState();
-}
-
-class _OrderCardState extends State<_OrderCard> {
-  bool _accepting = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final order   = widget.order;
-    final orderId = order['_id']?.toString() ?? order['id']?.toString() ?? '';
-    final items   = order['items'] as List? ?? [];
-    final total   = order['totalPrice'] ?? order['total'] ?? order['amount'] ?? 0;
-    final address = order['deliveryAddress']?.toString() ??
-        order['address']?.toString() ?? 'N/A';
-    final distance = order['distance']?.toString() ?? '';
+  Widget _orderCard(dynamic order) {
+    final o  = order is Map ? order as Map<String, dynamic> : <String, dynamic>{};
+    final id = o['_id']?.toString() ?? '';
+    final shortId = id.length >= 8 ? id.substring(0, 8).toUpperCase() : id.toUpperCase();
+    final vendor = o['vendorId'] is Map ? o['vendorId'] as Map : <String, dynamic>{};
+    final vendorName = vendor['businessName']?.toString() ?? vendor['name']?.toString() ?? 'Vendor';
+    final addr = _extractAddress(o);
+    final total = ((o['orderTotal'] ?? o['total'] ?? 0) as num).toInt();
+    final earning = ((o['estimatedEarning'] ?? o['driverEarning'] ?? 0) as num).toInt();
+    final items = (o['items'] ?? o['products']) is List ? (o['items'] ?? o['products']) as List : [];
+    final isAccepting = _acceptingId == id;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _kCard,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _kBorder),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: _kGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.shopping_bag_rounded,
-                    color: _kGreen, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Order #${orderId.length > 8 ? orderId.substring(orderId.length - 8) : orderId}',
-                        style: const TextStyle(
-                            color: _kText,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                    Text('${items.length} item${items.length != 1 ? 's' : ''}',
-                        style: const TextStyle(color: _kMuted, fontSize: 11)),
-                  ],
-                ),
-              ),
-              Text(widget.formatCurrency(total),
-                  style: const TextStyle(
-                      color: _kGreen,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13)),
-            ],
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Order #$shortId',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: _kText)),
+            const SizedBox(height: 2),
+            Text(vendorName, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text('+UGX ${_fmtK(earning)}',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kGreen)),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(Icons.location_on_rounded, color: _kOrange, size: 14),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(address,
-                    style: const TextStyle(color: _kMuted, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-              ),
-              if (distance.isNotEmpty)
-                Text(distance,
-                    style: const TextStyle(color: _kMuted, fontSize: 11)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {/* decline */},
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.red.withOpacity(0.4)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text('Decline',
-                          style: TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13)),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: GestureDetector(
-                  onTap: _accepting ? null : () async {
-                    setState(() => _accepting = true);
-                    await widget.onAccept(orderId);
-                    if (mounted) setState(() => _accepting = false);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00C853), Color(0xFF1A8E3E)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: _accepting
-                          ? const SizedBox(width: 16, height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Text('Accept Order',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        ]),
+        if (addr.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(children: [
+            const Icon(Icons.location_on_outlined, size: 12, color: _kMuted),
+            const SizedBox(width: 4),
+            Expanded(child: Text(addr, style: const TextStyle(fontSize: 11, color: _kMuted), overflow: TextOverflow.ellipsis)),
+          ]),
         ],
-      ),
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('${items.length} item${items.length != 1 ? 's' : ''} · UGX ${_fmtK(total)}',
+              style: const TextStyle(fontSize: 11, color: _kMuted)),
+        ],
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 38,
+          child: ElevatedButton(
+            onPressed: isAccepting ? null : () => _accept(id),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kGreen, foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: isAccepting
+                ? const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Accept Order', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          ),
+        ),
+      ]),
     );
+  }
+
+  String _extractAddress(dynamic delivery) {
+    if (delivery == null) return '';
+    final addr = delivery['deliveryAddress'];
+    if (addr is Map) return addr['address']?.toString() ?? addr['address1']?.toString() ?? '';
+    return addr?.toString() ?? '';
+  }
+
+  String _statusShort(String s) {
+    switch (s) {
+      case 'assigned':    return 'Assigned';
+      case 'picked_up':   return 'Picked Up';
+      case 'in_transit':  return 'In Transit';
+      case 'delivered':   return 'Delivered';
+      default:            return s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : 'Active';
+    }
   }
 }

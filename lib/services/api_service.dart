@@ -1153,6 +1153,28 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> addPayoutMethod({
+    required String token,
+    required String type,
+    required String provider,
+    required String phone,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/payout-methods'),
+        headers: getHeaders(token: token),
+        body: json.encode({'type': type, 'provider': provider, 'phone': phone}),
+      ).timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      }
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to add payout method: ${response.statusCode}');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
   static Future<Map<String, dynamic>> fetchWithdrawals({required String token}) async {
     try {
       final response = await http.get(
@@ -1191,16 +1213,17 @@ class ApiService {
   }
 
   // Rewards - public list, authenticated for my rewards
-  static Future<Map<String, dynamic>> fetchRewards() async {
+  static Future<Map<String, dynamic>> fetchRewards({String? token}) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/rewards'),
-        headers: getHeaders(),
+        headers: getHeaders(token: token),
       ).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) return json.decode(response.body);
-      throw Exception('Failed to load rewards: ${response.statusCode}');
+      // If auth fails or server error, return empty rather than throwing
+      return {'status': 'Success', 'data': []};
     } catch (e) {
-      throw Exception(ErrorHandlerService.getErrorMessage(e));
+      return {'status': 'Success', 'data': []};
     }
   }
 
@@ -1237,7 +1260,106 @@ class ApiService {
     }
   }
 
-  // ── Driver Dashboard ───────────────────────────────────────────────────
+  // ── Driver Dashboard (webapp-aligned endpoints) ────────────────────────
+
+  /// GET /driver/dashboard/{driverId}  — matches webapp exactly
+  static Future<Map<String, dynamic>> fetchDriverDashboard({
+    required String token,
+    required String driverId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/dashboard/$driverId'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 20));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'status': 'Error', 'data': {}};
+    } catch (e) {
+      return {'status': 'Error', 'data': {}};
+    }
+  }
+
+  /// GET /driver/{driverId}/available-orders  — matches webapp exactly
+  static Future<Map<String, dynamic>> fetchDriverAvailableOrders({
+    required String token,
+    required String driverId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/$driverId/available-orders'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'status': 'Success', 'data': []};
+    } catch (e) {
+      return {'status': 'Success', 'data': []};
+    }
+  }
+
+  /// PATCH /driver/{driverId}/availability  — matches webapp exactly
+  static Future<Map<String, dynamic>> toggleDriverAvailabilityById({
+    required String token,
+    required String driverId,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/driver/$driverId/availability'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to toggle availability');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  /// POST /driver/accept-order  — matches webapp exactly
+  static Future<Map<String, dynamic>> acceptDriverOrder({
+    required String token,
+    required String orderId,
+    required String driverId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/driver/accept-order'),
+        headers: getHeaders(token: token),
+        body: json.encode({'orderId': orderId, 'partnerId': driverId}),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to accept order');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  /// PATCH /driver/delivery/{deliveryId}/status  — matches webapp exactly
+  static Future<Map<String, dynamic>> updateDriverDeliveryStatus({
+    required String token,
+    required String deliveryId,
+    required String status,
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      final body = <String, dynamic>{'status': status};
+      if (lat != null) body['lat'] = lat;
+      if (lng != null) body['lng'] = lng;
+      final response = await http.patch(
+        Uri.parse('$baseUrl/driver/delivery/$deliveryId/status'),
+        headers: getHeaders(token: token),
+        body: json.encode(body),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final bd = json.decode(response.body);
+      throw Exception(bd['message'] ?? 'Failed to update delivery status');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Driver Dashboard (legacy endpoints kept for backward compat) ────────
 
   static Future<Map<String, dynamic>> fetchDriverStats({required String token}) async {
     try {
@@ -1334,6 +1456,65 @@ class ApiService {
     }
   }
 
+  /// PATCH /driver/{driverId}/profile
+  static Future<Map<String, dynamic>> updateDriverProfile({
+    required String token, required String driverId, required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/driver/$driverId/profile'),
+        headers: getHeaders(token: token),
+        body: json.encode(data),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to update profile');
+    } catch (e) { throw Exception(ErrorHandlerService.getErrorMessage(e)); }
+  }
+
+  /// PATCH /driver/{driverId}/payout-method
+  static Future<Map<String, dynamic>> updateDriverPayoutMethod({
+    required String token, required String driverId, required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/driver/$driverId/payout-method'),
+        headers: getHeaders(token: token),
+        body: json.encode(data),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to update payout method');
+    } catch (e) { throw Exception(ErrorHandlerService.getErrorMessage(e)); }
+  }
+
+  /// GET /driver/{driverId}/ratings
+  static Future<Map<String, dynamic>> fetchDriverRatings({
+    required String token, required String driverId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/driver/$driverId/ratings'),
+        headers: getHeaders(token: token),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(response.body);
+      return {'status': 'Success', 'data': []};
+    } catch (e) { return {'status': 'Success', 'data': []}; }
+  }
+
+  /// PATCH /driver/{driverId}/fcm-token
+  static Future<void> updateDriverFcmToken({
+    required String token, required String driverId, required String fcmToken,
+  }) async {
+    try {
+      await http.patch(
+        Uri.parse('$baseUrl/driver/$driverId/fcm-token'),
+        headers: getHeaders(token: token),
+        body: json.encode({'fcmToken': fcmToken}),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {}
+  }
+
   // ── Partner Registration ────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> registerVendor({
@@ -1395,6 +1576,70 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
       final body = json.decode(response.body);
       throw Exception(body['message'] ?? 'Driver registration failed');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  // ── Careers ─────────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> fetchCareers() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/careers'),
+        headers: getHeaders(),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to fetch careers');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> uploadCv({required String filePath}) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/careers/upload-cv'),
+      );
+      request.files.add(await http.MultipartFile.fromPath('cv', filePath));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'CV upload failed');
+    } catch (e) {
+      throw Exception(ErrorHandlerService.getErrorMessage(e));
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitJobApplicationWithResume({
+    required String jobId,
+    required String jobTitle,
+    required String name,
+    required String email,
+    required String phone,
+    String? coverLetter,
+    String? resume,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/careers/apply'),
+        headers: getHeaders(),
+        body: json.encode({
+          'jobId': jobId,
+          'jobTitle': jobTitle,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          if (coverLetter != null && coverLetter.isNotEmpty) 'coverLetter': coverLetter,
+          if (resume != null && resume.isNotEmpty) 'resume': resume,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (response.statusCode == 200 || response.statusCode == 201) return json.decode(response.body);
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to submit application');
     } catch (e) {
       throw Exception(ErrorHandlerService.getErrorMessage(e));
     }
@@ -1503,7 +1748,7 @@ class ApiService {
   static Future<Map<String, dynamic>> fetchReferralData({required String token}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/referrals/stats'),
+        Uri.parse('$baseUrl/cashout/referrals'),
         headers: getHeaders(token: token),
       ).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) return json.decode(response.body);

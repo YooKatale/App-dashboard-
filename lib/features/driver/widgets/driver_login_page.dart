@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../../services/auth_service.dart';
+import '../../../services/driver_auth_service.dart';
 
 const _kBg        = Color(0xFF0A0F14);
 const _kCard      = Color(0xFF111820);
@@ -43,19 +43,18 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
     setState(() { _loading = true; _error = null; });
     try {
       final res = await http.post(
-        Uri.parse('$_kBase/driver/login'),
+        Uri.parse('$_kBase/driver/auth'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       ).timeout(const Duration(seconds: 20));
       final body = jsonDecode(res.body) as Map<String, dynamic>;
-      if (res.statusCode == 200 && (body['token'] != null || body['data']?['token'] != null)) {
-        final token = body['token']?.toString() ?? body['data']?['token']?.toString() ?? '';
-        final userData = body['data'] ?? body['user'] ?? body;
-        // Store driver session separately
-        await AuthService.saveToken(token);
-        await AuthService.saveUserData(userData is Map<String, dynamic>
-            ? {...userData, '_isDriver': true}
-            : {'_isDriver': true});
+      final token = body['token']?.toString() ?? body['data']?['token']?.toString() ?? '';
+      if (res.statusCode == 200 && body['status'] == 'Success' && token.isNotEmpty) {
+        final driverData = body['driver'] ?? body['data'] ?? body['user'] ?? <String, dynamic>{};
+        await DriverAuthService.saveSession(
+          token,
+          driverData is Map<String, dynamic> ? driverData : <String, dynamic>{},
+        );
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/driver-app');
         }
@@ -98,15 +97,10 @@ class _DriverLoginPageState extends State<DriverLoginPage> {
               Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _kGreen.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _kGreen.withOpacity(0.4)),
-                    ),
-                    child: const Icon(Icons.delivery_dining_rounded,
-                        color: _kGreen, size: 26),
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset('assets/logo.jpg', fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 12),
                   Column(

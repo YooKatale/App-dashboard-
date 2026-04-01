@@ -157,7 +157,7 @@ class _MealSection extends StatelessWidget {
             itemCount: meals.length,
             itemBuilder: (context, index) {
               final meal = meals[index];
-              return _MealCard(meal: meal);
+              return _MealCard(meal: meal, accentColor: color);
             },
           ),
         ),
@@ -169,88 +169,104 @@ class _MealSection extends StatelessWidget {
 
 class _MealCard extends StatelessWidget {
   final Map<String, dynamic> meal;
+  final Color accentColor;
 
-  const _MealCard({required this.meal});
+  const _MealCard({required this.meal, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
-    final name = meal['name']?.toString() ?? meal['title']?.toString() ?? 'Meal';
-    final type = meal['mealType']?.toString() ?? meal['type']?.toString() ?? '';
+    final name  = meal['name']?.toString() ?? meal['title']?.toString() ?? 'Meal';
+    final type  = meal['mealType']?.toString() ?? meal['type']?.toString() ?? '';
     final image = meal['image']?.toString() ?? meal['imageUrl']?.toString() ?? '';
+    final price = meal['price'] ?? meal['basePrice'];
+    final priceStr = price != null ? 'UGX ${(price as num).toInt()}' : '';
 
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/subscription'),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 130,
-          margin: const EdgeInsets.only(right: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image
-              Expanded(
-                child: image.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: image,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.fastfood, color: Colors.grey),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.fastfood, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.fastfood, color: Colors.grey),
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image with gradient overlay
+            SizedBox(
+              height: 110,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  image.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: image, fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(color: accentColor.withOpacity(0.12),
+                              child: Icon(Icons.restaurant_rounded, color: accentColor.withOpacity(0.4), size: 32)),
+                          errorWidget: (_, __, ___) => Container(color: accentColor.withOpacity(0.12),
+                              child: Icon(Icons.restaurant_rounded, color: accentColor.withOpacity(0.4), size: 32)),
+                        )
+                      : Container(color: accentColor.withOpacity(0.12),
+                          child: Icon(Icons.restaurant_rounded, color: accentColor.withOpacity(0.4), size: 32)),
+                  // Gradient overlay
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.35)],
                       ),
-              ),
-
-              // Info
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0A0F0C),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (type.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        type,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
-                        ),
+                  ),
+                  // Meal type badge
+                  Positioned(
+                    top: 8, left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
-                  ],
-                ),
+                      child: Text(
+                        type.isNotEmpty ? type.replaceAll('_', ' ') : 'Meal',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            // Info
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(name,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0A0F0C), height: 1.2),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (priceStr.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(priceStr, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentColor)),
+                ],
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('Subscribe', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: accentColor)),
+                    const SizedBox(width: 3),
+                    Icon(Icons.arrow_forward_rounded, size: 10, color: accentColor),
+                  ]),
+                ),
+              ]),
+            ),
+          ],
         ),
       ),
     );

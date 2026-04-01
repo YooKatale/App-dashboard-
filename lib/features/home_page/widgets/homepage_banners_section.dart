@@ -26,12 +26,11 @@ class HomepageBannersSection extends ConsumerWidget {
             _buildMiniCardsRow(context, sideCards),
             if (promoBanners.isNotEmpty)
               _buildPromoBanners(context, promoBanners),
-            _buildDownloadCard(context),
           ],
         );
       },
-      loading: () => _buildDownloadCard(context),
-      error: (_, __) => _buildDownloadCard(context),
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 

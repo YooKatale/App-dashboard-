@@ -86,7 +86,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
                 children: [
                   // Gradient background + image
                   Container(
-                    height: 115,
+                    height: 110,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [_kPrimary.withOpacity(0.08), _kAccent.withOpacity(0.06)],
@@ -99,7 +99,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
                             imageUrl: product.image,
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            height: 115,
+                            height: 110,
                             placeholder: (_, __) => Container(
                               color: Colors.grey[100],
                               child: const Center(
@@ -112,7 +112,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
                             product.image.startsWith('assets/') ? product.image : 'assets/${product.image}',
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            height: 115,
+                            height: 110,
                             errorBuilder: (_, __, ___) => const _PlaceholderIcon(),
                           ),
                   ),
@@ -161,7 +161,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
 
             // Info section
             Padding(
-              padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
+              padding: const EdgeInsets.fromLTRB(9, 6, 9, 5),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -177,7 +177,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                   // Star rating + sold count
                   Row(
@@ -189,7 +189,7 @@ class _MobileProductCardState extends ConsumerState<MobileProductCard> {
                       Text('· 120 sold', style: TextStyle(fontSize: 9, color: Colors.grey[500])),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 3),
 
                   // Price row + add button
                   Row(
